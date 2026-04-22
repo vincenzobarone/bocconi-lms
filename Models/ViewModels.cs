@@ -21,9 +21,6 @@ public class RegisterViewModel
     [Required(ErrorMessage = "Cognome obbligatorio")]
     public string LastName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Username obbligatorio")]
-    public string Username { get; set; } = string.Empty;
-
     [Required(ErrorMessage = "Email obbligatoria")]
     [EmailAddress(ErrorMessage = "Email non valida")]
     public string Email { get; set; } = string.Empty;

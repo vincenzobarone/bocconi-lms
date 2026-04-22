@@ -62,7 +62,8 @@ public class AdminController : Controller
             Email = model.Email,
             FirstName = model.FirstName,
             LastName = model.LastName,
-            IsActive = true
+            IsActive = true,
+            SecurityStamp = Guid.NewGuid().ToString()
         };
 
         var result = await _userManager.CreateAsync(appUser, model.Password);

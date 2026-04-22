@@ -57,6 +57,8 @@ public class CourseController : Controller
         var course = await _courses.GetByIdAsync(id);
         if (course == null) return NotFound();
         bool isOwner = CurrentRole is "Admin" || course.TeacherId == CurrentUserId;
+        if (!course.IsPublished && !isOwner)
+            return NotFound();
         bool publishedOnly = !isOwner;
         var lessons = await _lessons.GetByCourseAsync(id, CurrentUserId, publishedOnly: publishedOnly);
         bool isEnrolled = await _enrollments.IsEnrolledAsync(CurrentUserId, id);
@@ -70,6 +72,11 @@ public class CourseController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Enroll(int id)
     {
+        var course = await _courses.GetByIdAsync(id);
+        if (course == null) return NotFound();
+        bool isOwner = CurrentRole is "Admin" || course.TeacherId == CurrentUserId;
+        if (!course.IsPublished && !isOwner)
+            return NotFound();
         await _enrollments.EnrollAsync(CurrentUserId, id);
         TempData["Success"] = "Iscrizione completata!";
         return RedirectToAction("Details", new { id });
@@ -79,6 +86,11 @@ public class CourseController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Unenroll(int id)
     {
+        var course = await _courses.GetByIdAsync(id);
+        if (course == null) return NotFound();
+        bool isOwner = CurrentRole is "Admin" || course.TeacherId == CurrentUserId;
+        if (!course.IsPublished && !isOwner)
+            return NotFound();
         await _enrollments.UnenrollAsync(CurrentUserId, id);
         TempData["Success"] = "Disiscrizione completata.";
         return RedirectToAction("Details", new { id });
