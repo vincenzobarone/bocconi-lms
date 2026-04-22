@@ -1,0 +1,7 @@
+obj/
+bin/
+*.user
+.vs/
+appsettings.Development.json
+wwwroot/uploads/
+*.log

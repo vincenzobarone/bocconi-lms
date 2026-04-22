@@ -1,0 +1,156 @@
+@model Lesson
+@{
+    ViewData["Title"] = Model.Title;
+    var documents = ViewBag.Documents as List<Document> ?? new();
+    var quizzes = ViewBag.Quizzes as List<Quiz> ?? new();
+    var isOwner = (bool)(ViewBag.IsOwner ?? false);
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Index">Corsi</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Details" asp-route-id="@Model.CourseId">@Model.CourseTitle</a></li>
+        <li class="breadcrumb-item active">@Model.Title</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <h2 class="fw-bold">@Model.Title</h2>
+            @if (isOwner)
+            {
+                <div class="d-flex gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil me-1"></i>Modifica
+                    </a>
+                    <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Eliminare la lezione?')">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Content))
+        {
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="lesson-content">@Html.Raw(Model.Content.Replace("\n", "<br/>"))</div>
+                </div>
+            </div>
+        }
+
+        @if (documents.Any() || isOwner)
+        {
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-semibold mb-0"><i class="bi bi-file-earmark me-2"></i>Documenti</h4>
+                @if (isOwner)
+                {
+                    <a asp-controller="Document" asp-action="Upload" asp-route-lessonId="@Model.Id"
+                       class="btn btn-sm btn-bocconi"><i class="bi bi-upload me-1"></i>Carica documento</a>
+                }
+            </div>
+            @if (documents.Any())
+            {
+                <div class="list-group mb-4">
+                    @foreach (var d in documents)
+                    {
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="bi bi-file-earmark-text me-2 text-bocconi"></i>
+                                <strong>@d.Title</strong>
+                                @if (d.CurrentVersion > 0)
+                                {
+                                    <span class="version-badge ms-2">v@d.CurrentVersion</span>
+                                }
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a asp-controller="Document" asp-action="Details" asp-route-id="@d.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-clock-history me-1"></i>Versioni
+                                </a>
+                                @if (d.ActiveVersion != null)
+                                {
+                                    <a asp-controller="Document" asp-action="Download" asp-route-versionId="@d.ActiveVersion.Id"
+                                       class="btn btn-sm btn-bocconi"><i class="bi bi-download"></i></a>
+                                }
+                                @if (isOwner)
+                                {
+                                    <a asp-controller="Document" asp-action="Upload"
+                                       asp-route-lessonId="@Model.Id" asp-route-documentId="@d.Id"
+                                       class="btn btn-sm btn-outline-warning"><i class="bi bi-arrow-up-circle"></i></a>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        }
+
+        @if (quizzes.Any() || isOwner)
+        {
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-semibold mb-0"><i class="bi bi-clipboard2-check me-2"></i>Quiz</h4>
+                @if (isOwner)
+                {
+                    <a asp-controller="Quiz" asp-action="Create" asp-route-lessonId="@Model.Id"
+                       class="btn btn-sm btn-bocconi"><i class="bi bi-plus-lg me-1"></i>Crea quiz</a>
+                }
+            </div>
+            @foreach (var q in quizzes)
+            {
+                <div class="card mb-2">
+                    <div class="card-body d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>@q.Title</strong>
+                            <div class="text-muted small">
+                                <i class="bi bi-clock me-1"></i>@q.TimeLimitMinutes min
+                                <span class="ms-3"><i class="bi bi-award me-1"></i>Sufficienza: @q.PassingScore%</span>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a asp-controller="Quiz" asp-action="Take" asp-route-id="@q.Id"
+                               class="btn btn-sm btn-bocconi"><i class="bi bi-play-circle me-1"></i>Svolgi</a>
+                            <a asp-controller="Quiz" asp-action="History" asp-route-quizId="@q.Id"
+                               class="btn btn-sm btn-outline-secondary">Storico</a>
+                            @if (isOwner)
+                            {
+                                <form asp-controller="Quiz" asp-action="Delete" asp-route-id="@q.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Eliminare il quiz?')">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                @if (Model.IsCompleted)
+                {
+                    <div class="text-center text-success mb-3">
+                        <i class="bi bi-check-circle-fill display-5"></i>
+                        <p class="fw-semibold mt-2">Lezione completata</p>
+                    </div>
+                }
+                <div class="text-muted small">
+                    <div class="mb-2"><i class="bi bi-book me-2"></i>@Model.CourseTitle</div>
+                    <div class="mb-2"><i class="bi bi-sort-numeric-up me-2"></i>Ordine: @Model.SortOrder</div>
+                    <div><i class="bi bi-calendar me-2"></i>@Model.CreatedAt.ToString("dd/MM/yyyy")</div>
+                </div>
+                <hr />
+                <a asp-controller="Course" asp-action="Details" asp-route-id="@Model.CourseId"
+                   class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-left me-2"></i>Torna al corso</a>
+            </div>
+        </div>
+    </div>
+</div>

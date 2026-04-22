@@ -1,0 +1,80 @@
+@model List<User>
+@{
+    ViewData["Title"] = "Gestione Utenti";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-people me-2"></i>Gestione Utenti</h2>
+    <a asp-action="CreateUser" class="btn btn-bocconi">
+        <i class="bi bi-person-plus me-1"></i>Nuovo utente
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table id="usersTable" class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Nome</th>
+                    <th>Email</th>
+                    <th>Ruolo</th>
+                    <th>Stato</th>
+                    <th>Registrato</th>
+                    <th>Azioni</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var u in Model)
+                {
+                    <tr>
+                        <td>
+                            <strong>@u.FullName</strong>
+                            <div class="text-muted small">@u.Username</div>
+                        </td>
+                        <td>@u.Email</td>
+                        <td>
+                            @{
+                                var roleClass = u.Role switch {
+                                    "Admin" => "bg-danger",
+                                    "Teacher" => "bg-primary",
+                                    _ => "bg-secondary"
+                                };
+                            }
+                            <span class="badge @roleClass">@u.Role</span>
+                        </td>
+                        <td>
+                            @if (u.IsActive)
+                            {
+                                <span class="badge bg-success">Attivo</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark">Disattivato</span>
+                            }
+                        </td>
+                        <td class="text-muted small">@u.CreatedAt.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a asp-action="EditUser" asp-route-id="@u.Id"
+                                   class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-action="ToggleUser" asp-route-id="@u.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm @(u.IsActive ? "btn-outline-warning" : "btn-outline-success")"
+                                            onclick="return confirm('@(u.IsActive ? "Disattivare" : "Attivare") @u.FullName?')">
+                                        <i class="bi @(u.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section Scripts {
+    <script>$(document).ready(function(){ $('#usersTable').DataTable({ language: { url: '//cdn.datatables.net/plug-ins/2.0.3/i18n/it-IT.json' } }); });</script>
+}

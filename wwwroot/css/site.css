@@ -1,0 +1,91 @@
+:root {
+    --bocconi-blue: #003087;
+    --bocconi-gold: #c8a96e;
+}
+
+.bg-bocconi {
+    background-color: var(--bocconi-blue) !important;
+}
+
+.navbar-brand {
+    letter-spacing: 0.5px;
+}
+
+.text-bocconi {
+    color: var(--bocconi-blue) !important;
+}
+
+.btn-bocconi {
+    background-color: var(--bocconi-blue);
+    border-color: var(--bocconi-blue);
+    color: #fff;
+}
+
+.btn-bocconi:hover {
+    background-color: #001f5c;
+    border-color: #001f5c;
+    color: #fff;
+}
+
+.badge-bocconi {
+    background-color: var(--bocconi-blue);
+}
+
+.card {
+    border: none;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    transition: box-shadow 0.2s;
+}
+
+.card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.13);
+}
+
+.progress {
+    height: 8px;
+    border-radius: 4px;
+}
+
+.stat-card {
+    border-left: 4px solid var(--bocconi-blue);
+}
+
+.stat-card.gold {
+    border-left-color: var(--bocconi-gold);
+}
+
+.version-badge {
+    background-color: var(--bocconi-gold);
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.active-version {
+    background-color: #e8f0fe;
+    border-left: 3px solid var(--bocconi-blue);
+}
+
+.quiz-option label {
+    cursor: pointer;
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    transition: all 0.15s;
+}
+
+.quiz-option input:checked + label {
+    background-color: #e8f0fe;
+    border-color: var(--bocconi-blue);
+    font-weight: 500;
+}
+
+footer {
+    margin-top: auto;
+}
+
+html { min-height: 100%; }
+body { display: flex; flex-direction: column; min-height: 100vh; }
+main { flex: 1; }

@@ -1,0 +1,59 @@
+@model List<Enrollment>
+@{
+    var course = ViewBag.Course as Course;
+    ViewData["Title"] = $"Studenti - {course?.Title}";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Dashboard">Dashboard</a></li>
+        <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@course?.Id">@course?.Title</a></li>
+        <li class="breadcrumb-item active">Studenti</li>
+    </ol>
+</nav>
+
+<h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-people me-2"></i>Studenti iscritti</h2>
+
+@if (Model.Any())
+{
+    <div class="card">
+        <div class="card-body">
+            <table id="studentsTable" class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Studente</th>
+                        <th>Data iscrizione</th>
+                        <th>Lezioni completate</th>
+                        <th>Progresso</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var e in Model)
+                    {
+                        <tr>
+                            <td><i class="bi bi-person-circle me-2 text-muted"></i>@e.UserName</td>
+                            <td>@e.EnrolledAt.ToString("dd/MM/yyyy")</td>
+                            <td>@e.CompletedLessons / @e.TotalLessons</td>
+                            <td style="min-width:150px;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="progress flex-grow-1">
+                                        <div class="progress-bar" style="width:@e.ProgressPercent%; background-color:var(--bocconi-blue);"></div>
+                                    </div>
+                                    <small class="fw-semibold">@e.ProgressPercent%</small>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Nessuno studente iscritto.</div>
+}
+
+@section Scripts {
+    <script>$(document).ready(function(){ $('#studentsTable').DataTable({ language: { url: '//cdn.datatables.net/plug-ins/2.0.3/i18n/it-IT.json' } }); });</script>
+}

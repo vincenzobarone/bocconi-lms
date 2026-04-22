@@ -1,0 +1,76 @@
+@model List<Course>
+@{
+    ViewData["Title"] = "Benvenuto";
+}
+
+<div class="py-5 text-center bg-bocconi text-white rounded-3 mb-4" style="background: linear-gradient(135deg, #003087, #0050c8) !important;">
+    <i class="bi bi-mortarboard-fill display-4 mb-3 d-block" style="color: #c8a96e;"></i>
+    <h1 class="fw-bold">Bocconi LMS</h1>
+    <p class="lead mb-4">Piattaforma E-Learning dell'Università Bocconi</p>
+    @if (!User.Identity!.IsAuthenticated)
+    {
+        <a asp-controller="Account" asp-action="Login" class="btn btn-lg me-2" style="background:#c8a96e; color:#fff; border:none;">
+            <i class="bi bi-box-arrow-in-right me-2"></i>Accedi alla piattaforma
+        </a>
+    }
+    else
+    {
+        <a asp-controller="Home" asp-action="Dashboard" class="btn btn-lg me-2" style="background:#c8a96e; color:#fff; border:none;">
+            <i class="bi bi-speedometer2 me-2"></i>Vai alla Dashboard
+        </a>
+    }
+    <a asp-controller="Course" asp-action="Index" class="btn btn-lg btn-outline-light">
+        <i class="bi bi-book me-2"></i>Esplora i corsi
+    </a>
+</div>
+
+<div class="row g-3 mb-4 text-center">
+    <div class="col-md-4">
+        <div class="card p-4 stat-card">
+            <i class="bi bi-book-fill display-5 text-bocconi mb-2"></i>
+            <h5 class="fw-bold">Corsi Strutturati</h5>
+            <p class="text-muted mb-0">Lezioni organizzate con materiali e quiz integrati</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 stat-card gold">
+            <i class="bi bi-files display-5 mb-2" style="color:#c8a96e;"></i>
+            <h5 class="fw-bold">Gestione Documenti</h5>
+            <p class="text-muted mb-0">Versioning completo: ogni upload conserva la storia</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-4 stat-card">
+            <i class="bi bi-clipboard2-check-fill display-5 text-bocconi mb-2"></i>
+            <h5 class="fw-bold">Quiz e Progressi</h5>
+            <p class="text-muted mb-0">Valutazioni online con monitoraggio dei progressi</p>
+        </div>
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <h3 class="fw-semibold mb-3">Corsi in evidenza</h3>
+    <div class="row g-3">
+        @foreach (var c in Model)
+        {
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <span class="badge bg-secondary mb-2">@c.Category</span>
+                        <h5 class="card-title">@c.Title</h5>
+                        <p class="card-text text-muted small">@(c.Description.Length > 100 ? c.Description[..100] + "..." : c.Description)</p>
+                        <div class="d-flex justify-content-between text-muted small">
+                            <span><i class="bi bi-person me-1"></i>@c.TeacherName</span>
+                            <span><i class="bi bi-people me-1"></i>@c.EnrolledCount iscritti</span>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <a asp-controller="Course" asp-action="Details" asp-route-id="@c.Id"
+                           class="btn btn-sm btn-bocconi w-100">Scopri il corso</a>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

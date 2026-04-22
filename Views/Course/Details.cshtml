@@ -1,0 +1,135 @@
+@model Course
+@{
+    ViewData["Title"] = Model.Title;
+    var lessons = ViewBag.Lessons as List<Lesson> ?? new List<Lesson>();
+    var isEnrolled = (bool)(ViewBag.IsEnrolled ?? false);
+    var isOwner = (bool)(ViewBag.IsOwner ?? false);
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Index">Corsi</a></li>
+        <li class="breadcrumb-item active">@Model.Title</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <div>
+                <span class="badge mb-2" style="background-color:var(--bocconi-blue);">@Model.Category</span>
+                <h2 class="fw-bold">@Model.Title</h2>
+                <p class="text-muted"><i class="bi bi-person me-1"></i>@Model.TeacherName</p>
+            </div>
+            @if (isOwner)
+            {
+                <div class="d-flex gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-pencil me-1"></i>Modifica
+                    </a>
+                    <a asp-controller="Lesson" asp-action="Create" asp-route-courseId="@Model.Id"
+                       class="btn btn-sm btn-bocconi"><i class="bi bi-plus-lg me-1"></i>Lezione</a>
+                </div>
+            }
+        </div>
+        <p class="lead mb-4">@Model.Description</p>
+
+        <h4 class="fw-semibold mb-3">Lezioni (@lessons.Count)</h4>
+        @if (lessons.Any())
+        {
+            <div class="list-group mb-4">
+                @foreach (var l in lessons)
+                {
+                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(!l.IsPublished && isOwner ? "bg-light" : "")">
+                        <div class="d-flex align-items-center gap-3">
+                            @if (l.IsCompleted)
+                            {
+                                <i class="bi bi-check-circle-fill text-success"></i>
+                            }
+                            else
+                            {
+                                <i class="bi bi-circle text-muted"></i>
+                            }
+                            <div>
+                                <a asp-controller="Lesson" asp-action="Details" asp-route-id="@l.Id"
+                                   class="fw-semibold text-decoration-none">@l.Title</a>
+                                @if (!l.IsPublished)
+                                {
+                                    <span class="badge bg-secondary ms-2">Bozza</span>
+                                }
+                            </div>
+                        </div>
+                        @if (isOwner)
+                        {
+                            <a asp-controller="Lesson" asp-action="Edit" asp-route-id="@l.Id"
+                               class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">Nessuna lezione ancora disponibile.</p>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card sticky-top" style="top:80px;">
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted"><i class="bi bi-people me-1"></i>@Model.EnrolledCount iscritti</span>
+                    <span class="text-muted"><i class="bi bi-book me-1"></i>@Model.LessonCount lezioni</span>
+                </div>
+                @if (Model.StartDate.HasValue)
+                {
+                    <div class="mb-2 small text-muted">
+                        <i class="bi bi-calendar me-1"></i>
+                        @Model.StartDate.Value.ToString("dd/MM/yyyy") — @(Model.EndDate?.ToString("dd/MM/yyyy") ?? "aperto")
+                    </div>
+                }
+                @if (User.Identity!.IsAuthenticated && !isOwner)
+                {
+                    if (isEnrolled)
+                    {
+                        <div class="alert alert-success small mb-3"><i class="bi bi-check-circle me-1"></i>Sei iscritto a questo corso</div>
+                        <form asp-action="Unenroll" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('Vuoi disiscriverti?')">
+                                Disiscrivi
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="Enroll" asp-route-id="@Model.Id" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-bocconi w-100 py-2 fw-semibold">
+                                <i class="bi bi-plus-circle me-2"></i>Iscriviti al corso
+                            </button>
+                        </form>
+                    }
+                }
+                else if (!User.Identity.IsAuthenticated)
+                {
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-bocconi w-100">
+                        Accedi per iscriverti
+                    </a>
+                }
+
+                @if (isOwner)
+                {
+                    <hr />
+                    <a asp-action="Students" asp-route-id="@Model.Id" class="btn btn-outline-secondary w-100 mb-2">
+                        <i class="bi bi-people me-1"></i>Vedi studenti
+                    </a>
+                    <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" class="btn btn-outline-danger w-100 btn-sm"
+                                onclick="return confirm('Eliminare il corso?')">Elimina corso</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>

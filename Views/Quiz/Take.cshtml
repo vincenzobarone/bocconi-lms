@@ -1,0 +1,109 @@
+@model Quiz
+@{
+    ViewData["Title"] = $"Quiz: {Model.Title}";
+    Layout = "_Layout";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">@Model.Title</h2>
+        @if (!string.IsNullOrEmpty(Model.Description))
+        {
+            <p class="text-muted mb-0">@Model.Description</p>
+        }
+    </div>
+    <div class="text-end">
+        <div class="display-6 fw-bold text-bocconi" id="timer">@Model.TimeLimitMinutes:00</div>
+        <div class="small text-muted">Tempo rimasto</div>
+    </div>
+</div>
+
+<form asp-action="Submit" asp-route-id="@Model.Id" method="post" id="quizForm">
+    @Html.AntiForgeryToken()
+
+    @for (int qi = 0; qi < Model.Questions.Count; qi++)
+    {
+        var q = Model.Questions[qi];
+        <div class="card mb-4 question-card" id="q-@(qi+1)" style="@(qi > 0 ? "display:none;" : "")">
+            <div class="card-header bg-light d-flex justify-content-between">
+                <span class="fw-semibold">Domanda @(qi+1) di @Model.Questions.Count</span>
+                <span class="text-muted small">Seleziona una risposta</span>
+            </div>
+            <div class="card-body">
+                <p class="fs-5 mb-4">@q.QuestionText</p>
+                @foreach (var opt in q.Options)
+                {
+                    <div class="quiz-option mb-2">
+                        <input type="radio" name="Answers[@q.Id]" id="opt-@opt.Id"
+                               value="@opt.Id" class="d-none opt-radio" data-q="@(qi+1)" />
+                        <label for="opt-@opt.Id" class="d-block">
+                            <i class="bi bi-circle me-2 opt-icon"></i>@opt.OptionText
+                        </label>
+                    </div>
+                }
+            </div>
+            <div class="card-footer d-flex justify-content-between">
+                @if (qi > 0)
+                {
+                    <button type="button" class="btn btn-outline-secondary" onclick="goTo(@qi)">
+                        <i class="bi bi-arrow-left me-1"></i>Precedente
+                    </button>
+                }
+                else
+                {
+                    <span></span>
+                }
+                @if (qi < Model.Questions.Count - 1)
+                {
+                    <button type="button" class="btn btn-bocconi" onclick="goTo(@(qi+2))">
+                        Successiva<i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                }
+                else
+                {
+                    <button type="submit" class="btn btn-success px-4" id="submitBtn"
+                            onclick="return confirm('Consegnare il quiz?')">
+                        <i class="bi bi-check2-circle me-2"></i>Consegna quiz
+                    </button>
+                }
+            </div>
+        </div>
+    }
+
+    <div class="d-flex gap-2 flex-wrap mb-3">
+        @for (int qi = 0; qi < Model.Questions.Count; qi++)
+        {
+            <button type="button" class="btn btn-sm btn-outline-secondary q-nav" data-q="@(qi+1)"
+                    onclick="goTo(@(qi+1))">@(qi+1)</button>
+        }
+    </div>
+</form>
+
+@section Scripts {
+<script>
+    var totalSeconds = @(Model.TimeLimitMinutes * 60);
+    var interval = setInterval(function() {
+        totalSeconds--;
+        var m = Math.floor(totalSeconds / 60);
+        var s = totalSeconds % 60;
+        document.getElementById('timer').textContent = m + ':' + (s < 10 ? '0' : '') + s;
+        if (totalSeconds <= 300) document.getElementById('timer').classList.add('text-danger');
+        if (totalSeconds <= 0) {
+            clearInterval(interval);
+            document.getElementById('quizForm').submit();
+        }
+    }, 1000);
+
+    function goTo(n) {
+        $('.question-card').hide();
+        $('#q-' + n).show();
+    }
+
+    $(document).on('change', '.opt-radio', function() {
+        var q = $(this).data('q');
+        $('.q-nav[data-q=' + q + ']').removeClass('btn-outline-secondary').addClass('btn-success');
+        var optId = '#opt-' + $(this).attr('id').split('-')[1];
+        $(optId).find('.opt-icon').removeClass('bi-circle').addClass('bi-check-circle-fill text-primary');
+    });
+</script>
+}

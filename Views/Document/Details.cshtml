@@ -1,0 +1,79 @@
+@model Document
+@{
+    ViewData["Title"] = $"Versioni - {Model.Title}";
+    var versions = ViewBag.Versions as List<DocumentVersion> ?? new();
+    bool isTeacher = User.IsInRole("Teacher") || User.IsInRole("Admin");
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-controller="Lesson" asp-action="Details" asp-route-id="@Model.LessonId">@Model.LessonTitle</a></li>
+        <li class="breadcrumb-item active">Versioni: @Model.Title</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1"><i class="bi bi-clock-history me-2 text-bocconi"></i>@Model.Title</h2>
+        <p class="text-muted mb-0">Storico versioni — @versions.Count versioni totali</p>
+    </div>
+    @if (isTeacher)
+    {
+        <a asp-controller="Document" asp-action="Upload"
+           asp-route-lessonId="@Model.LessonId" asp-route-documentId="@Model.Id"
+           class="btn btn-bocconi"><i class="bi bi-upload me-1"></i>Nuova versione</a>
+    }
+</div>
+
+@if (versions.Any())
+{
+    <div class="list-group">
+        @foreach (var v in versions)
+        {
+            <div class="list-group-item @(v.IsActive ? "active-version" : "")">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <span class="version-badge">v@v.VersionNumber</span>
+                            @if (v.IsActive)
+                            {
+                                <span class="badge bg-success">Versione attiva</span>
+                            }
+                            <span class="badge bg-light text-dark">@v.FileType</span>
+                        </div>
+                        <div class="fw-semibold">@v.FileName</div>
+                        @if (!string.IsNullOrEmpty(v.Notes))
+                        {
+                            <div class="text-muted small mt-1"><i class="bi bi-chat-text me-1"></i>@v.Notes</div>
+                        }
+                        <div class="text-muted small mt-1">
+                            <i class="bi bi-person me-1"></i>@v.UploaderName
+                            <span class="ms-3"><i class="bi bi-calendar me-1"></i>@v.UploadedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                            <span class="ms-3"><i class="bi bi-hdd me-1"></i>@v.FileSizeFormatted</span>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <a asp-controller="Document" asp-action="Download" asp-route-versionId="@v.Id"
+                           class="btn btn-sm btn-bocconi"><i class="bi bi-download me-1"></i>Scarica</a>
+                        @if (isTeacher && !v.IsActive)
+                        {
+                            <form asp-controller="Document" asp-action="Restore" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="documentId" value="@Model.Id" />
+                                <input type="hidden" name="versionId" value="@v.Id" />
+                                <button type="submit" class="btn btn-sm btn-outline-warning"
+                                        onclick="return confirm('Ripristinare questa versione?')">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Ripristina
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-info">Nessuna versione disponibile.</div>
+}

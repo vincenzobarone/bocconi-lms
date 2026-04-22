@@ -1,0 +1,100 @@
+@model QuizFormViewModel
+@{
+    ViewData["Title"] = "Crea quiz";
+}
+
+<div class="row">
+    <div class="col-lg-10 mx-auto">
+        <h2 class="fw-bold text-bocconi mb-1"><i class="bi bi-clipboard2-plus me-2"></i>Crea quiz</h2>
+        <p class="text-muted mb-4"><i class="bi bi-book me-1"></i>@ViewBag.LessonTitle</p>
+
+        <form asp-action="Create" method="post" id="quizForm">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="LessonId" />
+
+            <div class="card mb-4">
+                <div class="card-header fw-semibold">Impostazioni quiz</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label fw-semibold">Titolo *</label>
+                        <input asp-for="Title" class="form-control" placeholder="Es: Verifica lezione 1" />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Description" class="form-label fw-semibold">Descrizione</label>
+                        <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="TimeLimitMinutes" class="form-label fw-semibold">Tempo limite (minuti)</label>
+                            <input asp-for="TimeLimitMinutes" type="number" class="form-control" min="5" max="180" />
+                            <span asp-validation-for="TimeLimitMinutes" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="PassingScore" class="form-label fw-semibold">Punteggio sufficienza (%)</label>
+                            <input asp-for="PassingScore" type="number" class="form-control" min="1" max="100" />
+                            <span asp-validation-for="PassingScore" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="questionsContainer"></div>
+
+            <button type="button" class="btn btn-outline-secondary mb-4" onclick="addQuestion()">
+                <i class="bi bi-plus-circle me-1"></i>Aggiungi domanda
+            </button>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-bocconi px-4">
+                    <i class="bi bi-check-lg me-2"></i>Salva quiz
+                </button>
+                <a asp-controller="Lesson" asp-action="Details" asp-route-id="@Model.LessonId"
+                   class="btn btn-outline-secondary">Annulla</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+var qCount = 0;
+function addQuestion() {
+    qCount++;
+    var n = qCount;
+    var html = '<div class="card mb-3" id="qcard-' + n + '">' +
+        '<div class="card-header d-flex justify-content-between align-items-center">' +
+        '<span class="fw-semibold">Domanda ' + n + '</span>' +
+        '<button type="button" class="btn btn-sm btn-outline-danger" onclick="$(\'#qcard-'+n+'\').remove()"><i class="bi bi-trash"></i></button>' +
+        '</div><div class="card-body">' +
+        '<div class="mb-3"><label class="form-label fw-semibold">Testo domanda *</label>' +
+        '<input type="text" name="questionTexts" class="form-control" placeholder="Inserisci la domanda..." required /></div>' +
+        '<div class="mb-2 fw-semibold small text-muted">Opzioni (seleziona la risposta corretta)</div>' +
+        [1,2,3,4].map(function(i) {
+            return '<div class="input-group mb-2">' +
+                '<div class="input-group-text"><input type="radio" name="correctOpt" value="' + i + '" required /></div>' +
+                '<input type="text" name="opt' + i + '" class="form-control" placeholder="Opzione ' + i + '" required />' +
+                '</div>';
+        }).join('') +
+        '</div></div>';
+    document.getElementById('questionsContainer').insertAdjacentHTML('beforeend', html);
+    // group radio buttons per question
+    var cards = document.querySelectorAll('#questionsContainer .card');
+    cards.forEach(function(card, idx) {
+        card.querySelectorAll('input[type=radio]').forEach(function(r) {
+            r.name = 'correctOpt';
+        });
+    });
+}
+// Group radios correctly per question on submit
+document.getElementById('quizForm').addEventListener('submit', function() {
+    var cards = document.querySelectorAll('#questionsContainer .card');
+    cards.forEach(function(card, idx) {
+        card.querySelectorAll('input[type=radio]').forEach(function(r) {
+            r.name = 'correctOpt';
+        });
+    });
+});
+addQuestion();
+</script>
+}

@@ -1,0 +1,13 @@
+kind = "web"
+previewPath = "/bocconi-lms"
+title = "Bocconi LMS"
+version = "1.0.0"
+id = "bocconi-lms-001"
+
+[[services]]
+localPort = 5000
+name = "Bocconi LMS"
+paths = ["/bocconi-lms"]
+
+[services.development]
+run = "cd artifacts/bocconi-lms && dotnet build --nologo -q && dotnet run --no-build"
