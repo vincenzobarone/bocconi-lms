@@ -12,43 +12,72 @@ public class DocumentController : Controller
     private readonly DocumentRepository _documents;
     private readonly LessonRepository _lessons;
     private readonly CourseRepository _courses;
+    private readonly EnrollmentRepository _enrollments;
     private readonly IWebHostEnvironment _env;
 
-    public DocumentController(DocumentRepository documents, LessonRepository lessons, CourseRepository courses, IWebHostEnvironment env)
+    public DocumentController(DocumentRepository documents, LessonRepository lessons,
+        CourseRepository courses, EnrollmentRepository enrollments, IWebHostEnvironment env)
     {
         _documents = documents;
         _lessons = lessons;
         _courses = courses;
+        _enrollments = enrollments;
         _env = env;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
     private string CurrentRole => User.FindFirst(ClaimTypes.Role)!.Value;
 
-    private async Task<bool> IsOwnerOrAdminOfLessonAsync(int lessonId)
+    private async Task<bool> IsOwnerOrAdminOfCourseAsync(int courseId)
     {
         if (CurrentRole == "Admin") return true;
-        var lesson = await _lessons.GetByIdAsync(lessonId);
-        if (lesson == null) return false;
-        var course = await _courses.GetByIdAsync(lesson.CourseId);
+        var course = await _courses.GetByIdAsync(courseId);
         return course != null && course.TeacherId == CurrentUserId;
     }
 
-    private async Task<bool> IsOwnerOrAdminOfDocumentAsync(int documentId)
+    private async Task<(Lesson? lesson, int courseId)> GetLessonCourseAsync(int lessonId)
     {
-        if (CurrentRole == "Admin") return true;
+        var lesson = await _lessons.GetByIdAsync(lessonId);
+        return (lesson, lesson?.CourseId ?? 0);
+    }
+
+    private async Task<(Lesson? lesson, int courseId, Document? doc)> GetDocContextAsync(int documentId)
+    {
         var doc = await _documents.GetByIdAsync(documentId);
-        if (doc == null) return false;
-        return await IsOwnerOrAdminOfLessonAsync(doc.LessonId);
+        if (doc == null) return (null, 0, null);
+        var lesson = await _lessons.GetByIdAsync(doc.LessonId);
+        return (lesson, lesson?.CourseId ?? 0, doc);
+    }
+
+    private async Task<IActionResult?> RequireDocumentAccessAsync(int documentId)
+    {
+        var (lesson, courseId, doc) = await GetDocContextAsync(documentId);
+        if (doc == null || lesson == null) return NotFound();
+
+        if (CurrentRole == "Admin") return null;
+
+        if (CurrentRole == "Teacher")
+        {
+            if (!await IsOwnerOrAdminOfCourseAsync(courseId)) return Forbid();
+            return null;
+        }
+
+        if (!lesson.IsPublished) return Forbid();
+        if (!await _enrollments.IsEnrolledAsync(CurrentUserId, courseId)) return Forbid();
+        return null;
     }
 
     public async Task<IActionResult> Details(int id)
     {
+        var access = await RequireDocumentAccessAsync(id);
+        if (access != null) return access;
+
         var doc = await _documents.GetByIdAsync(id);
         if (doc == null) return NotFound();
         var versions = await _documents.GetVersionsAsync(id);
         ViewBag.Versions = versions;
-        ViewBag.IsOwner = await IsOwnerOrAdminOfDocumentAsync(id);
+        var docCtx = await GetDocContextAsync(id);
+        ViewBag.IsOwner = await IsOwnerOrAdminOfCourseAsync(docCtx.courseId);
         return View(doc);
     }
 
@@ -56,13 +85,17 @@ public class DocumentController : Controller
     [HttpGet]
     public async Task<IActionResult> Upload(int lessonId, int? documentId = null)
     {
-        var lesson = await _lessons.GetByIdAsync(lessonId);
+        var (lesson, courseId) = await GetLessonCourseAsync(lessonId);
         if (lesson == null) return NotFound();
-        if (!await IsOwnerOrAdminOfLessonAsync(lessonId)) return Forbid();
+        if (!await IsOwnerOrAdminOfCourseAsync(courseId)) return Forbid();
 
         Document? existingDoc = null;
         if (documentId.HasValue)
+        {
             existingDoc = await _documents.GetByIdAsync(documentId.Value);
+            if (existingDoc != null && existingDoc.LessonId != lessonId) return Forbid();
+        }
+
         var model = new DocumentUploadViewModel
         {
             LessonId = lessonId,
@@ -80,7 +113,9 @@ public class DocumentController : Controller
     public async Task<IActionResult> Upload(DocumentUploadViewModel model)
     {
         if (!ModelState.IsValid) return View(model);
-        if (!await IsOwnerOrAdminOfLessonAsync(model.LessonId)) return Forbid();
+        var (lesson, courseId) = await GetLessonCourseAsync(model.LessonId);
+        if (lesson == null) return NotFound();
+        if (!await IsOwnerOrAdminOfCourseAsync(courseId)) return Forbid();
 
         if (model.File == null || model.File.Length == 0)
         {
@@ -99,7 +134,8 @@ public class DocumentController : Controller
         int docId;
         if (model.DocumentId.HasValue && model.DocumentId.Value > 0)
         {
-            if (!await IsOwnerOrAdminOfDocumentAsync(model.DocumentId.Value)) return Forbid();
+            var existingDoc = await _documents.GetByIdAsync(model.DocumentId.Value);
+            if (existingDoc == null || existingDoc.LessonId != model.LessonId) return Forbid();
             docId = model.DocumentId.Value;
         }
         else
@@ -136,14 +172,9 @@ public class DocumentController : Controller
     {
         var version = await _documents.GetVersionByIdAsync(versionId);
         if (version == null) return NotFound();
-        var doc = await _documents.GetByIdAsync(version.DocumentId);
-        if (doc == null) return NotFound();
 
-        if (CurrentRole == "Student")
-        {
-            var lesson = await _lessons.GetByIdAsync(doc.LessonId);
-            if (lesson == null || !lesson.IsPublished) return Forbid();
-        }
+        var access = await RequireDocumentAccessAsync(version.DocumentId);
+        if (access != null) return access;
 
         var physPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
         if (!System.IO.File.Exists(physPath)) return NotFound();
@@ -162,7 +193,9 @@ public class DocumentController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Restore(int documentId, int versionId)
     {
-        if (!await IsOwnerOrAdminOfDocumentAsync(documentId)) return Forbid();
+        var (_, courseId, doc) = await GetDocContextAsync(documentId);
+        if (doc == null) return NotFound();
+        if (!await IsOwnerOrAdminOfCourseAsync(courseId)) return Forbid();
         await _documents.RestoreVersionAsync(documentId, versionId);
         TempData["Success"] = "Versione ripristinata.";
         return RedirectToAction("Details", new { id = documentId });

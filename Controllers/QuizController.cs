@@ -12,49 +12,60 @@ public class QuizController : Controller
     private readonly QuizRepository _quizzes;
     private readonly LessonRepository _lessons;
     private readonly CourseRepository _courses;
+    private readonly EnrollmentRepository _enrollments;
 
-    public QuizController(QuizRepository quizzes, LessonRepository lessons, CourseRepository courses)
+    public QuizController(QuizRepository quizzes, LessonRepository lessons,
+        CourseRepository courses, EnrollmentRepository enrollments)
     {
         _quizzes = quizzes;
         _lessons = lessons;
         _courses = courses;
+        _enrollments = enrollments;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
     private string CurrentRole => User.FindFirst(ClaimTypes.Role)!.Value;
 
-    private async Task<bool> IsOwnerOrAdminOfLessonAsync(int lessonId)
+    private async Task<bool> IsOwnerOrAdminOfCourseAsync(int courseId)
     {
         if (CurrentRole == "Admin") return true;
-        var lesson = await _lessons.GetByIdAsync(lessonId);
-        if (lesson == null) return false;
-        var course = await _courses.GetByIdAsync(lesson.CourseId);
+        var course = await _courses.GetByIdAsync(courseId);
         return course != null && course.TeacherId == CurrentUserId;
     }
 
-    private async Task<bool> IsOwnerOrAdminOfQuizAsync(int quizId)
+    private async Task<(Quiz? quiz, Lesson? lesson, int courseId)> GetQuizContextAsync(int quizId)
     {
-        if (CurrentRole == "Admin") return true;
         var quiz = await _quizzes.GetByIdAsync(quizId);
-        if (quiz == null) return false;
-        return await IsOwnerOrAdminOfLessonAsync(quiz.LessonId);
+        if (quiz == null) return (null, null, 0);
+        var lesson = await _lessons.GetByIdAsync(quiz.LessonId);
+        return (quiz, lesson, lesson?.CourseId ?? 0);
+    }
+
+    private async Task<IActionResult?> RequireQuizAccessAsync(int quizId)
+    {
+        var (quiz, lesson, courseId) = await GetQuizContextAsync(quizId);
+        if (quiz == null || lesson == null) return NotFound();
+
+        if (CurrentRole == "Admin") return null;
+
+        if (CurrentRole == "Teacher")
+        {
+            if (!await IsOwnerOrAdminOfCourseAsync(courseId)) return Forbid();
+            return null;
+        }
+
+        if (!lesson.IsPublished) return Forbid();
+        if (!await _enrollments.IsEnrolledAsync(CurrentUserId, courseId)) return Forbid();
+        return null;
     }
 
     public async Task<IActionResult> Take(int id)
     {
+        var access = await RequireQuizAccessAsync(id);
+        if (access != null) return access;
+
         var quiz = await _quizzes.GetByIdAsync(id, withQuestions: true);
         if (quiz == null) return NotFound();
-
-        if (CurrentRole == "Student")
-        {
-            var lesson = await _lessons.GetByIdAsync(quiz.LessonId);
-            if (lesson == null || !lesson.IsPublished) return Forbid();
-        }
-        else if (CurrentRole == "Teacher" && !await IsOwnerOrAdminOfQuizAsync(id))
-        {
-            return Forbid();
-        }
-
         return View(quiz);
     }
 
@@ -62,6 +73,9 @@ public class QuizController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Submit(int id, Dictionary<int, int> answers)
     {
+        var access = await RequireQuizAccessAsync(id);
+        if (access != null) return access;
+
         var attempt = await _quizzes.SubmitAttemptAsync(id, CurrentUserId, answers);
         return RedirectToAction("Result", new { attemptId = attempt.Id });
     }
@@ -76,6 +90,9 @@ public class QuizController : Controller
 
     public async Task<IActionResult> History(int quizId)
     {
+        var access = await RequireQuizAccessAsync(quizId);
+        if (access != null) return access;
+
         var quiz = await _quizzes.GetByIdAsync(quizId);
         if (quiz == null) return NotFound();
         var attempts = await _quizzes.GetAttemptsAsync(CurrentUserId, quizId);
@@ -89,7 +106,7 @@ public class QuizController : Controller
     {
         var lesson = await _lessons.GetByIdAsync(lessonId);
         if (lesson == null) return NotFound();
-        if (!await IsOwnerOrAdminOfLessonAsync(lessonId)) return Forbid();
+        if (!await IsOwnerOrAdminOfCourseAsync(lesson.CourseId)) return Forbid();
         ViewBag.LessonTitle = lesson.Title;
         return View(new QuizFormViewModel { LessonId = lessonId });
     }
@@ -101,7 +118,9 @@ public class QuizController : Controller
         List<string> opt1, List<string> opt2, List<string> opt3, List<string> opt4, List<int> correctOpt)
     {
         if (!ModelState.IsValid) return View(model);
-        if (!await IsOwnerOrAdminOfLessonAsync(model.LessonId)) return Forbid();
+        var lesson = await _lessons.GetByIdAsync(model.LessonId);
+        if (lesson == null) return NotFound();
+        if (!await IsOwnerOrAdminOfCourseAsync(lesson.CourseId)) return Forbid();
 
         if (questionTexts.Count == 0 || questionTexts.All(string.IsNullOrWhiteSpace))
         {
@@ -121,7 +140,7 @@ public class QuizController : Controller
         for (int i = 0; i < questionTexts.Count; i++)
         {
             if (string.IsNullOrWhiteSpace(questionTexts[i])) continue;
-            int correct = correctOpt.Count > i ? correctOpt[i] : 0;
+            int correct = correctOpt.Count > i ? correctOpt[i] : 1;
             if (correct < 1 || correct > 4) correct = 1;
             var q = new QuizQuestion
             {
@@ -147,12 +166,11 @@ public class QuizController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
-        var quiz = await _quizzes.GetByIdAsync(id);
+        var (quiz, lesson, courseId) = await GetQuizContextAsync(id);
         if (quiz == null) return NotFound();
-        if (!await IsOwnerOrAdminOfQuizAsync(id)) return Forbid();
-        var lessonId = quiz.LessonId;
+        if (!await IsOwnerOrAdminOfCourseAsync(courseId)) return Forbid();
         await _quizzes.DeleteQuizAsync(id);
         TempData["Success"] = "Quiz eliminato.";
-        return RedirectToAction("Details", "Lesson", new { id = lessonId });
+        return RedirectToAction("Details", "Lesson", new { id = quiz.LessonId });
     }
 }
