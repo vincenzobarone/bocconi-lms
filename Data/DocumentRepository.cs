@@ -131,18 +131,41 @@ public class DocumentRepository
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
 
-    public async Task RestoreVersionAsync(int documentId, int versionId)
+    public async Task<bool> RestoreVersionAsync(int documentId, int versionId)
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var tx = await conn.BeginTransactionAsync();
-        using var deact = new MySqlCommand("UPDATE document_versions SET is_active=0 WHERE document_id=@did", conn, tx);
+
+        using var verify = new MySqlCommand(
+            "SELECT COUNT(*) FROM document_versions WHERE id=@vid AND document_id=@did", conn, tx);
+        verify.Parameters.AddWithValue("@vid", versionId);
+        verify.Parameters.AddWithValue("@did", documentId);
+        var count = Convert.ToInt32(await verify.ExecuteScalarAsync());
+        if (count == 0)
+        {
+            await tx.RollbackAsync();
+            return false;
+        }
+
+        using var deact = new MySqlCommand(
+            "UPDATE document_versions SET is_active=0 WHERE document_id=@did", conn, tx);
         deact.Parameters.AddWithValue("@did", documentId);
         await deact.ExecuteNonQueryAsync();
-        using var act = new MySqlCommand("UPDATE document_versions SET is_active=1 WHERE id=@id", conn, tx);
-        act.Parameters.AddWithValue("@id", versionId);
-        await act.ExecuteNonQueryAsync();
+
+        using var act = new MySqlCommand(
+            "UPDATE document_versions SET is_active=1 WHERE id=@vid AND document_id=@did", conn, tx);
+        act.Parameters.AddWithValue("@vid", versionId);
+        act.Parameters.AddWithValue("@did", documentId);
+        var affected = await act.ExecuteNonQueryAsync();
+        if (affected == 0)
+        {
+            await tx.RollbackAsync();
+            return false;
+        }
+
         await tx.CommitAsync();
+        return true;
     }
 
     private async Task<DocumentVersion?> GetActiveVersionAsync(int documentId, MySqlConnection conn)

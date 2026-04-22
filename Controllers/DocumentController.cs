@@ -193,10 +193,11 @@ public class DocumentController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Restore(int documentId, int versionId)
     {
-        var (_, courseId, doc) = await GetDocContextAsync(documentId);
-        if (doc == null) return NotFound();
-        if (!await IsOwnerOrAdminOfCourseAsync(courseId)) return Forbid();
-        await _documents.RestoreVersionAsync(documentId, versionId);
+        var docCtx = await GetDocContextAsync(documentId);
+        if (docCtx.doc == null) return NotFound();
+        if (!await IsOwnerOrAdminOfCourseAsync(docCtx.courseId)) return Forbid();
+        var ok = await _documents.RestoreVersionAsync(documentId, versionId);
+        if (!ok) return BadRequest("Versione non valida per questo documento.");
         TempData["Success"] = "Versione ripristinata.";
         return RedirectToAction("Details", new { id = documentId });
     }
