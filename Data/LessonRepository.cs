@@ -8,19 +8,21 @@ public class LessonRepository
     private readonly DbHelper _db;
     public LessonRepository(DbHelper db) => _db = db;
 
-    public async Task<List<Lesson>> GetByCourseAsync(int courseId, int? userId = null)
+    public async Task<List<Lesson>> GetByCourseAsync(int courseId, int? userId = null, bool publishedOnly = false)
     {
         var lessons = new List<Lesson>();
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
-        using var cmd = new MySqlCommand(@"
+        var sql = @"
             SELECT l.id, l.course_id, c.title AS course_title, l.title, l.content,
                    l.sort_order, l.is_published, l.created_at,
                    CASE WHEN @uid IS NOT NULL AND EXISTS(SELECT 1 FROM lesson_progress lp WHERE lp.lesson_id=l.id AND lp.user_id=@uid) THEN 1 ELSE 0 END AS is_completed
             FROM lessons l
             JOIN courses c ON c.id = l.course_id
-            WHERE l.course_id = @cid
-            ORDER BY l.sort_order, l.id", conn);
+            WHERE l.course_id = @cid";
+        if (publishedOnly) sql += " AND l.is_published = 1";
+        sql += " ORDER BY l.sort_order, l.id";
+        using var cmd = new MySqlCommand(sql, conn);
         cmd.Parameters.AddWithValue("@cid", courseId);
         cmd.Parameters.AddWithValue("@uid", userId.HasValue ? userId.Value : DBNull.Value);
         using var reader = await cmd.ExecuteReaderAsync();

@@ -11,16 +11,36 @@ public class DocumentController : Controller
 {
     private readonly DocumentRepository _documents;
     private readonly LessonRepository _lessons;
+    private readonly CourseRepository _courses;
     private readonly IWebHostEnvironment _env;
 
-    public DocumentController(DocumentRepository documents, LessonRepository lessons, IWebHostEnvironment env)
+    public DocumentController(DocumentRepository documents, LessonRepository lessons, CourseRepository courses, IWebHostEnvironment env)
     {
         _documents = documents;
         _lessons = lessons;
+        _courses = courses;
         _env = env;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+    private string CurrentRole => User.FindFirst(ClaimTypes.Role)!.Value;
+
+    private async Task<bool> IsOwnerOrAdminOfLessonAsync(int lessonId)
+    {
+        if (CurrentRole == "Admin") return true;
+        var lesson = await _lessons.GetByIdAsync(lessonId);
+        if (lesson == null) return false;
+        var course = await _courses.GetByIdAsync(lesson.CourseId);
+        return course != null && course.TeacherId == CurrentUserId;
+    }
+
+    private async Task<bool> IsOwnerOrAdminOfDocumentAsync(int documentId)
+    {
+        if (CurrentRole == "Admin") return true;
+        var doc = await _documents.GetByIdAsync(documentId);
+        if (doc == null) return false;
+        return await IsOwnerOrAdminOfLessonAsync(doc.LessonId);
+    }
 
     public async Task<IActionResult> Details(int id)
     {
@@ -28,6 +48,7 @@ public class DocumentController : Controller
         if (doc == null) return NotFound();
         var versions = await _documents.GetVersionsAsync(id);
         ViewBag.Versions = versions;
+        ViewBag.IsOwner = await IsOwnerOrAdminOfDocumentAsync(id);
         return View(doc);
     }
 
@@ -37,6 +58,8 @@ public class DocumentController : Controller
     {
         var lesson = await _lessons.GetByIdAsync(lessonId);
         if (lesson == null) return NotFound();
+        if (!await IsOwnerOrAdminOfLessonAsync(lessonId)) return Forbid();
+
         Document? existingDoc = null;
         if (documentId.HasValue)
             existingDoc = await _documents.GetByIdAsync(documentId.Value);
@@ -57,6 +80,8 @@ public class DocumentController : Controller
     public async Task<IActionResult> Upload(DocumentUploadViewModel model)
     {
         if (!ModelState.IsValid) return View(model);
+        if (!await IsOwnerOrAdminOfLessonAsync(model.LessonId)) return Forbid();
+
         if (model.File == null || model.File.Length == 0)
         {
             ModelState.AddModelError("File", "Seleziona un file.");
@@ -74,6 +99,7 @@ public class DocumentController : Controller
         int docId;
         if (model.DocumentId.HasValue && model.DocumentId.Value > 0)
         {
+            if (!await IsOwnerOrAdminOfDocumentAsync(model.DocumentId.Value)) return Forbid();
             docId = model.DocumentId.Value;
         }
         else
@@ -110,6 +136,15 @@ public class DocumentController : Controller
     {
         var version = await _documents.GetVersionByIdAsync(versionId);
         if (version == null) return NotFound();
+        var doc = await _documents.GetByIdAsync(version.DocumentId);
+        if (doc == null) return NotFound();
+
+        if (CurrentRole == "Student")
+        {
+            var lesson = await _lessons.GetByIdAsync(doc.LessonId);
+            if (lesson == null || !lesson.IsPublished) return Forbid();
+        }
+
         var physPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
         if (!System.IO.File.Exists(physPath)) return NotFound();
         var mimeType = version.FileType.ToLower() switch
@@ -127,6 +162,7 @@ public class DocumentController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Restore(int documentId, int versionId)
     {
+        if (!await IsOwnerOrAdminOfDocumentAsync(documentId)) return Forbid();
         await _documents.RestoreVersionAsync(documentId, versionId);
         TempData["Success"] = "Versione ripristinata.";
         return RedirectToAction("Details", new { id = documentId });

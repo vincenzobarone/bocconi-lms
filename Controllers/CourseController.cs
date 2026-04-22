@@ -56,9 +56,10 @@ public class CourseController : Controller
     {
         var course = await _courses.GetByIdAsync(id);
         if (course == null) return NotFound();
-        var lessons = await _lessons.GetByCourseAsync(id, CurrentUserId);
-        bool isEnrolled = await _enrollments.IsEnrolledAsync(CurrentUserId, id);
         bool isOwner = CurrentRole is "Admin" || course.TeacherId == CurrentUserId;
+        bool publishedOnly = !isOwner;
+        var lessons = await _lessons.GetByCourseAsync(id, CurrentUserId, publishedOnly: publishedOnly);
+        bool isEnrolled = await _enrollments.IsEnrolledAsync(CurrentUserId, id);
         ViewBag.Lessons = lessons;
         ViewBag.IsEnrolled = isEnrolled;
         ViewBag.IsOwner = isOwner;
@@ -165,6 +166,7 @@ public class CourseController : Controller
     {
         var course = await _courses.GetByIdAsync(id);
         if (course == null) return NotFound();
+        if (CurrentRole != "Admin" && course.TeacherId != CurrentUserId) return Forbid();
         var students = await _enrollments.GetByCourseAsync(id);
         ViewBag.Course = course;
         return View(students);

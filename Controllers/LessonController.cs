@@ -31,14 +31,30 @@ public class LessonController : Controller
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
     private string CurrentRole => User.FindFirst(ClaimTypes.Role)!.Value;
 
+    private async Task<bool> IsOwnerOrAdminAsync(int courseId)
+    {
+        if (CurrentRole == "Admin") return true;
+        var course = await _courses.GetByIdAsync(courseId);
+        return course != null && course.TeacherId == CurrentUserId;
+    }
+
     public async Task<IActionResult> Details(int id)
     {
         var lesson = await _lessons.GetByIdAsync(id, CurrentUserId);
         if (lesson == null) return NotFound();
 
-        bool hasAccess = CurrentRole is "Admin" or "Teacher" ||
-            await _enrollments.IsEnrolledAsync(CurrentUserId, lesson.CourseId);
-        if (!hasAccess) return RedirectToAction("Details", "Course", new { id = lesson.CourseId });
+        bool isOwner = await IsOwnerOrAdminAsync(lesson.CourseId);
+
+        if (CurrentRole == "Student")
+        {
+            if (!lesson.IsPublished) return Forbid();
+            bool enrolled = await _enrollments.IsEnrolledAsync(CurrentUserId, lesson.CourseId);
+            if (!enrolled) return RedirectToAction("Details", "Course", new { id = lesson.CourseId });
+        }
+        else if (CurrentRole == "Teacher" && !isOwner)
+        {
+            return Forbid();
+        }
 
         var documents = await _documents.GetByLessonAsync(id);
         var quizzes = await _quizzes.GetByLessonAsync(id);
@@ -48,7 +64,7 @@ public class LessonController : Controller
 
         ViewBag.Documents = documents;
         ViewBag.Quizzes = quizzes;
-        ViewBag.IsOwner = CurrentRole is "Admin" || (await _courses.GetByIdAsync(lesson.CourseId))?.TeacherId == CurrentUserId;
+        ViewBag.IsOwner = isOwner;
         return View(lesson);
     }
 
@@ -58,6 +74,7 @@ public class LessonController : Controller
     {
         var course = await _courses.GetByIdAsync(courseId);
         if (course == null) return NotFound();
+        if (!await IsOwnerOrAdminAsync(courseId)) return Forbid();
         var model = new LessonFormViewModel { CourseId = courseId };
         ViewBag.CourseTitle = course.Title;
         return View(model);
@@ -69,6 +86,7 @@ public class LessonController : Controller
     public async Task<IActionResult> Create(LessonFormViewModel model)
     {
         if (!ModelState.IsValid) return View(model);
+        if (!await IsOwnerOrAdminAsync(model.CourseId)) return Forbid();
         var lesson = new Lesson
         {
             CourseId = model.CourseId,
@@ -88,6 +106,7 @@ public class LessonController : Controller
     {
         var lesson = await _lessons.GetByIdAsync(id);
         if (lesson == null) return NotFound();
+        if (!await IsOwnerOrAdminAsync(lesson.CourseId)) return Forbid();
         return View(new LessonFormViewModel
         {
             Id = lesson.Id,
@@ -107,6 +126,7 @@ public class LessonController : Controller
         if (!ModelState.IsValid) return View(model);
         var lesson = await _lessons.GetByIdAsync(id);
         if (lesson == null) return NotFound();
+        if (!await IsOwnerOrAdminAsync(lesson.CourseId)) return Forbid();
         lesson.Title = model.Title;
         lesson.Content = model.Content;
         lesson.SortOrder = model.SortOrder;
@@ -123,6 +143,7 @@ public class LessonController : Controller
     {
         var lesson = await _lessons.GetByIdAsync(id);
         if (lesson == null) return NotFound();
+        if (!await IsOwnerOrAdminAsync(lesson.CourseId)) return Forbid();
         var courseId = lesson.CourseId;
         await _lessons.DeleteAsync(id);
         TempData["Success"] = "Lezione eliminata.";

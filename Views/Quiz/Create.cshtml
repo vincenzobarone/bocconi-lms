@@ -59,42 +59,80 @@
 @section Scripts {
 <script>
 var qCount = 0;
+
 function addQuestion() {
+    var idx = qCount;
     qCount++;
-    var n = qCount;
-    var html = '<div class="card mb-3" id="qcard-' + n + '">' +
+    // Each question gets its own radio group name: correctOpt with index in form array
+    // correctOpt[idx] = 1..4 (which option is correct for this question)
+    var groupName = 'correctOpt';
+    var html = '<div class="card mb-3" id="qcard-' + idx + '" data-qidx="' + idx + '">' +
         '<div class="card-header d-flex justify-content-between align-items-center">' +
-        '<span class="fw-semibold">Domanda ' + n + '</span>' +
-        '<button type="button" class="btn btn-sm btn-outline-danger" onclick="$(\'#qcard-'+n+'\').remove()"><i class="bi bi-trash"></i></button>' +
+        '<span class="fw-semibold">Domanda ' + (idx + 1) + '</span>' +
+        '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestion(' + idx + ')"><i class="bi bi-trash"></i></button>' +
         '</div><div class="card-body">' +
         '<div class="mb-3"><label class="form-label fw-semibold">Testo domanda *</label>' +
         '<input type="text" name="questionTexts" class="form-control" placeholder="Inserisci la domanda..." required /></div>' +
-        '<div class="mb-2 fw-semibold small text-muted">Opzioni (seleziona la risposta corretta)</div>' +
+        '<div class="mb-2 fw-semibold small text-muted">Opzioni <span class="text-danger">(seleziona il cerchio della risposta corretta)</span></div>' +
         [1,2,3,4].map(function(i) {
             return '<div class="input-group mb-2">' +
-                '<div class="input-group-text"><input type="radio" name="correctOpt" value="' + i + '" required /></div>' +
+                '<div class="input-group-text">' +
+                '<input type="radio" class="qradio" data-qidx="' + idx + '" value="' + i + '"' +
+                (i === 1 ? ' checked' : '') + ' />' +
+                '</div>' +
                 '<input type="text" name="opt' + i + '" class="form-control" placeholder="Opzione ' + i + '" required />' +
                 '</div>';
         }).join('') +
         '</div></div>';
     document.getElementById('questionsContainer').insertAdjacentHTML('beforeend', html);
-    // group radio buttons per question
-    var cards = document.querySelectorAll('#questionsContainer .card');
-    cards.forEach(function(card, idx) {
-        card.querySelectorAll('input[type=radio]').forEach(function(r) {
-            r.name = 'correctOpt';
+    reindexAll();
+}
+
+function removeQuestion(idx) {
+    var card = document.getElementById('qcard-' + idx);
+    if (card) card.remove();
+    reindexAll();
+}
+
+function reindexAll() {
+    // Assign unique name per question position so only one radio per question can be selected
+    var cards = document.querySelectorAll('#questionsContainer .card[data-qidx]');
+    cards.forEach(function(card, pos) {
+        var radios = card.querySelectorAll('.qradio');
+        radios.forEach(function(r) {
+            r.name = 'correctOpt_q' + pos;
+        });
+        // Hidden field to carry the selected value as correctOpt for the server
+        var hidden = card.querySelector('.correctOpt-hidden');
+        if (!hidden) {
+            hidden = document.createElement('input');
+            hidden.type = 'hidden';
+            hidden.name = 'correctOpt';
+            hidden.className = 'correctOpt-hidden';
+            card.querySelector('.card-body').appendChild(hidden);
+        }
+        // Set current value from checked radio
+        var checked = card.querySelector('.qradio:checked');
+        hidden.value = checked ? checked.value : '1';
+        // Update hidden on radio change
+        radios.forEach(function(r) {
+            r.onchange = function() {
+                hidden.value = r.value;
+            };
         });
     });
 }
-// Group radios correctly per question on submit
-document.getElementById('quizForm').addEventListener('submit', function() {
-    var cards = document.querySelectorAll('#questionsContainer .card');
-    cards.forEach(function(card, idx) {
-        card.querySelectorAll('input[type=radio]').forEach(function(r) {
-            r.name = 'correctOpt';
-        });
-    });
+
+document.getElementById('quizForm').addEventListener('submit', function(e) {
+    var cards = document.querySelectorAll('#questionsContainer .card[data-qidx]');
+    if (cards.length === 0) {
+        e.preventDefault();
+        alert('Aggiungi almeno una domanda al quiz.');
+        return;
+    }
+    reindexAll();
 });
+
 addQuestion();
 </script>
 }

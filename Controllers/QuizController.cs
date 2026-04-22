@@ -11,19 +11,50 @@ public class QuizController : Controller
 {
     private readonly QuizRepository _quizzes;
     private readonly LessonRepository _lessons;
+    private readonly CourseRepository _courses;
 
-    public QuizController(QuizRepository quizzes, LessonRepository lessons)
+    public QuizController(QuizRepository quizzes, LessonRepository lessons, CourseRepository courses)
     {
         _quizzes = quizzes;
         _lessons = lessons;
+        _courses = courses;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+    private string CurrentRole => User.FindFirst(ClaimTypes.Role)!.Value;
+
+    private async Task<bool> IsOwnerOrAdminOfLessonAsync(int lessonId)
+    {
+        if (CurrentRole == "Admin") return true;
+        var lesson = await _lessons.GetByIdAsync(lessonId);
+        if (lesson == null) return false;
+        var course = await _courses.GetByIdAsync(lesson.CourseId);
+        return course != null && course.TeacherId == CurrentUserId;
+    }
+
+    private async Task<bool> IsOwnerOrAdminOfQuizAsync(int quizId)
+    {
+        if (CurrentRole == "Admin") return true;
+        var quiz = await _quizzes.GetByIdAsync(quizId);
+        if (quiz == null) return false;
+        return await IsOwnerOrAdminOfLessonAsync(quiz.LessonId);
+    }
 
     public async Task<IActionResult> Take(int id)
     {
         var quiz = await _quizzes.GetByIdAsync(id, withQuestions: true);
         if (quiz == null) return NotFound();
+
+        if (CurrentRole == "Student")
+        {
+            var lesson = await _lessons.GetByIdAsync(quiz.LessonId);
+            if (lesson == null || !lesson.IsPublished) return Forbid();
+        }
+        else if (CurrentRole == "Teacher" && !await IsOwnerOrAdminOfQuizAsync(id))
+        {
+            return Forbid();
+        }
+
         return View(quiz);
     }
 
@@ -58,6 +89,7 @@ public class QuizController : Controller
     {
         var lesson = await _lessons.GetByIdAsync(lessonId);
         if (lesson == null) return NotFound();
+        if (!await IsOwnerOrAdminOfLessonAsync(lessonId)) return Forbid();
         ViewBag.LessonTitle = lesson.Title;
         return View(new QuizFormViewModel { LessonId = lessonId });
     }
@@ -69,6 +101,14 @@ public class QuizController : Controller
         List<string> opt1, List<string> opt2, List<string> opt3, List<string> opt4, List<int> correctOpt)
     {
         if (!ModelState.IsValid) return View(model);
+        if (!await IsOwnerOrAdminOfLessonAsync(model.LessonId)) return Forbid();
+
+        if (questionTexts.Count == 0 || questionTexts.All(string.IsNullOrWhiteSpace))
+        {
+            ModelState.AddModelError("", "Il quiz deve avere almeno una domanda.");
+            return View(model);
+        }
+
         var quiz = new Quiz
         {
             LessonId = model.LessonId,
@@ -81,6 +121,8 @@ public class QuizController : Controller
         for (int i = 0; i < questionTexts.Count; i++)
         {
             if (string.IsNullOrWhiteSpace(questionTexts[i])) continue;
+            int correct = correctOpt.Count > i ? correctOpt[i] : 0;
+            if (correct < 1 || correct > 4) correct = 1;
             var q = new QuizQuestion
             {
                 QuizId = quizId,
@@ -88,10 +130,10 @@ public class QuizController : Controller
                 SortOrder = i + 1,
                 Options = new List<QuizOption>
                 {
-                    new() { OptionText = opt1.ElementAtOrDefault(i) ?? "", IsCorrect = correctOpt.ElementAtOrDefault(i) == 1, SortOrder = 1 },
-                    new() { OptionText = opt2.ElementAtOrDefault(i) ?? "", IsCorrect = correctOpt.ElementAtOrDefault(i) == 2, SortOrder = 2 },
-                    new() { OptionText = opt3.ElementAtOrDefault(i) ?? "", IsCorrect = correctOpt.ElementAtOrDefault(i) == 3, SortOrder = 3 },
-                    new() { OptionText = opt4.ElementAtOrDefault(i) ?? "", IsCorrect = correctOpt.ElementAtOrDefault(i) == 4, SortOrder = 4 }
+                    new() { OptionText = opt1.ElementAtOrDefault(i) ?? "", IsCorrect = correct == 1, SortOrder = 1 },
+                    new() { OptionText = opt2.ElementAtOrDefault(i) ?? "", IsCorrect = correct == 2, SortOrder = 2 },
+                    new() { OptionText = opt3.ElementAtOrDefault(i) ?? "", IsCorrect = correct == 3, SortOrder = 3 },
+                    new() { OptionText = opt4.ElementAtOrDefault(i) ?? "", IsCorrect = correct == 4, SortOrder = 4 }
                 }
             };
             await _quizzes.AddQuestionAsync(q);
@@ -107,6 +149,7 @@ public class QuizController : Controller
     {
         var quiz = await _quizzes.GetByIdAsync(id);
         if (quiz == null) return NotFound();
+        if (!await IsOwnerOrAdminOfQuizAsync(id)) return Forbid();
         var lessonId = quiz.LessonId;
         await _quizzes.DeleteQuizAsync(id);
         TempData["Success"] = "Quiz eliminato.";
