@@ -16,15 +16,8 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
-        try
-        {
-            var courses = await _courses.GetAllAsync(publishedOnly: true);
-            return View(courses.Take(6).ToList());
-        }
-        catch
-        {
-            return View(new List<BocconiLMS.Models.Course>());
-        }
+        var courses = await _courses.GetAllAsync(publishedOnly: true);
+        return View(courses.Take(6).ToList());
     }
 
     [Route("/healthz")]

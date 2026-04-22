@@ -30,6 +30,8 @@ builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
 })
 .AddDefaultTokenProviders();
 
+builder.Services.AddScoped<IPasswordHasher<ApplicationUser>, BcryptPasswordHasher>();
+
 builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Account/Login";
