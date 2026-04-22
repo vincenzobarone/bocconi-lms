@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
 
@@ -9,9 +7,16 @@ namespace BocconiLMS.Controllers;
 
 public class AccountController : Controller
 {
-    private readonly UserRepository _users;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
 
-    public AccountController(UserRepository users) => _users = users;
+    public AccountController(
+        UserManager<ApplicationUser> userManager,
+        SignInManager<ApplicationUser> signInManager)
+    {
+        _userManager = userManager;
+        _signInManager = signInManager;
+    }
 
     [HttpGet]
     public IActionResult Login(string? returnUrl = null)
@@ -28,19 +33,27 @@ public class AccountController : Controller
     {
         if (!ModelState.IsValid) return View(model);
 
-        var user = await _users.GetByEmailAsync(model.Email);
-        if (user == null || !user.IsActive || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
+        var user = await _userManager.FindByEmailAsync(model.Email);
+        if (user == null || !user.IsActive)
         {
             ModelState.AddModelError("", "Credenziali non valide o account disattivato.");
             return View(model);
         }
 
-        await SignInUserAsync(user);
+        var result = await _signInManager.PasswordSignInAsync(user, model.Password, isPersistent: false, lockoutOnFailure: false);
+        if (!result.Succeeded)
+        {
+            ModelState.AddModelError("", "Credenziali non valide o account disattivato.");
+            return View(model);
+        }
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);
 
-        return user.Role switch
+        var roles = await _userManager.GetRolesAsync(user);
+        var role = roles.FirstOrDefault() ?? "Student";
+
+        return role switch
         {
             "Admin" => RedirectToAction("Index", "Admin"),
             "Teacher" => RedirectToAction("Dashboard", "Course"),
@@ -52,23 +65,9 @@ public class AccountController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        await _signInManager.SignOutAsync();
         return RedirectToAction("Index", "Home");
     }
 
     public IActionResult AccessDenied() => View();
-
-    private async Task SignInUserAsync(User user)
-    {
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Name, user.FullName),
-            new(ClaimTypes.Email, user.Email),
-            new(ClaimTypes.Role, user.Role)
-        };
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-    }
 }

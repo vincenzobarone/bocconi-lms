@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
@@ -10,11 +11,19 @@ public class AdminController : Controller
 {
     private readonly UserRepository _users;
     private readonly CourseRepository _courses;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly RoleManager<ApplicationRole> _roleManager;
 
-    public AdminController(UserRepository users, CourseRepository courses)
+    public AdminController(
+        UserRepository users,
+        CourseRepository courses,
+        UserManager<ApplicationUser> userManager,
+        RoleManager<ApplicationRole> roleManager)
     {
         _users = users;
         _courses = courses;
+        _userManager = userManager;
+        _roleManager = roleManager;
     }
 
     public async Task<IActionResult> Index()
@@ -37,22 +46,37 @@ public class AdminController : Controller
     public async Task<IActionResult> CreateUser(RegisterViewModel model)
     {
         if (!ModelState.IsValid) return View(model);
-        if (await _users.EmailExistsAsync(model.Email))
+
+        if (await _userManager.FindByEmailAsync(model.Email) != null)
         {
             ModelState.AddModelError("Email", "Email già in uso.");
             return View(model);
         }
-        var user = new User
+
+        var validRoles = new[] { "Student", "Teacher", "Admin" };
+        var role = validRoles.Contains(model.Role) ? model.Role : "Student";
+
+        var appUser = new ApplicationUser
         {
-            Username = model.Username,
+            UserName = model.Email,
             Email = model.Email,
             FirstName = model.FirstName,
             LastName = model.LastName,
-            Role = model.Role,
-            PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password)
+            IsActive = true
         };
-        await _users.CreateAsync(user);
-        TempData["Success"] = $"Utente {user.FullName} creato con successo.";
+
+        var result = await _userManager.CreateAsync(appUser, model.Password);
+        if (!result.Succeeded)
+        {
+            foreach (var e in result.Errors)
+                ModelState.AddModelError("", e.Description);
+            return View(model);
+        }
+
+        await EnsureRoleExistsAsync(role);
+        await _userManager.AddToRoleAsync(appUser, role);
+
+        TempData["Success"] = $"Utente {appUser.FullName} creato con successo.";
         return RedirectToAction("Users");
     }
 
@@ -76,6 +100,16 @@ public class AdminController : Controller
         user.Role = model.Role;
         user.IsActive = model.IsActive;
         await _users.UpdateAsync(user);
+
+        var appUser = await _userManager.FindByIdAsync(model.Id.ToString());
+        if (appUser != null)
+        {
+            var currentRoles = await _userManager.GetRolesAsync(appUser);
+            await _userManager.RemoveFromRolesAsync(appUser, currentRoles);
+            await EnsureRoleExistsAsync(model.Role);
+            await _userManager.AddToRoleAsync(appUser, model.Role);
+        }
+
         TempData["Success"] = "Utente aggiornato.";
         return RedirectToAction("Users");
     }
@@ -90,5 +124,11 @@ public class AdminController : Controller
         await _users.UpdateAsync(user);
         TempData["Success"] = user.IsActive ? "Utente attivato." : "Utente disattivato.";
         return RedirectToAction("Users");
+    }
+
+    private async Task EnsureRoleExistsAsync(string roleName)
+    {
+        if (!await _roleManager.RoleExistsAsync(roleName))
+            await _roleManager.CreateAsync(new ApplicationRole(roleName));
     }
 }

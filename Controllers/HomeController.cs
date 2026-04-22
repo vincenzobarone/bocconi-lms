@@ -33,13 +33,11 @@ public class HomeController : Controller
     [Authorize]
     public IActionResult Dashboard()
     {
-        var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value;
-        return role switch
-        {
-            "Admin" => RedirectToAction("Index", "Admin"),
-            "Teacher" => RedirectToAction("Dashboard", "Course"),
-            _ => RedirectToAction("Dashboard", "Student")
-        };
+        if (User.IsInRole("Admin"))
+            return RedirectToAction("Index", "Admin");
+        if (User.IsInRole("Teacher"))
+            return RedirectToAction("Dashboard", "Course");
+        return RedirectToAction("Dashboard", "Student");
     }
 
     public IActionResult Error()

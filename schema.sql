@@ -156,6 +156,27 @@ CREATE TABLE IF NOT EXISTS quiz_attempts (
     INDEX idx_user (user_id)
 ) ENGINE=InnoDB;
 
+-- Ruoli Identity (tabelle per ASP.NET Core Identity custom stores)
+CREATE TABLE IF NOT EXISTS roles (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    name            VARCHAR(256) NOT NULL,
+    normalized_name VARCHAR(256) NOT NULL,
+    UNIQUE KEY uk_normalized (normalized_name)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS user_roles (
+    user_id         INT NOT NULL,
+    role_id         INT NOT NULL,
+    PRIMARY KEY (user_id, role_id),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+INSERT IGNORE INTO roles (name, normalized_name) VALUES
+    ('Student', 'STUDENT'),
+    ('Teacher', 'TEACHER'),
+    ('Admin',   'ADMIN');
+
 -- ============================================================
 -- Dati iniziali: utente Admin di default
 -- Password: Admin@Bocconi2024 (modificare subito dopo il primo accesso)

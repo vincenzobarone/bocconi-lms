@@ -1,5 +1,5 @@
 using BocconiLMS.Data;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,13 +8,36 @@ var connectionString = Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRI
     ?? "Server=localhost;Port=3306;Database=bocconi_lms;User=root;Password=;";
 
 builder.Services.AddSingleton<DbHelper>(_ => new DbHelper(connectionString));
-builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<CourseRepository>();
 builder.Services.AddScoped<LessonRepository>();
 builder.Services.AddScoped<DocumentRepository>();
 builder.Services.AddScoped<QuizRepository>();
 builder.Services.AddScoped<EnrollmentRepository>();
 builder.Services.AddScoped<ProgressRepository>();
+builder.Services.AddScoped<UserRepository>();
+
+builder.Services.AddScoped<IUserStore<ApplicationUser>, CustomUserStore>();
+builder.Services.AddScoped<IRoleStore<ApplicationRole>, CustomRoleStore>();
+
+builder.Services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
+{
+    options.Password.RequireDigit = false;
+    options.Password.RequiredLength = 8;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.SignIn.RequireConfirmedEmail = false;
+    options.SignIn.RequireConfirmedAccount = false;
+})
+.AddDefaultTokenProviders();
+
+builder.Services.ConfigureApplicationCookie(options =>
+{
+    options.LoginPath = "/Account/Login";
+    options.LogoutPath = "/Account/Logout";
+    options.AccessDeniedPath = "/Account/AccessDenied";
+    options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    options.SlidingExpiration = true;
+});
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddSession(options =>
@@ -23,18 +46,6 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
-
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.LoginPath = "/Account/Login";
-        options.LogoutPath = "/Account/Logout";
-        options.AccessDeniedPath = "/Account/AccessDenied";
-        options.ExpireTimeSpan = TimeSpan.FromHours(8);
-        options.SlidingExpiration = true;
-    });
-
-builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
