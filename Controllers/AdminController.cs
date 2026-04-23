@@ -129,6 +129,39 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteUser(int id)
+    {
+        var user = await _users.GetByIdAsync(id);
+        if (user == null) return NotFound();
+
+        var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        if (user.Id == currentUserId)
+        {
+            TempData["Error"] = "Cannot delete your own account.";
+            return RedirectToAction("Users");
+        }
+
+        if (user.Role == "Teacher")
+        {
+            var courseCount = await _users.GetActiveCourseCountAsync(id);
+            if (courseCount > 0)
+            {
+                TempData["Error"] = $"Cannot delete teacher \"{user.FullName}\": they have {courseCount} active course(s). Reassign or delete the courses first.";
+                return RedirectToAction("Users");
+            }
+        }
+
+        var appUser = await _userManager.FindByIdAsync(id.ToString());
+        await _users.DeleteWithCascadeAsync(id);
+        if (appUser != null)
+            await _userManager.DeleteAsync(appUser);
+
+        TempData["Success"] = $"User \"{user.FullName}\" deleted.";
+        return RedirectToAction("Users");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleUser(int id)
     {
         var user = await _users.GetByIdAsync(id);

@@ -36,10 +36,18 @@ public class UserRepository
         var users = new List<User>();
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
-        using var cmd = new MySqlCommand(
-            "SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at FROM users ORDER BY last_name, first_name", conn);
+        using var cmd = new MySqlCommand(@"
+            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.role, u.is_active, u.created_at,
+                   (SELECT COUNT(*) FROM courses c WHERE c.teacher_id = u.id) AS course_count
+            FROM users u
+            ORDER BY u.last_name, u.first_name", conn);
         using var reader = await cmd.ExecuteReaderAsync();
-        while (reader.Read()) users.Add(MapUser(reader));
+        while (reader.Read())
+        {
+            var user = MapUser(reader);
+            user.CourseCount = reader.GetInt32("course_count");
+            users.Add(user);
+        }
         return users;
     }
 
@@ -69,6 +77,43 @@ public class UserRepository
         cmd.Parameters.AddWithValue("@active", user.IsActive);
         cmd.Parameters.AddWithValue("@id", user.Id);
         await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task<int> GetActiveCourseCountAsync(int userId)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand("SELECT COUNT(*) FROM courses WHERE teacher_id=@uid", conn);
+        cmd.Parameters.AddWithValue("@uid", userId);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
+    public async Task DeleteWithCascadeAsync(int userId)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var tx = await conn.BeginTransactionAsync();
+        try
+        {
+            foreach (var sql in new[]
+            {
+                "DELETE FROM quiz_attempts WHERE user_id=@uid",
+                "DELETE FROM lesson_progress WHERE user_id=@uid",
+                "DELETE FROM enrollments WHERE user_id=@uid",
+                "DELETE FROM users WHERE id=@uid"
+            })
+            {
+                using var cmd = new MySqlCommand(sql, conn, tx);
+                cmd.Parameters.AddWithValue("@uid", userId);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
     public async Task<bool> EmailExistsAsync(string email)

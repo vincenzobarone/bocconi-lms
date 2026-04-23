@@ -4,6 +4,10 @@
     var lessons = ViewBag.Lessons as List<Lesson> ?? new List<Lesson>();
     var isEnrolled = (bool)(ViewBag.IsEnrolled ?? false);
     var isOwner = (bool)(ViewBag.IsOwner ?? false);
+    var docCount = (int)(ViewBag.DocumentCount ?? 0);
+    var deleteMsg = docCount > 0
+        ? $"{T["course.confirm_delete_docs","Delete this course? This will also permanently delete"]} {docCount} {T["course.confirm_delete_docs_suffix","document(s) and all their versions."]}"
+        : T["course.confirm_delete","Delete this course? This action cannot be undone."];
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -127,7 +131,7 @@
                     <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
                         @Html.AntiForgeryToken()
                         <button type="submit" class="btn btn-outline-danger w-100 btn-sm"
-                                data-confirm="@T["course.confirm_delete","Delete this course?"]">
+                                data-confirm="@deleteMsg">
                             @T["course.delete","Delete course"]
                         </button>
                     </form>

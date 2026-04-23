@@ -104,13 +104,70 @@ public class CourseRepository
         await cmd.ExecuteNonQueryAsync();
     }
 
+    public async Task<int> CountDocumentsAsync(int courseId)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            SELECT COUNT(*) FROM documents d
+            JOIN lessons l ON l.id = d.lesson_id
+            WHERE l.course_id = @cid", conn);
+        cmd.Parameters.AddWithValue("@cid", courseId);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
     public async Task DeleteAsync(int id)
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
-        using var cmd = new MySqlCommand("DELETE FROM courses WHERE id=@id", conn);
-        cmd.Parameters.AddWithValue("@id", id);
-        await cmd.ExecuteNonQueryAsync();
+        using var tx = await conn.BeginTransactionAsync();
+        try
+        {
+            var steps = new[]
+            {
+                @"DELETE qa FROM quiz_attempts qa
+                  JOIN quizzes q ON q.id = qa.quiz_id
+                  JOIN lessons l ON l.id = q.lesson_id
+                  WHERE l.course_id = @id",
+                @"DELETE qo FROM quiz_options qo
+                  JOIN quiz_questions qq ON qq.id = qo.question_id
+                  JOIN quizzes q ON q.id = qq.quiz_id
+                  JOIN lessons l ON l.id = q.lesson_id
+                  WHERE l.course_id = @id",
+                @"DELETE qq FROM quiz_questions qq
+                  JOIN quizzes q ON q.id = qq.quiz_id
+                  JOIN lessons l ON l.id = q.lesson_id
+                  WHERE l.course_id = @id",
+                @"DELETE q FROM quizzes q
+                  JOIN lessons l ON l.id = q.lesson_id
+                  WHERE l.course_id = @id",
+                @"DELETE dv FROM document_versions dv
+                  JOIN documents d ON d.id = dv.document_id
+                  JOIN lessons l ON l.id = d.lesson_id
+                  WHERE l.course_id = @id",
+                @"DELETE d FROM documents d
+                  JOIN lessons l ON l.id = d.lesson_id
+                  WHERE l.course_id = @id",
+                @"DELETE lp FROM lesson_progress lp
+                  JOIN lessons l ON l.id = lp.lesson_id
+                  WHERE l.course_id = @id",
+                "DELETE FROM lessons WHERE course_id = @id",
+                "DELETE FROM enrollments WHERE course_id = @id",
+                "DELETE FROM courses WHERE id = @id"
+            };
+            foreach (var sql in steps)
+            {
+                using var cmd = new MySqlCommand(sql, conn, tx);
+                cmd.Parameters.AddWithValue("@id", id);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
     }
 
     private static Course MapCourse(MySqlDataReader r) => new()

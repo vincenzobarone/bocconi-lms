@@ -1,6 +1,7 @@
 @model List<User>
 @{
     ViewData["Title"] = T["admin.users.page_title", "User Management"];
+    var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -53,17 +54,48 @@
                         <td>
                             <div class="d-flex gap-1">
                                 <a asp-action="EditUser" asp-route-id="@u.Id"
-                                   class="btn btn-sm btn-outline-secondary">
+                                   class="btn btn-sm btn-outline-secondary" title="@T["common.edit","Edit"]">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <button type="button"
-                                        class="btn btn-sm @(u.IsActive ? "btn-outline-warning" : "btn-outline-success")"
-                                        data-bs-toggle="modal" data-bs-target="#toggleModal"
-                                        data-user-id="@u.Id"
-                                        data-user-name="@u.FullName"
-                                        data-confirm-msg="@(u.IsActive ? T["users.confirm_deactivate", "Deactivate"] : T["users.confirm_activate", "Activate"]) &quot;@u.FullName&quot;?">
-                                    <i class="bi @(u.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
-                                </button>
+                                @if (u.Id != currentUserId)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm @(u.IsActive ? "btn-outline-warning" : "btn-outline-success")"
+                                            data-bs-toggle="modal" data-bs-target="#toggleModal"
+                                            data-user-id="@u.Id"
+                                            data-user-name="@u.FullName"
+                                            data-confirm-msg="@(u.IsActive ? T["users.confirm_deactivate", "Deactivate"] : T["users.confirm_activate", "Activate"]) &quot;@u.FullName&quot;?"
+                                            title="@(u.IsActive ? T["users.confirm_deactivate","Deactivate"] : T["users.confirm_activate","Activate"])">
+                                        <i class="bi @(u.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
+                                    </button>
+
+                                    @if (u.Role != "Admin")
+                                    {
+                                        @if (u.Role == "Teacher" && u.CourseCount > 0)
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="modal" data-bs-target="#deleteBlockedModal"
+                                                    data-user-name="@u.FullName"
+                                                    data-course-count="@u.CourseCount"
+                                                    title="@T["users.delete","Delete"]">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                                    data-user-id="@u.Id"
+                                                    data-user-name="@u.FullName"
+                                                    data-user-role="@u.Role"
+                                                    title="@T["users.delete","Delete"]">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        }
+                                    }
+                                }
                             </div>
                         </td>
                     </tr>
@@ -92,6 +124,48 @@
     </div>
 </div>
 
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-danger">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel"><i class="bi bi-exclamation-triangle me-2"></i>@T["users.delete_title","Delete user"]</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteModalBody"></p>
+                <div id="deleteStudentWarning" class="alert alert-warning small d-none">
+                    <i class="bi bi-exclamation-triangle me-1"></i>@T["users.delete_student_warning","All quiz attempts, lesson progress and enrollment records will also be permanently deleted."]
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                <form id="deleteForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-danger">@T["users.delete_confirm","Yes, delete"]</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="deleteBlockedModal" tabindex="-1" aria-labelledby="deleteBlockedLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteBlockedLabel"><i class="bi bi-lock me-2"></i>@T["users.delete_blocked_title","Cannot delete teacher"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="deleteBlockedBody"></p>
+                <p class="text-muted small">@T["users.delete_blocked_hint","Reassign or delete all courses for this teacher before deleting their account."]</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-bocconi" data-bs-dismiss="modal">@T["common.ok","OK"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         $(document).ready(function () {
@@ -101,6 +175,26 @@
                 var btn = $(e.relatedTarget);
                 $('#toggleModalBody').text(btn.data('confirm-msg'));
                 $('#toggleForm').attr('action', '/Admin/ToggleUser/' + btn.data('user-id'));
+            });
+
+            $('#deleteModal').on('show.bs.modal', function (e) {
+                var btn = $(e.relatedTarget);
+                var name = btn.data('user-name');
+                var role = btn.data('user-role');
+                $('#deleteModalBody').text('@T["users.delete_confirm_msg","Are you sure you want to delete"]' + ' "' + name + '"?');
+                if (role === 'Student') {
+                    $('#deleteStudentWarning').removeClass('d-none');
+                } else {
+                    $('#deleteStudentWarning').addClass('d-none');
+                }
+                $('#deleteForm').attr('action', '/Admin/DeleteUser/' + btn.data('user-id'));
+            });
+
+            $('#deleteBlockedModal').on('show.bs.modal', function (e) {
+                var btn = $(e.relatedTarget);
+                var name = btn.data('user-name');
+                var count = btn.data('course-count');
+                $('#deleteBlockedBody').text('"' + name + '" @T["users.delete_blocked_msg","has"] ' + count + ' @T["users.delete_blocked_courses","active course(s) and cannot be deleted."]');
             });
         });
     </script>
