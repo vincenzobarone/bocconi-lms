@@ -27,10 +27,10 @@ public class DocumentVersioningTests : IAsyncLifetime
         var suffix = Guid.NewGuid().ToString("N")[..8];
         _teacherEmail = $"doc_teacher_{suffix}@test.it";
         _teacherId = await _db.CreateUserAsync(
-            _teacherEmail, $"doc_teacher_{suffix}",
+            _teacherEmail,
             "Doc", "Teacher", "Teacher", Password);
         _studentId = await _db.CreateUserAsync(
-            $"doc_student_{suffix}@test.it", $"doc_student_{suffix}",
+            $"doc_student_{suffix}@test.it",
             "Doc", "Student", "Student", Password);
 
         _courseId = await _db.CreateCourseAsync(_teacherId, $"Doc Course {suffix}", isPublished: true);

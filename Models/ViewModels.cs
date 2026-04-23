@@ -145,6 +145,23 @@ public class AddTranslationKeyViewModel
     public string EnglishValue { get; set; } = string.Empty;
 }
 
+public class ChangePasswordViewModel
+{
+    [Required(ErrorMessage = "Password attuale obbligatoria")]
+    [DataType(DataType.Password)]
+    public string CurrentPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Nuova password obbligatoria")]
+    [MinLength(8, ErrorMessage = "La nuova password deve contenere almeno 8 caratteri")]
+    [DataType(DataType.Password)]
+    public string NewPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Conferma password obbligatoria")]
+    [DataType(DataType.Password)]
+    [Compare("NewPassword", ErrorMessage = "Le password non corrispondono")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
 public class StudentDashboard
 {
     public List<Enrollment> Enrollments { get; set; } = new();

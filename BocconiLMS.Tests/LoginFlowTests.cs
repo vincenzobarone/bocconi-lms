@@ -21,13 +21,13 @@ public class LoginFlowTests : IAsyncLifetime
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
         _studentId = await _db.CreateUserAsync(
-            $"student_{suffix}@test.it", $"student_{suffix}",
+            $"student_{suffix}@test.it",
             "Test", "Student", "Student", Password);
         _teacherId = await _db.CreateUserAsync(
-            $"teacher_{suffix}@test.it", $"teacher_{suffix}",
+            $"teacher_{suffix}@test.it",
             "Test", "Teacher", "Teacher", Password);
         _adminId = await _db.CreateUserAsync(
-            $"admin_{suffix}@test.it", $"admin_{suffix}",
+            $"admin_{suffix}@test.it",
             "Test", "Admin", "Admin", Password);
     }
 

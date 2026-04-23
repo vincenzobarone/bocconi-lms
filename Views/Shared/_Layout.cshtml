@@ -84,6 +84,11 @@
                             <li><span class="dropdown-item-text text-muted small">@User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value</span></li>
                             <li><hr class="dropdown-divider" /></li>
                             <li>
+                                <a class="dropdown-item" asp-controller="Account" asp-action="ChangePassword">
+                                    <i class="bi bi-key me-1"></i>Cambia password
+                                </a>
+                            </li>
+                            <li>
                                 <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="dropdown-item text-danger">

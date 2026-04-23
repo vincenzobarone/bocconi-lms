@@ -18,7 +18,7 @@ public class DbTestHelper : IAsyncDisposable
         return new MySqlConnection(_connectionString);
     }
 
-    public async Task<int> CreateUserAsync(string email, string username, string firstName, string lastName,
+    public async Task<int> CreateUserAsync(string email, string firstName, string lastName,
         string role, string password = "TestPassword1!")
     {
         var hash = BCrypt.Net.BCrypt.HashPassword(password);
@@ -26,10 +26,9 @@ public class DbTestHelper : IAsyncDisposable
         await conn.OpenAsync();
 
         using var cmd = new MySqlCommand(@"
-            INSERT INTO users (username, email, password_hash, first_name, last_name, role, is_active, created_at)
-            VALUES (@un, @email, @hash, @fn, @ln, @role, 1, NOW());
+            INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, created_at)
+            VALUES (@email, @hash, @fn, @ln, @role, 1, NOW());
             SELECT LAST_INSERT_ID();", conn);
-        cmd.Parameters.AddWithValue("@un", username);
         cmd.Parameters.AddWithValue("@email", email);
         cmd.Parameters.AddWithValue("@hash", hash);
         cmd.Parameters.AddWithValue("@fn", firstName);

@@ -26,10 +26,10 @@ public class QuizFlowTests : IAsyncLifetime
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
         _teacherId = await _db.CreateUserAsync(
-            $"quiz_teacher_{suffix}@test.it", $"quiz_teacher_{suffix}",
+            $"quiz_teacher_{suffix}@test.it",
             "Quiz", "Teacher", "Teacher", Password);
         _studentId = await _db.CreateUserAsync(
-            $"quiz_student_{suffix}@test.it", $"quiz_student_{suffix}",
+            $"quiz_student_{suffix}@test.it",
             "Quiz", "Student", "Student", Password);
 
         _courseId = await _db.CreateCourseAsync(_teacherId, $"Test Course {suffix}", isPublished: true);
@@ -172,7 +172,7 @@ public class QuizFlowTests : IAsyncLifetime
         var suffix = Guid.NewGuid().ToString("N")[..8];
         var unenrolledEmail = $"unenrolled_{suffix}@test.it";
         await _db.CreateUserAsync(
-            unenrolledEmail, $"unenrolled_{suffix}",
+            unenrolledEmail,
             "Un", "Enrolled", "Student", Password);
 
         var client = _factory.CreateClientWithCookies();
