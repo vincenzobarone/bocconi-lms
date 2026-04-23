@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using MySqlConnector;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
 
@@ -16,8 +17,16 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var courses = await _courses.GetAllAsync(publishedOnly: true);
-        return View(courses.Take(6).ToList());
+        try
+        {
+            var courses = await _courses.GetAllAsync(publishedOnly: true);
+            return View(courses.Take(6).ToList());
+        }
+        catch (MySqlException)
+        {
+            ViewBag.DbError = true;
+            return View(new List<Course>());
+        }
     }
 
     [Route("/healthz")]

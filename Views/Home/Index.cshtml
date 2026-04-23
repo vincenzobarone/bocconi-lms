@@ -3,6 +3,18 @@
     ViewData["Title"] = "Benvenuto";
 }
 
+@if (ViewBag.DbError == true)
+{
+    <div class="alert alert-warning d-flex align-items-center gap-3 mb-4" role="alert">
+        <i class="bi bi-database-exclamation fs-4"></i>
+        <div>
+            <strong>Database non ancora configurato.</strong>
+            Per usare la piattaforma è necessario eseguire <code>schema.sql</code> sul server MySQL
+            e verificare la variabile <code>MYSQL_CONNECTION_STRING</code>.
+        </div>
+    </div>
+}
+
 <div class="py-5 text-center bg-bocconi text-white rounded-3 mb-4" style="background: linear-gradient(135deg, #003087, #0050c8) !important;">
     <i class="bi bi-mortarboard-fill display-4 mb-3 d-block" style="color: #c8a96e;"></i>
     <h1 class="fw-bold">Bocconi LMS</h1>
