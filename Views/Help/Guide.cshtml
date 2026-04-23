@@ -1,0 +1,249 @@
+@{
+    ViewData["Title"] = T["help.guide_title", "User Guide"];
+    var role = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <i class="bi bi-book-half text-bocconi" style="font-size:2rem;"></i>
+            <div>
+                <h2 class="fw-bold mb-0">@T["help.guide_title","User Guide"]</h2>
+                <p class="text-muted mb-0">Bocconi LMS — @T["help.guide_subtitle","Complete platform reference"]</p>
+            </div>
+        </div>
+
+        @* ── QUICK START PER RUOLO ─────────────────────────────────── *@
+        @if (role == "Admin")
+        {
+            <div class="alert alert-primary d-flex gap-2 mb-4">
+                <i class="bi bi-shield-check fs-5 flex-shrink-0 mt-1"></i>
+                <div>
+                    <strong>@T["help.you_are_admin","You are logged in as Administrator."]</strong>
+                    @T["help.admin_intro","You have full access to all sections of the platform: user management, courses, translations and email settings."]
+                </div>
+            </div>
+        }
+        else if (role == "Teacher")
+        {
+            <div class="alert alert-info d-flex gap-2 mb-4">
+                <i class="bi bi-person-video3 fs-5 flex-shrink-0 mt-1"></i>
+                <div>
+                    <strong>@T["help.you_are_teacher","You are logged in as Teacher."]</strong>
+                    @T["help.teacher_intro","You can create and manage your own courses, add lessons, upload materials and create quizzes."]
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-success d-flex gap-2 mb-4">
+                <i class="bi bi-mortarboard fs-5 flex-shrink-0 mt-1"></i>
+                <div>
+                    <strong>@T["help.you_are_student","You are logged in as Student."]</strong>
+                    @T["help.student_intro","You can browse and enroll in published courses, study lessons, download materials and take quizzes."]
+                </div>
+            </div>
+        }
+
+        <div class="accordion" id="guideAccordion">
+
+            @* ── SEZIONE ADMIN ─────────────────────────────────────── *@
+            @if (role == "Admin")
+            {
+                <div class="accordion-item border mb-2 rounded">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button rounded fw-semibold" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#sec-admin-users">
+                            <i class="bi bi-people me-2 text-bocconi"></i>@T["help.sec.user_management","User Management"]
+                        </button>
+                    </h2>
+                    <div id="sec-admin-users" class="accordion-collapse collapse show" data-bs-parent="#guideAccordion">
+                        <div class="accordion-body">
+                            <p>@T["help.admin.users.intro","From <strong>Admin → Users</strong> you can see all registered users on the platform."]</p>
+                            <h6 class="fw-semibold">@T["help.admin.users.actions","Available actions per user:"]</h6>
+                            <ul>
+                                <li><i class="bi bi-pencil me-1 text-secondary"></i><strong>@T["common.edit","Edit"]</strong> — @T["help.admin.users.edit","Modify name, role and account status."]</li>
+                                <li><i class="bi bi-eye me-1 text-info"></i><strong>@T["help.admin.users.view_courses","View courses"]</strong> — @T["help.admin.users.view_courses_desc","The eye icon shows the courses taught (for teachers) or the enrolled courses with progress bar (for students)."]</li>
+                                <li><i class="bi bi-person-dash me-1 text-warning"></i><strong>@T["help.admin.users.toggle","Activate / Deactivate"]</strong> — @T["help.admin.users.toggle_desc","Suspended users cannot log in."]</li>
+                                <li><i class="bi bi-trash me-1 text-danger"></i><strong>@T["common.delete","Delete"]</strong> — @T["help.admin.users.delete_desc","Permanently deletes the user and all related data (quiz attempts, progress, enrollments)."]</li>
+                            </ul>
+                            <div class="alert alert-warning small py-2">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                <strong>@T["help.admin.users.role_rules","Role rules:"]</strong>
+                                @T["help.admin.users.role_rules_desc","When creating a user, the Admin role is not available. A teacher cannot change role if they have active courses; a student cannot change role if they are enrolled in courses. The Admin role is unique and cannot be changed."]
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border mb-2 rounded">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed rounded fw-semibold" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#sec-admin-courses">
+                            <i class="bi bi-book me-2 text-bocconi"></i>@T["help.sec.course_management","Course Management"]
+                        </button>
+                    </h2>
+                    <div id="sec-admin-courses" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                        <div class="accordion-body">
+                            <p>@T["help.admin.courses.intro","As Administrator you have access to all courses on the platform, regardless of the teacher who created them."]</p>
+                            <h6 class="fw-semibold">@T["help.admin.courses.assign_teacher","Assigning a teacher to a course:"]</h6>
+                            <ol>
+                                <li>@T["help.admin.courses.step1","Go to <strong>Dashboard → Create Course</strong> or open an existing course and click Edit."]</li>
+                                <li>@T["help.admin.courses.step2","At the top of the form a <strong>Teacher</strong> dropdown appears, listing all active teachers on the platform."]</li>
+                                <li>@T["help.admin.courses.step3","Select the desired teacher and save. The course will appear in the selected teacher's Dashboard."]</li>
+                            </ol>
+                            <div class="alert alert-info small py-2">
+                                <i class="bi bi-info-circle me-1"></i>
+                                @T["help.admin.courses.reassign","You can also reassign an existing course to a different teacher by editing it and changing the Teacher field. The teacher must be active on the platform."]
+                            </div>
+                            <h6 class="fw-semibold mt-3">@T["help.admin.courses.delete","Deleting a course:"]</h6>
+                            <p>@T["help.admin.courses.delete_desc","Course deletion is cascading: lessons, quizzes, documents (and their files on disk), enrollments and student progress are all permanently deleted."]</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border mb-2 rounded">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed rounded fw-semibold" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#sec-admin-settings">
+                            <i class="bi bi-gear me-2 text-bocconi"></i>@T["help.sec.settings","Settings &amp; Translations"]
+                        </button>
+                    </h2>
+                    <div id="sec-admin-settings" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                        <div class="accordion-body">
+                            <h6 class="fw-semibold">@T["help.admin.email","Email settings:"]</h6>
+                            <p>@T["help.admin.email_desc","Configure SMTP for sending lesson reminder emails to students. You can send a test email directly from the settings page."]</p>
+                            <h6 class="fw-semibold">@T["help.admin.translations","Translations:"]</h6>
+                            <p>@T["help.admin.translations_desc","The platform supports 4 languages (Italian, English, Spanish, German). Each interface text is identified by a key; missing keys are auto-generated on first page load with the default English value. You can edit translations from Admin → Translations."]</p>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @* ── SEZIONE COMUNE: CORSI ─────────────────────────────── *@
+            <div class="accordion-item border mb-2 rounded">
+                <h2 class="accordion-header">
+                    <button class="accordion-button @(role != "Admin" ? "" : "collapsed") rounded fw-semibold" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#sec-courses">
+                        <i class="bi bi-book me-2 text-bocconi"></i>
+                        @if (role == "Teacher" || role == "Admin")
+                        {
+                            @T["help.sec.my_courses","Courses (Teacher)"]
+                        }
+                        else
+                        {
+                            @T["help.sec.courses_student","Courses (Student)"]
+                        }
+                    </button>
+                </h2>
+                <div id="sec-courses" class="accordion-collapse collapse @(role != "Admin" ? "show" : "")" data-bs-parent="#guideAccordion">
+                    <div class="accordion-body">
+                        @if (role == "Teacher" || role == "Admin")
+                        {
+                            <p>@T["help.teacher.courses.intro","From <strong>Dashboard</strong> you can see all your courses and create new ones."]</p>
+                            <ul>
+                                <li>@T["help.teacher.courses.create","<strong>Create Course</strong>: title, description, category, optional start/end dates. Tick \"Publish immediately\" to make it visible to students."]</li>
+                                <li>@T["help.teacher.courses.lessons","<strong>Lessons</strong>: from the course detail page you can add lessons in order. Each lesson can contain text, documents and quizzes."]</li>
+                                <li>@T["help.teacher.courses.students","<strong>Students</strong>: view the list of enrolled students with their lesson progress."]</li>
+                            </ul>
+                        }
+                        else
+                        {
+                            <p>@T["help.student.courses.intro","From the <strong>Courses</strong> menu you can browse all published courses."]</p>
+                            <ul>
+                                <li>@T["help.student.courses.enroll","<strong>Enroll</strong>: click \"Enroll\" on the course detail page to join it."]</li>
+                                <li>@T["help.student.courses.progress","<strong>Progress</strong>: each completed lesson is tracked. The progress bar on the course page shows how far you have come."]</li>
+                                <li>@T["help.student.courses.dashboard","<strong>Dashboard</strong>: shows all your enrolled courses with overall progress."]</li>
+                            </ul>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* ── SEZIONE DOCUMENTI E VIDEO ─────────────────────────── *@
+            <div class="accordion-item border mb-2 rounded">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded fw-semibold" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#sec-docs">
+                        <i class="bi bi-file-earmark me-2 text-bocconi"></i>@T["help.sec.documents","Documents &amp; Videos"]
+                    </button>
+                </h2>
+                <div id="sec-docs" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                    <div class="accordion-body">
+                        @if (role == "Teacher" || role == "Admin")
+                        {
+                            <p>@T["help.docs.teacher.intro","From within a lesson, click <strong>Upload</strong> to attach a file."]</p>
+                            <h6 class="fw-semibold">@T["help.docs.formats","Supported formats:"]</h6>
+                            <ul>
+                                <li><i class="bi bi-file-earmark-text me-1"></i><strong>@T["help.docs.files","Documents"]</strong>: PDF, Word (.doc/.docx), PowerPoint (.ppt/.pptx), Excel (.xls/.xlsx), TXT — max 50 MB</li>
+                                <li><i class="bi bi-play-circle me-1"></i><strong>@T["help.docs.videos","Videos"]</strong>: MP4, WebM, MOV, AVI, MKV — max 500 MB</li>
+                            </ul>
+                            <p>@T["help.docs.versioning","Each new upload on the same document creates a new version. Previous versions are preserved and accessible from the <strong>Versions</strong> button. You can restore an older version at any time."]</p>
+                            <p>@T["help.docs.delete","To permanently delete a document and all its versions, use the <strong>trash icon</strong> next to it in the lesson."]</p>
+                        }
+                        else
+                        {
+                            <p>@T["help.docs.student.intro","In each lesson you will find an attached files section."]</p>
+                            <ul>
+                                <li><i class="bi bi-file-earmark-text me-1"></i>@T["help.docs.student.download","Files (PDF, Word…): download button to save them to your device."]</li>
+                                <li><i class="bi bi-play-circle me-1"></i>@T["help.docs.student.video","Videos (MP4, WebM…): play directly in the page without downloading."]</li>
+                            </ul>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* ── SEZIONE QUIZ ──────────────────────────────────────── *@
+            <div class="accordion-item border mb-2 rounded">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded fw-semibold" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#sec-quiz">
+                        <i class="bi bi-clipboard2-check me-2 text-bocconi"></i>Quiz
+                    </button>
+                </h2>
+                <div id="sec-quiz" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                    <div class="accordion-body">
+                        @if (role == "Teacher" || role == "Admin")
+                        {
+                            <p>@T["help.quiz.teacher.intro","From within a lesson, click <strong>Create Quiz</strong> to add a quiz."]</p>
+                            <ul>
+                                <li>@T["help.quiz.teacher.settings","Set title, time limit (minutes) and minimum passing score (%)."]</li>
+                                <li>@T["help.quiz.teacher.questions","Add multiple-choice questions: each question can have multiple options, mark one as correct."]</li>
+                                <li>@T["help.quiz.teacher.delete","You can delete a quiz at any time; all student attempts will also be deleted."]</li>
+                            </ul>
+                        }
+                        else
+                        {
+                            <p>@T["help.quiz.student.intro","In each lesson you will find the available quizzes."]</p>
+                            <ul>
+                                <li>@T["help.quiz.student.take","Click <strong>Take</strong> to start the quiz. The countdown timer starts immediately."]</li>
+                                <li>@T["help.quiz.student.result","At the end you will see your score and whether you have passed or not."]</li>
+                                <li>@T["help.quiz.student.history","<strong>History</strong>: shows all your past attempts for that quiz."]</li>
+                            </ul>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            @* ── SEZIONE ACCOUNT ───────────────────────────────────── *@
+            <div class="accordion-item border mb-2 rounded">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed rounded fw-semibold" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#sec-account">
+                        <i class="bi bi-person-circle me-2 text-bocconi"></i>@T["help.sec.account","Account &amp; Profile"]
+                    </button>
+                </h2>
+                <div id="sec-account" class="accordion-collapse collapse" data-bs-parent="#guideAccordion">
+                    <div class="accordion-body">
+                        <ul>
+                            <li>@T["help.account.profile","<strong>Profile</strong>: from the top-right menu you can change your name and email."]</li>
+                            <li>@T["help.account.password","<strong>Password</strong>: you can change your password from your profile at any time."]</li>
+                            <li>@T["help.account.language","<strong>Language</strong>: the language selector in the top bar lets you switch between Italian, English, Spanish and German."]</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

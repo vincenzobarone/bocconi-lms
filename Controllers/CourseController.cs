@@ -140,22 +140,36 @@ public class CourseController : Controller
 
     [Authorize(Roles = "Teacher,Admin")]
     [HttpGet]
-    public IActionResult Create() => View(new CourseFormViewModel());
+    public async Task<IActionResult> Create()
+    {
+        var vm = new CourseFormViewModel { IsAdminView = CurrentRole == "Admin" };
+        if (vm.IsAdminView)
+            vm.AvailableTeachers = await GetTeacherOptionsAsync();
+        return View(vm);
+    }
 
     [Authorize(Roles = "Teacher,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(CourseFormViewModel model)
     {
+        model.IsAdminView = CurrentRole == "Admin";
+        if (model.IsAdminView)
+        {
+            model.AvailableTeachers = await GetTeacherOptionsAsync();
+            if (!model.TeacherId.HasValue || model.TeacherId == 0)
+                ModelState.AddModelError("TeacherId", "Select a teacher.");
+        }
         if (!ModelState.IsValid) return View(model);
+
         var course = new Course
         {
-            Title = model.Title,
+            Title       = model.Title,
             Description = model.Description,
-            Category = model.Category,
-            TeacherId = CurrentUserId,
-            StartDate = model.StartDate,
-            EndDate = model.EndDate,
+            Category    = model.Category,
+            TeacherId   = model.IsAdminView ? model.TeacherId!.Value : CurrentUserId,
+            StartDate   = model.StartDate,
+            EndDate     = model.EndDate,
             IsPublished = model.IsPublished
         };
         var id = await _courses.CreateAsync(course);
@@ -170,16 +184,21 @@ public class CourseController : Controller
         var course = await _courses.GetByIdAsync(id);
         if (course == null) return NotFound();
         if (CurrentRole != "Admin" && course.TeacherId != CurrentUserId) return Forbid();
-        return View(new CourseFormViewModel
+        var vm = new CourseFormViewModel
         {
-            Id = course.Id,
-            Title = course.Title,
+            Id          = course.Id,
+            Title       = course.Title,
             Description = course.Description,
-            Category = course.Category,
-            StartDate = course.StartDate,
-            EndDate = course.EndDate,
-            IsPublished = course.IsPublished
-        });
+            Category    = course.Category,
+            StartDate   = course.StartDate,
+            EndDate     = course.EndDate,
+            IsPublished = course.IsPublished,
+            TeacherId   = course.TeacherId,
+            IsAdminView = CurrentRole == "Admin"
+        };
+        if (vm.IsAdminView)
+            vm.AvailableTeachers = await GetTeacherOptionsAsync();
+        return View(vm);
     }
 
     [Authorize(Roles = "Teacher,Admin")]
@@ -187,19 +206,41 @@ public class CourseController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, CourseFormViewModel model)
     {
+        model.IsAdminView = CurrentRole == "Admin";
+        if (model.IsAdminView)
+        {
+            model.AvailableTeachers = await GetTeacherOptionsAsync();
+            if (!model.TeacherId.HasValue || model.TeacherId == 0)
+                ModelState.AddModelError("TeacherId", "Select a teacher.");
+        }
         if (!ModelState.IsValid) return View(model);
+
         var course = await _courses.GetByIdAsync(id);
         if (course == null) return NotFound();
         if (CurrentRole != "Admin" && course.TeacherId != CurrentUserId) return Forbid();
-        course.Title = model.Title;
+
+        course.Title       = model.Title;
         course.Description = model.Description;
-        course.Category = model.Category;
-        course.StartDate = model.StartDate;
-        course.EndDate = model.EndDate;
+        course.Category    = model.Category;
+        course.StartDate   = model.StartDate;
+        course.EndDate     = model.EndDate;
         course.IsPublished = model.IsPublished;
+        if (model.IsAdminView && model.TeacherId.HasValue)
+            course.TeacherId = model.TeacherId.Value;
+
         await _courses.UpdateAsync(course);
         TempData["Success"] = "Corso aggiornato!";
         return RedirectToAction("Details", new { id });
+    }
+
+    private async Task<List<TeacherOption>> GetTeacherOptionsAsync()
+    {
+        var all = await _users.GetAllAsync();
+        return all
+            .Where(u => u.Role == "Teacher" && u.IsActive)
+            .Select(u => new TeacherOption(u.Id, u.FullName))
+            .OrderBy(t => t.FullName)
+            .ToList();
     }
 
     [Authorize(Roles = "Teacher,Admin")]

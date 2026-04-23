@@ -1,5 +1,32 @@
 @model CourseFormViewModel
 
+@if (Model.IsAdminView)
+{
+    <div class="mb-3">
+        <label asp-for="TeacherId" class="form-label fw-semibold">
+            <i class="bi bi-person-video3 me-1"></i>@T["course.form.teacher","Teacher"] *
+        </label>
+        @if (Model.AvailableTeachers.Any())
+        {
+            <select asp-for="TeacherId" class="form-select">
+                <option value="">@T["course.form.select_teacher","— Select a teacher —"]</option>
+                @foreach (var t in Model.AvailableTeachers)
+                {
+                    <option value="@t.Id" selected="@(Model.TeacherId == t.Id)">@t.FullName</option>
+                }
+            </select>
+        }
+        else
+        {
+            <div class="alert alert-warning py-2 mb-0">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                @T["course.form.no_teachers","No active teachers found. Create a teacher account first."]
+            </div>
+        }
+        <span asp-validation-for="TeacherId" class="text-danger small"></span>
+    </div>
+}
+
 <div class="mb-3">
     <label asp-for="Title" class="form-label fw-semibold">@T["course.form.title","Title"] *</label>
     <input asp-for="Title" class="form-control" placeholder="@T["course.form.title_placeholder","e.g. Business Economics I"]" />

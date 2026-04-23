@@ -50,7 +50,13 @@ public class CourseFormViewModel
     public DateTime? StartDate { get; set; }
     public DateTime? EndDate { get; set; }
     public bool IsPublished { get; set; }
+
+    public int? TeacherId { get; set; }
+    public bool IsAdminView { get; set; }
+    public List<TeacherOption> AvailableTeachers { get; set; } = new();
 }
+
+public record TeacherOption(int Id, string FullName);
 
 public class LessonFormViewModel
 {
