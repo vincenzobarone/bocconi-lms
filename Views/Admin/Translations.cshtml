@@ -71,13 +71,9 @@
             </div>
             @if (totalMissing > 0)
             {
-                <form asp-action="FillMissingTranslations" method="post" class="d-inline">
-                    @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-sm btn-outline-warning"
-                            data-confirm="@T["admin.translations.fill_confirm","Fill all missing translations with English values as defaults? You can edit them afterwards."]">
-                        <i class="bi bi-magic me-1"></i>@T["admin.translations.fill_missing","Fill missing with English defaults"]
-                    </button>
-                </form>
+                <button id="btnFilterMissing" class="btn btn-sm btn-outline-warning">
+                    <i class="bi bi-funnel me-1"></i>@T["admin.translations.filter_missing","Show only missing"]
+                </button>
             }
         </div>
     </div>
@@ -102,7 +98,10 @@
                 <tbody>
                     @foreach (var row in Model)
                     {
-                        <tr>
+                        bool hasMissing = (enabledLangs.Contains("it") && string.IsNullOrEmpty(row.It))
+                                       || (enabledLangs.Contains("es") && string.IsNullOrEmpty(row.Es))
+                                       || (enabledLangs.Contains("de") && string.IsNullOrEmpty(row.De));
+                        <tr data-missing="@(hasMissing ? "true" : "false")">
                             <td class="font-monospace small text-muted align-middle">@row.Key</td>
                             <td class="align-middle">@row.En</td>
                             @if (enabledLangs.Contains("it"))
@@ -160,11 +159,31 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-            $('#translationsTable').DataTable({
+            var filterMissingOnly = false;
+
+            $.fn.dataTable.ext.search.push(function (settings, data, dataIndex, rowData, counter) {
+                if (!filterMissingOnly) return true;
+                var row = settings.aoData[dataIndex].nTr;
+                return $(row).data('missing') === 'true' || $(row).attr('data-missing') === 'true';
+            });
+
+            var dt = $('#translationsTable').DataTable({
                 language: window.dtLang(),
                 pageLength: 25,
                 columnDefs: [{ orderable: false, targets: -1 }],
                 order: [[0, 'asc']]
+            });
+
+            $('#btnFilterMissing').on('click', function () {
+                filterMissingOnly = !filterMissingOnly;
+                if (filterMissingOnly) {
+                    $(this).removeClass('btn-outline-warning').addClass('btn-warning');
+                    $(this).html('<i class="bi bi-funnel-fill me-1"></i>' + $(this).text().trim());
+                } else {
+                    $(this).removeClass('btn-warning').addClass('btn-outline-warning');
+                    $(this).html('<i class="bi bi-funnel me-1"></i>' + $(this).text().trim());
+                }
+                dt.draw();
             });
         });
     </script>
