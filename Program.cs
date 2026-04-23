@@ -52,6 +52,7 @@ builder.Services.AddHostedService<LessonReminderHostedService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<TranslationService>();
+builder.Services.AddSingleton<AppVersionService>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddSession(options =>

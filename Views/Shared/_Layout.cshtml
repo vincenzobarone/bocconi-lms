@@ -156,5 +156,10 @@ window.dtIT = {
 window.dtLang = function() { return window.currentLang === 'it' ? window.dtIT : {}; };
 </script>
 @await RenderSectionAsync("Scripts", required: false)
+@inject BocconiLMS.Services.AppVersionService _ver
+<div id="build-badge" title="Build: @_ver.CommitHash — @_ver.Environment">
+    <span class="badge-dot @(_ver.Environment == "Development" ? "badge-dev" : "badge-prod")"></span>
+    <span class="badge-text">@_ver.CommitHash</span>
+</div>
 </body>
 </html>
