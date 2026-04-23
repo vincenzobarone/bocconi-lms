@@ -160,5 +160,42 @@ window.dtIT = {
 window.dtLang = function() { return window.currentLang === 'it' ? window.dtIT : {}; };
 </script>
 @await RenderSectionAsync("Scripts", required: false)
+
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body py-4 text-center">
+                <i class="bi bi-exclamation-triangle-fill text-warning fs-2 d-block mb-3"></i>
+                <p class="mb-0 fw-semibold" id="confirmModalBody"></p>
+            </div>
+            <div class="modal-footer justify-content-center border-0 pt-0">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                    @T["common.cancel","Cancel"]
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmModalOk">
+                    @T["common.confirm","Confirm"]
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+(function() {
+    var pendingForm = null;
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('[data-confirm]');
+        if (!btn) return;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        pendingForm = btn.closest('form');
+        document.getElementById('confirmModalBody').textContent = btn.dataset.confirm;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmModal')).show();
+    });
+    document.getElementById('confirmModalOk').addEventListener('click', function() {
+        bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
+        if (pendingForm) { pendingForm.submit(); pendingForm = null; }
+    });
+})();
+</script>
 </body>
 </html>

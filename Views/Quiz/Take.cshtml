@@ -14,7 +14,7 @@
     </div>
     <div class="text-end">
         <div class="display-6 fw-bold text-bocconi" id="timer">@Model.TimeLimitMinutes:00</div>
-        <div class="small text-muted">Tempo rimasto</div>
+        <div class="small text-muted">@T["quiz.time_remaining","Time remaining"]</div>
     </div>
 </div>
 
@@ -26,8 +26,8 @@
         var q = Model.Questions[qi];
         <div class="card mb-4 question-card" id="q-@(qi+1)" style="@(qi > 0 ? "display:none;" : "")">
             <div class="card-header bg-light d-flex justify-content-between">
-                <span class="fw-semibold">Domanda @(qi+1) di @Model.Questions.Count</span>
-                <span class="text-muted small">Seleziona una risposta</span>
+                <span class="fw-semibold">@T["quiz.question","Question"] @(qi+1) / @Model.Questions.Count</span>
+                <span class="text-muted small">@T["quiz.select_answer","Select an answer"]</span>
             </div>
             <div class="card-body">
                 <p class="fs-5 mb-4">@q.QuestionText</p>
@@ -46,7 +46,7 @@
                 @if (qi > 0)
                 {
                     <button type="button" class="btn btn-outline-secondary" onclick="goTo(@qi)">
-                        <i class="bi bi-arrow-left me-1"></i>Precedente
+                        <i class="bi bi-arrow-left me-1"></i>@T["common.previous","Previous"]
                     </button>
                 }
                 else
@@ -56,14 +56,14 @@
                 @if (qi < Model.Questions.Count - 1)
                 {
                     <button type="button" class="btn btn-bocconi" onclick="goTo(@(qi+2))">
-                        Successiva<i class="bi bi-arrow-right ms-1"></i>
+                        @T["common.next","Next"]<i class="bi bi-arrow-right ms-1"></i>
                     </button>
                 }
                 else
                 {
-                    <button type="submit" class="btn btn-success px-4" id="submitBtn"
-                            onclick="return confirm('Consegnare il quiz?')">
-                        <i class="bi bi-check2-circle me-2"></i>Consegna quiz
+                    <button type="button" class="btn btn-success px-4" id="submitBtn"
+                            data-confirm="@T["quiz.confirm_submit","Submit the quiz?"]">
+                        <i class="bi bi-check2-circle me-2"></i>@T["quiz.submit","Submit quiz"]
                     </button>
                 }
             </div>

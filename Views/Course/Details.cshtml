@@ -8,7 +8,7 @@
 
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Index">Corsi</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Index">@T["nav.courses","Courses"]</a></li>
         <li class="breadcrumb-item active">@Model.Title</li>
     </ol>
 </nav>
@@ -25,16 +25,16 @@
             {
                 <div class="d-flex gap-2">
                     <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-pencil me-1"></i>Modifica
+                        <i class="bi bi-pencil me-1"></i>@T["common.edit","Edit"]
                     </a>
                     <a asp-controller="Lesson" asp-action="Create" asp-route-courseId="@Model.Id"
-                       class="btn btn-sm btn-bocconi"><i class="bi bi-plus-lg me-1"></i>Lezione</a>
+                       class="btn btn-sm btn-bocconi"><i class="bi bi-plus-lg me-1"></i>@T["common.lesson","Lesson"]</a>
                 </div>
             }
         </div>
         <p class="lead mb-4">@Model.Description</p>
 
-        <h4 class="fw-semibold mb-3">Lezioni (@lessons.Count)</h4>
+        <h4 class="fw-semibold mb-3">@T["course.lessons","Lessons"] (@lessons.Count)</h4>
         @if (lessons.Any())
         {
             <div class="list-group mb-4">
@@ -55,7 +55,7 @@
                                    class="fw-semibold text-decoration-none">@l.Title</a>
                                 @if (!l.IsPublished)
                                 {
-                                    <span class="badge bg-secondary ms-2">Bozza</span>
+                                    <span class="badge bg-secondary ms-2">@T["common.draft","Draft"]</span>
                                 }
                             </div>
                         </div>
@@ -70,7 +70,7 @@
         }
         else
         {
-            <p class="text-muted">Nessuna lezione ancora disponibile.</p>
+            <p class="text-muted">@T["course.no_lessons","No lessons available yet."]</p>
         }
     </div>
 
@@ -78,25 +78,26 @@
         <div class="card sticky-top" style="top:80px;">
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-3">
-                    <span class="text-muted"><i class="bi bi-people me-1"></i>@Model.EnrolledCount iscritti</span>
-                    <span class="text-muted"><i class="bi bi-book me-1"></i>@Model.LessonCount lezioni</span>
+                    <span class="text-muted"><i class="bi bi-people me-1"></i>@Model.EnrolledCount @T["course.enrolled_count","enrolled"]</span>
+                    <span class="text-muted"><i class="bi bi-book me-1"></i>@Model.LessonCount @T["course.lessons_count","lessons"]</span>
                 </div>
                 @if (Model.StartDate.HasValue)
                 {
                     <div class="mb-2 small text-muted">
                         <i class="bi bi-calendar me-1"></i>
-                        @Model.StartDate.Value.ToString("dd/MM/yyyy") — @(Model.EndDate?.ToString("dd/MM/yyyy") ?? "aperto")
+                        @Model.StartDate.Value.ToString("dd/MM/yyyy") — @(Model.EndDate?.ToString("dd/MM/yyyy") ?? T["common.open","open"])
                     </div>
                 }
                 @if (User.Identity!.IsAuthenticated && !isOwner)
                 {
                     if (isEnrolled)
                     {
-                        <div class="alert alert-success small mb-3"><i class="bi bi-check-circle me-1"></i>Sei iscritto a questo corso</div>
+                        <div class="alert alert-success small mb-3"><i class="bi bi-check-circle me-1"></i>@T["course.enrolled_msg","You are enrolled in this course"]</div>
                         <form asp-action="Unenroll" asp-route-id="@Model.Id" method="post">
                             @Html.AntiForgeryToken()
-                            <button type="submit" class="btn btn-outline-danger w-100" onclick="return confirm('Vuoi disiscriverti?')">
-                                Disiscrivi
+                            <button type="submit" class="btn btn-outline-danger w-100"
+                                    data-confirm="@T["course.confirm_unenroll","Unenroll from this course?"]">
+                                @T["course.unenroll","Unenroll"]
                             </button>
                         </form>
                     }
@@ -105,7 +106,7 @@
                         <form asp-action="Enroll" asp-route-id="@Model.Id" method="post">
                             @Html.AntiForgeryToken()
                             <button type="submit" class="btn btn-bocconi w-100 py-2 fw-semibold">
-                                <i class="bi bi-plus-circle me-2"></i>Iscriviti al corso
+                                <i class="bi bi-plus-circle me-2"></i>@T["course.enroll","Enroll in course"]
                             </button>
                         </form>
                     }
@@ -113,7 +114,7 @@
                 else if (!User.Identity.IsAuthenticated)
                 {
                     <a asp-controller="Account" asp-action="Login" class="btn btn-bocconi w-100">
-                        Accedi per iscriverti
+                        @T["course.login_to_enroll","Log in to enroll"]
                     </a>
                 }
 
@@ -121,12 +122,14 @@
                 {
                     <hr />
                     <a asp-action="Students" asp-route-id="@Model.Id" class="btn btn-outline-secondary w-100 mb-2">
-                        <i class="bi bi-people me-1"></i>Vedi studenti
+                        <i class="bi bi-people me-1"></i>@T["course.view_students","View students"]
                     </a>
                     <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
                         @Html.AntiForgeryToken()
                         <button type="submit" class="btn btn-outline-danger w-100 btn-sm"
-                                onclick="return confirm('Eliminare il corso?')">Elimina corso</button>
+                                data-confirm="@T["course.confirm_delete","Delete this course?"]">
+                            @T["course.delete","Delete course"]
+                        </button>
                     </form>
                 }
             </div>

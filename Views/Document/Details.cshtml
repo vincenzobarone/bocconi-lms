@@ -1,6 +1,6 @@
 @model Document
 @{
-    ViewData["Title"] = $"Versioni - {Model.Title}";
+    ViewData["Title"] = $"{T["document.versions","Versions"]} - {Model.Title}";
     var versions = ViewBag.Versions as List<DocumentVersion> ?? new();
     bool isTeacher = User.IsInRole("Teacher") || User.IsInRole("Admin");
 }
@@ -8,20 +8,20 @@
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a asp-controller="Lesson" asp-action="Details" asp-route-id="@Model.LessonId">@Model.LessonTitle</a></li>
-        <li class="breadcrumb-item active">Versioni: @Model.Title</li>
+        <li class="breadcrumb-item active">@T["document.versions","Versions"]: @Model.Title</li>
     </ol>
 </nav>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h2 class="fw-bold mb-1"><i class="bi bi-clock-history me-2 text-bocconi"></i>@Model.Title</h2>
-        <p class="text-muted mb-0">Storico versioni — @versions.Count versioni totali</p>
+        <p class="text-muted mb-0">@T["document.version_history","Version history"] — @versions.Count @T["document.total_versions","versions total"]</p>
     </div>
     @if (isTeacher)
     {
         <a asp-controller="Document" asp-action="Upload"
            asp-route-lessonId="@Model.LessonId" asp-route-documentId="@Model.Id"
-           class="btn btn-bocconi"><i class="bi bi-upload me-1"></i>Nuova versione</a>
+           class="btn btn-bocconi"><i class="bi bi-upload me-1"></i>@T["document.new_version","New version"]</a>
     }
 </div>
 
@@ -37,7 +37,7 @@
                             <span class="version-badge">v@v.VersionNumber</span>
                             @if (v.IsActive)
                             {
-                                <span class="badge bg-success">Versione attiva</span>
+                                <span class="badge bg-success">@T["document.active_version","Active version"]</span>
                             }
                             <span class="badge bg-light text-dark">@v.FileType</span>
                         </div>
@@ -54,7 +54,7 @@
                     </div>
                     <div class="d-flex gap-2">
                         <a asp-controller="Document" asp-action="Download" asp-route-versionId="@v.Id"
-                           class="btn btn-sm btn-bocconi"><i class="bi bi-download me-1"></i>Scarica</a>
+                           class="btn btn-sm btn-bocconi"><i class="bi bi-download me-1"></i>@T["common.download","Download"]</a>
                         @if (isTeacher && !v.IsActive)
                         {
                             <form asp-controller="Document" asp-action="Restore" method="post">
@@ -62,8 +62,8 @@
                                 <input type="hidden" name="documentId" value="@Model.Id" />
                                 <input type="hidden" name="versionId" value="@v.Id" />
                                 <button type="submit" class="btn btn-sm btn-outline-warning"
-                                        onclick="return confirm('Ripristinare questa versione?')">
-                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Ripristina
+                                        data-confirm="@T["document.confirm_restore","Restore this version?"]">
+                                    <i class="bi bi-arrow-counterclockwise me-1"></i>@T["document.restore","Restore"]
                                 </button>
                             </form>
                         }
@@ -75,5 +75,5 @@
 }
 else
 {
-    <div class="alert alert-info">Nessuna versione disponibile.</div>
+    <div class="alert alert-info">@T["document.no_versions","No versions available."]</div>
 }

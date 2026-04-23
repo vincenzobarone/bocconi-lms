@@ -8,7 +8,7 @@
 
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Index">Corsi</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Index">@T["nav.courses","Courses"]</a></li>
         <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Details" asp-route-id="@Model.CourseId">@Model.CourseTitle</a></li>
         <li class="breadcrumb-item active">@Model.Title</li>
     </ol>
@@ -22,11 +22,13 @@
             {
                 <div class="d-flex gap-2">
                     <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-pencil me-1"></i>Modifica
+                        <i class="bi bi-pencil me-1"></i>@T["common.edit","Edit"]
                     </a>
                     <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
                         @Html.AntiForgeryToken()
-                        <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Eliminare la lezione?')">
+                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                data-confirm="@T["lesson.confirm_delete","Delete this lesson?"]"
+                                title="@T["common.delete","Delete"]">
                             <i class="bi bi-trash"></i>
                         </button>
                     </form>
@@ -46,11 +48,11 @@
         @if (documents.Any() || isOwner)
         {
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="fw-semibold mb-0"><i class="bi bi-file-earmark me-2"></i>Documenti</h4>
+                <h4 class="fw-semibold mb-0"><i class="bi bi-file-earmark me-2"></i>@T["lesson.documents","Documents"]</h4>
                 @if (isOwner)
                 {
                     <a asp-controller="Document" asp-action="Upload" asp-route-lessonId="@Model.Id"
-                       class="btn btn-sm btn-bocconi"><i class="bi bi-upload me-1"></i>Carica documento</a>
+                       class="btn btn-sm btn-bocconi"><i class="bi bi-upload me-1"></i>@T["lesson.upload_document","Upload document"]</a>
                 }
             </div>
             @if (documents.Any())
@@ -70,7 +72,7 @@
                             <div class="d-flex gap-2">
                                 <a asp-controller="Document" asp-action="Details" asp-route-id="@d.Id"
                                    class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-clock-history me-1"></i>Versioni
+                                    <i class="bi bi-clock-history me-1"></i>@T["document.versions","Versions"]
                                 </a>
                                 @if (d.ActiveVersion != null)
                                 {
@@ -97,7 +99,7 @@
                 @if (isOwner)
                 {
                     <a asp-controller="Quiz" asp-action="Create" asp-route-lessonId="@Model.Id"
-                       class="btn btn-sm btn-bocconi"><i class="bi bi-plus-lg me-1"></i>Crea quiz</a>
+                       class="btn btn-sm btn-bocconi"><i class="bi bi-plus-lg me-1"></i>@T["quiz.create","Create quiz"]</a>
                 }
             </div>
             @foreach (var q in quizzes)
@@ -107,20 +109,22 @@
                         <div>
                             <strong>@q.Title</strong>
                             <div class="text-muted small">
-                                <i class="bi bi-clock me-1"></i>@q.TimeLimitMinutes min
-                                <span class="ms-3"><i class="bi bi-award me-1"></i>Sufficienza: @q.PassingScore%</span>
+                                <i class="bi bi-clock me-1"></i>@q.TimeLimitMinutes @T["quiz.minutes","min"]
+                                <span class="ms-3"><i class="bi bi-award me-1"></i>@T["quiz.passing_score","Pass"]: @q.PassingScore%</span>
                             </div>
                         </div>
                         <div class="d-flex gap-2">
                             <a asp-controller="Quiz" asp-action="Take" asp-route-id="@q.Id"
-                               class="btn btn-sm btn-bocconi"><i class="bi bi-play-circle me-1"></i>Svolgi</a>
+                               class="btn btn-sm btn-bocconi"><i class="bi bi-play-circle me-1"></i>@T["quiz.take","Take"]</a>
                             <a asp-controller="Quiz" asp-action="History" asp-route-quizId="@q.Id"
-                               class="btn btn-sm btn-outline-secondary">Storico</a>
+                               class="btn btn-sm btn-outline-secondary">@T["quiz.history","History"]</a>
                             @if (isOwner)
                             {
                                 <form asp-controller="Quiz" asp-action="Delete" asp-route-id="@q.Id" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Eliminare il quiz?')">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            data-confirm="@T["quiz.confirm_delete","Delete this quiz?"]"
+                                            title="@T["common.delete","Delete"]">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
@@ -139,17 +143,17 @@
                 {
                     <div class="text-center text-success mb-3">
                         <i class="bi bi-check-circle-fill display-5"></i>
-                        <p class="fw-semibold mt-2">Lezione completata</p>
+                        <p class="fw-semibold mt-2">@T["lesson.completed","Lesson completed"]</p>
                     </div>
                 }
                 <div class="text-muted small">
                     <div class="mb-2"><i class="bi bi-book me-2"></i>@Model.CourseTitle</div>
-                    <div class="mb-2"><i class="bi bi-sort-numeric-up me-2"></i>Ordine: @Model.SortOrder</div>
+                    <div class="mb-2"><i class="bi bi-sort-numeric-up me-2"></i>@T["lesson.sort_order","Order"]: @Model.SortOrder</div>
                     <div><i class="bi bi-calendar me-2"></i>@Model.CreatedAt.ToString("dd/MM/yyyy")</div>
                 </div>
                 <hr />
                 <a asp-controller="Course" asp-action="Details" asp-route-id="@Model.CourseId"
-                   class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-left me-2"></i>Torna al corso</a>
+                   class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-left me-2"></i>@T["common.back_to_course","Back to course"]</a>
             </div>
         </div>
     </div>
