@@ -18,6 +18,12 @@ public class DbTestHelper : IAsyncDisposable
         return new MySqlConnection(_connectionString);
     }
 
+    private static async Task<int> GetLastInsertIdAsync(MySqlConnection conn)
+    {
+        using var cmd = new MySqlCommand("SELECT LAST_INSERT_ID()", conn);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
     public async Task<int> CreateUserAsync(string email, string firstName, string lastName,
         string role, string password = "TestPassword1!")
     {
@@ -27,14 +33,14 @@ public class DbTestHelper : IAsyncDisposable
 
         using var cmd = new MySqlCommand(@"
             INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, created_at)
-            VALUES (@email, @hash, @fn, @ln, @role, 1, NOW());
-            SELECT LAST_INSERT_ID();", conn);
+            VALUES (@email, @hash, @fn, @ln, @role, 1, NOW())", conn);
         cmd.Parameters.AddWithValue("@email", email);
         cmd.Parameters.AddWithValue("@hash", hash);
         cmd.Parameters.AddWithValue("@fn", firstName);
         cmd.Parameters.AddWithValue("@ln", lastName);
         cmd.Parameters.AddWithValue("@role", role);
-        var userId = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        await cmd.ExecuteNonQueryAsync();
+        var userId = await GetLastInsertIdAsync(conn);
 
         using var roleCmd = new MySqlCommand(@"
             INSERT INTO user_roles (user_id, role_id)
@@ -53,12 +59,12 @@ public class DbTestHelper : IAsyncDisposable
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             INSERT INTO courses (title, description, category, teacher_id, is_published, created_at)
-            VALUES (@title, 'Test description', 'Test', @tid, @pub, NOW());
-            SELECT LAST_INSERT_ID();", conn);
+            VALUES (@title, 'Test description', 'Test', @tid, @pub, NOW())", conn);
         cmd.Parameters.AddWithValue("@title", title);
         cmd.Parameters.AddWithValue("@tid", teacherId);
         cmd.Parameters.AddWithValue("@pub", isPublished ? 1 : 0);
-        var id = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        await cmd.ExecuteNonQueryAsync();
+        var id = await GetLastInsertIdAsync(conn);
         _cleanups.Add(("courses", $"id = {id}"));
         return id;
     }
@@ -69,12 +75,12 @@ public class DbTestHelper : IAsyncDisposable
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             INSERT INTO lessons (course_id, title, content, sort_order, is_published, created_at)
-            VALUES (@cid, @title, 'Test content', 1, @pub, NOW());
-            SELECT LAST_INSERT_ID();", conn);
+            VALUES (@cid, @title, 'Test content', 1, @pub, NOW())", conn);
         cmd.Parameters.AddWithValue("@cid", courseId);
         cmd.Parameters.AddWithValue("@title", title);
         cmd.Parameters.AddWithValue("@pub", isPublished ? 1 : 0);
-        var id = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        await cmd.ExecuteNonQueryAsync();
+        var id = await GetLastInsertIdAsync(conn);
         _cleanups.Add(("lessons", $"id = {id}"));
         return id;
     }
@@ -99,21 +105,21 @@ public class DbTestHelper : IAsyncDisposable
 
         using var qCmd = new MySqlCommand(@"
             INSERT INTO quizzes (lesson_id, title, description, time_limit_minutes, passing_score, created_at)
-            VALUES (@lid, @title, 'Test quiz', 30, @ps, NOW());
-            SELECT LAST_INSERT_ID();", conn);
+            VALUES (@lid, @title, 'Test quiz', 30, @ps, NOW())", conn);
         qCmd.Parameters.AddWithValue("@lid", lessonId);
         qCmd.Parameters.AddWithValue("@title", quizTitle);
         qCmd.Parameters.AddWithValue("@ps", passingScore);
-        var quizId = Convert.ToInt32(await qCmd.ExecuteScalarAsync());
+        await qCmd.ExecuteNonQueryAsync();
+        var quizId = await GetLastInsertIdAsync(conn);
         _cleanups.Add(("quizzes", $"id = {quizId}"));
 
         using var qqCmd = new MySqlCommand(@"
             INSERT INTO quiz_questions (quiz_id, question_text, sort_order)
-            VALUES (@qid, @qtext, 1);
-            SELECT LAST_INSERT_ID();", conn);
+            VALUES (@qid, @qtext, 1)", conn);
         qqCmd.Parameters.AddWithValue("@qid", quizId);
         qqCmd.Parameters.AddWithValue("@qtext", questionText);
-        var questionId = Convert.ToInt32(await qqCmd.ExecuteScalarAsync());
+        await qqCmd.ExecuteNonQueryAsync();
+        var questionId = await GetLastInsertIdAsync(conn);
 
         int correctOptId = 0;
         string[] options = { "3", "4", "5", "6" };
@@ -122,13 +128,13 @@ public class DbTestHelper : IAsyncDisposable
             bool isCorrect = i == 1;
             using var optCmd = new MySqlCommand(@"
                 INSERT INTO quiz_options (question_id, option_text, is_correct, sort_order)
-                VALUES (@qid, @text, @correct, @so);
-                SELECT LAST_INSERT_ID();", conn);
+                VALUES (@qid, @text, @correct, @so)", conn);
             optCmd.Parameters.AddWithValue("@qid", questionId);
             optCmd.Parameters.AddWithValue("@text", options[i]);
             optCmd.Parameters.AddWithValue("@correct", isCorrect);
             optCmd.Parameters.AddWithValue("@so", i + 1);
-            var optId = Convert.ToInt32(await optCmd.ExecuteScalarAsync());
+            await optCmd.ExecuteNonQueryAsync();
+            var optId = await GetLastInsertIdAsync(conn);
             if (isCorrect) correctOptId = optId;
         }
 
@@ -141,11 +147,11 @@ public class DbTestHelper : IAsyncDisposable
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             INSERT INTO documents (lesson_id, title, created_at)
-            VALUES (@lid, @title, NOW());
-            SELECT LAST_INSERT_ID();", conn);
+            VALUES (@lid, @title, NOW())", conn);
         cmd.Parameters.AddWithValue("@lid", lessonId);
         cmd.Parameters.AddWithValue("@title", title);
-        var id = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        await cmd.ExecuteNonQueryAsync();
+        var id = await GetLastInsertIdAsync(conn);
         _cleanups.Add(("documents", $"id = {id}"));
         return id;
     }
@@ -168,8 +174,7 @@ public class DbTestHelper : IAsyncDisposable
         using var cmd = new MySqlCommand(@"
             INSERT INTO document_versions (document_id, version_number, file_name, file_path,
                 file_type, file_size_bytes, uploaded_by, notes, is_active, uploaded_at)
-            VALUES (@did, @vn, @fn, @fp, 'TXT', 100, @ub, @notes, @active, NOW());
-            SELECT LAST_INSERT_ID();", conn);
+            VALUES (@did, @vn, @fn, @fp, 'TXT', 100, @ub, @notes, @active, NOW())", conn);
         cmd.Parameters.AddWithValue("@did", documentId);
         cmd.Parameters.AddWithValue("@vn", versionNumber);
         cmd.Parameters.AddWithValue("@fn", $"test_v{versionNumber}.txt");
@@ -177,7 +182,8 @@ public class DbTestHelper : IAsyncDisposable
         cmd.Parameters.AddWithValue("@ub", uploadedBy);
         cmd.Parameters.AddWithValue("@notes", (object?)notes ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@active", isActive ? 1 : 0);
-        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        await cmd.ExecuteNonQueryAsync();
+        return await GetLastInsertIdAsync(conn);
     }
 
     public async Task<int?> GetActiveVersionNumberAsync(int documentId)

@@ -61,8 +61,8 @@ public class QuizFlowTests : IAsyncLifetime
         var html = await response.Content.ReadAsStringAsync();
         Assert.True(html.Contains(_quizTitle),
             $"Expected quiz title '{_quizTitle}' in page. HTML snippet: {html[..Math.Min(500, html.Length)]}");
-        Assert.True(html.Contains("Domanda 1"),
-            $"Expected 'Domanda 1' in page (questions not loaded?). HTML snippet: {html[..Math.Min(500, html.Length)]}");
+        Assert.True(html.Contains("1 /"),
+            $"Expected question counter '1 /' in page (questions not loaded?). HTML snippet: {html[..Math.Min(500, html.Length)]}");
         Assert.Contains(_questionText, html);
     }
 
