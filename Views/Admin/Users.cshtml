@@ -206,6 +206,19 @@
 
 @section Scripts {
     <script>
+        var _lbl = {
+            noCourseTaught:    @Json.Serialize(T["users.no_courses_taught","This teacher has no courses."]),
+            noCourseEnrolled:  @Json.Serialize(T["users.no_courses_enrolled","This student is not enrolled in any course."]),
+            coursesTaught:     @Json.Serialize(T["users.courses_taught","Courses taught"]),
+            coursesEnrolled:   @Json.Serialize(T["users.courses_enrolled","Enrolled courses"]),
+            published:         @Json.Serialize(T["common.published","Published"]),
+            draft:             @Json.Serialize(T["common.draft","Draft"]),
+            error:             @Json.Serialize(T["common.error","An error occurred."]),
+            deleteConfirmMsg:  @Json.Serialize(T["users.delete_confirm_msg","Are you sure you want to delete"]),
+            deleteBlockedMsg:  @Json.Serialize(T["users.delete_blocked_msg","has"]),
+            deleteBlockedCourses: @Json.Serialize(T["users.delete_blocked_courses","active course(s) and cannot be deleted."])
+        };
+
         $(document).ready(function () {
             $('#usersTable').DataTable({ language: window.dtLang() });
 
@@ -225,20 +238,16 @@
                     var courses = data.courses;
 
                     if (!courses || courses.length === 0) {
-                        var emptyMsg = userRole === 'Teacher'
-                            ? '@T["users.no_courses_taught","This teacher has no courses."]'
-                            : '@T["users.no_courses_enrolled","This student is not enrolled in any course."]';
+                        var emptyMsg = userRole === 'Teacher' ? _lbl.noCourseTaught : _lbl.noCourseEnrolled;
                         html = '<p class="text-muted text-center py-3"><i class="bi bi-inbox me-2"></i>' + emptyMsg + '</p>';
                     } else {
-                        var heading = userRole === 'Teacher'
-                            ? '@T["users.courses_taught","Courses taught"]'
-                            : '@T["users.courses_enrolled","Enrolled courses"]';
+                        var heading = userRole === 'Teacher' ? _lbl.coursesTaught : _lbl.coursesEnrolled;
                         html += '<p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>' + heading + '</p>';
                         html += '<div class="list-group">';
                         courses.forEach(function (c) {
                             var statusBadge = c.isPublished
-                                ? '<span class="badge bg-success ms-2">@T["common.published","Published"]</span>'
-                                : '<span class="badge bg-secondary ms-2">@T["common.draft","Draft"]</span>';
+                                ? '<span class="badge bg-success ms-2">' + _lbl.published + '</span>'
+                                : '<span class="badge bg-secondary ms-2">' + _lbl.draft + '</span>';
 
                             var progressHtml = '';
                             if (userRole === 'Student' && c.totalLessons > 0) {
@@ -258,7 +267,7 @@
                     }
                     $('#coursesModalBody').html(html);
                 }).fail(function () {
-                    $('#coursesModalBody').html('<div class="alert alert-danger">@T["common.error","An error occurred."]</div>');
+                    $('#coursesModalBody').html('<div class="alert alert-danger">' + _lbl.error + '</div>');
                 });
             });
 
@@ -274,7 +283,7 @@
                 var btn = $(e.relatedTarget);
                 var name = btn.data('user-name');
                 var role = btn.data('user-role');
-                $('#deleteModalBody').text('@T["users.delete_confirm_msg","Are you sure you want to delete"]' + ' "' + name + '"?');
+                $('#deleteModalBody').text(_lbl.deleteConfirmMsg + ' "' + name + '"?');
                 if (role === 'Student') {
                     $('#deleteStudentWarning').removeClass('d-none');
                 } else {
@@ -288,7 +297,7 @@
                 var btn = $(e.relatedTarget);
                 var name = btn.data('user-name');
                 var count = btn.data('course-count');
-                $('#deleteBlockedBody').text('"' + name + '" @T["users.delete_blocked_msg","has"] ' + count + ' @T["users.delete_blocked_courses","active course(s) and cannot be deleted."]');
+                $('#deleteBlockedBody').text('"' + name + '" ' + _lbl.deleteBlockedMsg + ' ' + count + ' ' + _lbl.deleteBlockedCourses);
             });
         });
     </script>

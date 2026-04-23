@@ -59,13 +59,13 @@
 @section Scripts {
 <script>
 var qCount = 0;
-var lblQuestion = '@T["quiz.js.question","Question"]';
-var lblQuestionText = '@T["quiz.js.question_text","Question text"] *';
-var lblQuestionPlaceholder = '@T["quiz.js.question_placeholder","Enter the question..."]';
-var lblOptions = '@T["quiz.js.options","Options"]';
-var lblOptionsHint = '@T["quiz.js.options_hint","(select the circle of the correct answer)"]';
-var lblOptionPlaceholder = '@T["quiz.js.option_placeholder","Option"]';
-var lblAtLeastOne = '@T["quiz.js.at_least_one","Please add at least one question to the quiz."]';
+var lblQuestion = @Json.Serialize(T["quiz.js.question","Question"]);
+var lblQuestionText = @Json.Serialize(T["quiz.js.question_text","Question text"] + " *");
+var lblQuestionPlaceholder = @Json.Serialize(T["quiz.js.question_placeholder","Enter the question..."]);
+var lblOptions = @Json.Serialize(T["quiz.js.options","Options"]);
+var lblOptionsHint = @Json.Serialize(T["quiz.js.options_hint","(select the circle of the correct answer)"]);
+var lblOptionPlaceholder = @Json.Serialize(T["quiz.js.option_placeholder","Option"]);
+var lblAtLeastOne = @Json.Serialize(T["quiz.js.at_least_one","Please add at least one question to the quiz."]);
 
 function addQuestion() {
     var idx = qCount;
