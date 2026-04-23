@@ -140,6 +140,7 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.21.0/dist/jquery.validate.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive@4.0.0/dist/jquery.validate.unobtrusive.min.js"></script>
 <script>
+window.currentLang = '@T.CurrentLanguage';
 window.dtIT = {
     search: "Cerca:", lengthMenu: "Mostra _MENU_ righe",
     info: "Da _START_ a _END_ di _TOTAL_ elementi",
@@ -147,6 +148,7 @@ window.dtIT = {
     zeroRecords: "Nessun risultato trovato", emptyTable: "Tabella vuota",
     paginate: { first: "Primo", last: "Ultimo", next: "Succ.", previous: "Prec." }
 };
+window.dtLang = function() { return window.currentLang === 'it' ? window.dtIT : {}; };
 </script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>

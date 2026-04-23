@@ -1,13 +1,13 @@
 @using BocconiLMS.Data
 @model TranslationRow
 @{
-    ViewData["Title"] = $"Modifica: {Model.Key}";
+    ViewData["Title"] = T["admin.translations.edit_title", "Edit Translation"] + ": " + Model.Key;
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a asp-action="Index">Admin</a></li>
-        <li class="breadcrumb-item"><a asp-action="Translations">Traduzioni</a></li>
+        <li class="breadcrumb-item"><a asp-action="Translations">@T["admin.translations.page_title", "Translations"]</a></li>
         <li class="breadcrumb-item active font-monospace">@Model.Key</li>
     </ol>
 </nav>
@@ -15,7 +15,7 @@
 <div class="row justify-content-center">
     <div class="col-lg-7">
         <h2 class="fw-bold text-bocconi mb-1">
-            <i class="bi bi-translate me-2"></i>Modifica traduzioni
+            <i class="bi bi-translate me-2"></i>@T["admin.translations.edit_title", "Edit Translation"]
         </h2>
         <p class="text-muted mb-4 font-monospace small">@Model.Key</p>
 
@@ -32,7 +32,7 @@
                         </label>
                         <input name="En" class="form-control" value="@Model.En"
                                placeholder="English default value" />
-                        <div class="form-text">Valore base usato come fallback se la traduzione manca</div>
+                        <div class="form-text">@T["admin.translations.en_hint", "Default English text used as fallback"]</div>
                     </div>
 
                     <hr class="my-3" />
@@ -66,10 +66,10 @@
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-bocconi px-4">
-                            <i class="bi bi-check-lg me-1"></i>Salva traduzioni
+                            <i class="bi bi-check-lg me-1"></i>@T["admin.translations.save_btn", "Save Translations"]
                         </button>
                         <a asp-action="Translations" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i>Indietro
+                            <i class="bi bi-arrow-left me-1"></i>@T["common.back", "Back"]
                         </a>
                     </div>
                 </form>

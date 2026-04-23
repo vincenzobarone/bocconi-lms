@@ -1,12 +1,12 @@
 @model List<User>
 @{
-    ViewData["Title"] = "Gestione Utenti";
+    ViewData["Title"] = T["admin.users.page_title", "User Management"];
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-people me-2"></i>Gestione Utenti</h2>
+    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-people me-2"></i>@T["admin.users.page_title", "User Management"]</h2>
     <a asp-action="CreateUser" class="btn btn-bocconi">
-        <i class="bi bi-person-plus me-1"></i>Nuovo utente
+        <i class="bi bi-person-plus me-1"></i>@T["admin.users.new_btn", "New User"]
     </a>
 </div>
 
@@ -15,12 +15,12 @@
         <table id="usersTable" class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>Nome</th>
+                    <th>@T["common.name", "Name"]</th>
                     <th>Email</th>
-                    <th>Ruolo</th>
-                    <th>Stato</th>
-                    <th>Registrato</th>
-                    <th>Azioni</th>
+                    <th>@T["common.role", "Role"]</th>
+                    <th>@T["common.status", "Status"]</th>
+                    <th>@T["common.registered", "Registered"]</th>
+                    <th>@T["common.actions", "Actions"]</th>
                 </tr>
             </thead>
             <tbody>
@@ -42,11 +42,11 @@
                         <td>
                             @if (u.IsActive)
                             {
-                                <span class="badge bg-success">Attivo</span>
+                                <span class="badge bg-success">@T["common.active", "Active"]</span>
                             }
                             else
                             {
-                                <span class="badge bg-warning text-dark">Disattivato</span>
+                                <span class="badge bg-warning text-dark">@T["common.inactive", "Inactive"]</span>
                             }
                         </td>
                         <td class="text-muted small">@u.CreatedAt.ToString("dd/MM/yyyy")</td>
@@ -61,7 +61,7 @@
                                         data-bs-toggle="modal" data-bs-target="#toggleModal"
                                         data-user-id="@u.Id"
                                         data-user-name="@u.FullName"
-                                        data-action="@(u.IsActive ? "Disattivare" : "Attivare")">
+                                        data-confirm-msg="@(u.IsActive ? T["users.confirm_deactivate", "Deactivate"] : T["users.confirm_activate", "Activate"]) &quot;@u.FullName&quot;?">
                                     <i class="bi @(u.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
                                 </button>
                             </div>
@@ -77,15 +77,15 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="toggleModalLabel">Conferma operazione</h5>
+                <h5 class="modal-title" id="toggleModalLabel">@T["common.confirm_action", "Confirm Action"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="toggleModalBody"></div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel", "Cancel"]</button>
                 <form id="toggleForm" method="post">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-bocconi">Conferma</button>
+                    <button type="submit" class="btn btn-bocconi">@T["common.confirm", "Confirm"]</button>
                 </form>
             </div>
         </div>
@@ -95,15 +95,12 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
-            $('#usersTable').DataTable({ language: window.dtIT });
+            $('#usersTable').DataTable({ language: window.dtLang() });
 
             $('#toggleModal').on('show.bs.modal', function (e) {
                 var btn = $(e.relatedTarget);
-                var userId = btn.data('user-id');
-                var userName = btn.data('user-name');
-                var action = btn.data('action');
-                $('#toggleModalBody').text(action + ' l\'utente "' + userName + '"?');
-                $('#toggleForm').attr('action', '/Admin/ToggleUser/' + userId);
+                $('#toggleModalBody').text(btn.data('confirm-msg'));
+                $('#toggleForm').attr('action', '/Admin/ToggleUser/' + btn.data('user-id'));
             });
         });
     </script>

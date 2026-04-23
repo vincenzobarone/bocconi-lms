@@ -13,6 +13,9 @@ public class TranslationService
     private const string CachePrefix = "translations_";
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(30);
 
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte>
+        _autoInserted = new(StringComparer.OrdinalIgnoreCase);
+
     public TranslationService(
         TranslationRepository repo,
         IMemoryCache cache,
@@ -44,10 +47,24 @@ public class TranslationService
             if (enDict.TryGetValue(key, out var enVal)) return enVal;
         }
 
+        if (!string.IsNullOrEmpty(defaultValue) && _autoInserted.TryAdd(key, 0))
+        {
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _repo.UpsertAsync("en", key, defaultValue);
+                    _cache.Remove(CachePrefix + "en");
+                }
+                catch { }
+            });
+        }
+
         return string.IsNullOrEmpty(defaultValue) ? key : defaultValue;
     }
 
     public string this[string key] => T(key);
+    public string this[string key, string defaultValue] => T(key, defaultValue);
 
     public void InvalidateCache()
     {

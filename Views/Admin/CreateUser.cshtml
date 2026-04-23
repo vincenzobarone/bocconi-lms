@@ -1,23 +1,23 @@
 @model RegisterViewModel
 @{
-    ViewData["Title"] = "Crea utente";
+    ViewData["Title"] = T["admin.users.create_title", "Create User"];
 }
 
 <div class="row justify-content-center">
     <div class="col-lg-6">
-        <h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-person-plus me-2"></i>Crea nuovo utente</h2>
+        <h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-person-plus me-2"></i>@T["admin.users.create_title", "Create New User"]</h2>
         <div class="card shadow-sm">
             <div class="card-body p-4">
                 <form asp-action="CreateUser" method="post">
                     @Html.AntiForgeryToken()
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label asp-for="FirstName" class="form-label fw-semibold">Nome *</label>
+                            <label asp-for="FirstName" class="form-label fw-semibold">@T["common.first_name", "First Name"] *</label>
                             <input asp-for="FirstName" class="form-control" />
                             <span asp-validation-for="FirstName" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label asp-for="LastName" class="form-label fw-semibold">Cognome *</label>
+                            <label asp-for="LastName" class="form-label fw-semibold">@T["common.last_name", "Last Name"] *</label>
                             <input asp-for="LastName" class="form-control" />
                             <span asp-validation-for="LastName" class="text-danger small"></span>
                         </div>
@@ -33,16 +33,16 @@
                         <span asp-validation-for="Password" class="text-danger small"></span>
                     </div>
                     <div class="mb-4">
-                        <label asp-for="Role" class="form-label fw-semibold">Ruolo *</label>
+                        <label asp-for="Role" class="form-label fw-semibold">@T["common.role", "Role"] *</label>
                         <select asp-for="Role" class="form-select">
-                            <option value="Student">Studente</option>
-                            <option value="Teacher">Docente</option>
-                            <option value="Admin">Amministratore</option>
+                            <option value="Student">@T["role.student", "Student"]</option>
+                            <option value="Teacher">@T["role.teacher", "Teacher"]</option>
+                            <option value="Admin">@T["role.admin", "Admin"]</option>
                         </select>
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-bocconi px-4">Crea utente</button>
-                        <a asp-action="Users" class="btn btn-outline-secondary">Annulla</a>
+                        <button type="submit" class="btn btn-bocconi px-4">@T["admin.users.create_btn", "Create User"]</button>
+                        <a asp-action="Users" class="btn btn-outline-secondary">@T["common.cancel", "Cancel"]</a>
                     </div>
                 </form>
             </div>

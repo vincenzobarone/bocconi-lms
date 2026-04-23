@@ -1,26 +1,26 @@
 @using BocconiLMS.Data
 @model List<TranslationRow>
 @{
-    ViewData["Title"] = "Gestione Traduzioni";
+    ViewData["Title"] = T["admin.translations.page_title", "Translation Management"];
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-bocconi mb-0">
-        <i class="bi bi-translate me-2"></i>Gestione Traduzioni
+        <i class="bi bi-translate me-2"></i>@T["admin.translations.page_title", "Translation Management"]
     </h2>
     <button class="btn btn-bocconi" data-bs-toggle="modal" data-bs-target="#addKeyModal">
-        <i class="bi bi-plus-lg me-1"></i>Aggiungi chiave
+        <i class="bi bi-plus-lg me-1"></i>@T["admin.translations.add_key_btn", "Add Key"]
     </button>
 </div>
 
 <div class="card mb-3">
     <div class="card-body py-2">
         <div class="d-flex align-items-center gap-3 flex-wrap text-muted small">
-            <span><i class="bi bi-info-circle me-1"></i>Base: <strong>Inglese</strong> (EN)</span>
+            <span><i class="bi bi-info-circle me-1"></i>@T["admin.translations.base_lang", "Base"]: <strong>@T["lang.english", "English"]</strong> (EN)</span>
             <span>|</span>
-            <span>Totale chiavi: <strong>@Model.Count</strong></span>
+            <span>@T["admin.translations.total_keys", "Total keys"]: <strong>@Model.Count</strong></span>
             <span>|</span>
-            <span>Traduzioni: IT · ES · DE</span>
+            <span>@T["admin.translations.available", "Translations"]: IT · ES · DE</span>
         </div>
     </div>
 </div>
@@ -31,7 +31,7 @@
             <table class="table table-hover table-sm mb-0" id="translationsTable">
                 <thead class="table-light">
                     <tr>
-                        <th style="width:22%">Chiave</th>
+                        <th style="width:22%">@T["admin.translations.col_key", "Key"]</th>
                         <th style="width:24%">🇬🇧 English</th>
                         <th style="width:18%">🇮🇹 Italiano</th>
                         <th style="width:18%">🇪🇸 Español</th>
@@ -48,36 +48,36 @@
                             <td class="align-middle">
                                 @if (string.IsNullOrEmpty(row.It))
                                 {
-                                    <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>Mancante</span>
+                                    <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing", "Missing"]</span>
                                 }
                                 else { @row.It }
                             </td>
                             <td class="align-middle">
                                 @if (string.IsNullOrEmpty(row.Es))
                                 {
-                                    <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>Mancante</span>
+                                    <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing", "Missing"]</span>
                                 }
                                 else { @row.Es }
                             </td>
                             <td class="align-middle">
                                 @if (string.IsNullOrEmpty(row.De))
                                 {
-                                    <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>Mancante</span>
+                                    <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing", "Missing"]</span>
                                 }
                                 else { @row.De }
                             </td>
                             <td class="align-middle text-end">
                                 <div class="d-flex gap-1 justify-content-end">
                                     <a asp-action="EditTranslation" asp-route-key="@row.Key"
-                                       class="btn btn-sm btn-outline-secondary" title="Modifica">
+                                       class="btn btn-sm btn-outline-secondary" title="@T["common.edit", "Edit"]">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form asp-action="DeleteTranslationKey" method="post" class="d-inline">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="key" value="@row.Key" />
                                         <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                title="Elimina"
-                                                onclick="return confirm('Eliminare la chiave @row.Key e tutte le sue traduzioni?')">
+                                                title="@T["common.delete", "Delete"]"
+                                                onclick="return confirm('@T["admin.translations.confirm_delete", "Delete this key and all its translations?"]')">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
@@ -97,26 +97,26 @@
             <form asp-action="AddTranslationKey" method="post">
                 @Html.AntiForgeryToken()
                 <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Aggiungi nuova chiave</h5>
+                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>@T["admin.translations.add_key_title", "Add New Key"]</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Chiave <span class="text-danger">*</span></label>
-                        <input name="Key" class="form-control font-monospace" placeholder="es. nav.courses oppure common.save" required
+                        <label class="form-label fw-semibold">@T["admin.translations.col_key", "Key"] <span class="text-danger">*</span></label>
+                        <input name="Key" class="form-control font-monospace" placeholder="e.g. nav.courses or common.save" required
                                pattern="^[a-z0-9_\.]+$" />
-                        <div class="form-text">Solo lettere minuscole, numeri, punto (.) e underscore (_)</div>
+                        <div class="form-text">@T["admin.translations.key_hint", "Lowercase letters, numbers, dot (.) and underscore (_) only"]</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Valore inglese (base) <span class="text-danger">*</span></label>
-                        <input name="EnglishValue" class="form-control" placeholder="es. Courses" required />
-                        <div class="form-text">Il testo predefinito in inglese usato come fallback</div>
+                        <label class="form-label fw-semibold">@T["admin.translations.en_value", "English value (base)"] <span class="text-danger">*</span></label>
+                        <input name="EnglishValue" class="form-control" placeholder="e.g. Courses" required />
+                        <div class="form-text">@T["admin.translations.en_hint", "Default English text used as fallback"]</div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel", "Cancel"]</button>
                     <button type="submit" class="btn btn-bocconi">
-                        <i class="bi bi-plus-lg me-1"></i>Aggiungi
+                        <i class="bi bi-plus-lg me-1"></i>@T["admin.translations.add_btn", "Add"]
                     </button>
                 </div>
             </form>
@@ -128,7 +128,7 @@
     <script>
         $(document).ready(function () {
             $('#translationsTable').DataTable({
-                language: window.dtIT,
+                language: window.dtLang(),
                 pageLength: 25,
                 columnDefs: [{ orderable: false, targets: 5 }],
                 order: [[0, 'asc']]
