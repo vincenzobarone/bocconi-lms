@@ -4,13 +4,10 @@
     ViewData["Title"] = T["admin.translations.page_title", "Translation Management"];
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="mb-4">
     <h2 class="fw-bold text-bocconi mb-0">
         <i class="bi bi-translate me-2"></i>@T["admin.translations.page_title", "Translation Management"]
     </h2>
-    <button class="btn btn-bocconi" data-bs-toggle="modal" data-bs-target="#addKeyModal">
-        <i class="bi bi-plus-lg me-1"></i>@T["admin.translations.add_key_btn", "Add Key"]
-    </button>
 </div>
 
 <div class="card mb-3">
@@ -91,38 +88,6 @@
     </div>
 </div>
 
-<div class="modal fade" id="addKeyModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form asp-action="AddTranslationKey" method="post">
-                @Html.AntiForgeryToken()
-                <div class="modal-header">
-                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>@T["admin.translations.add_key_title", "Add New Key"]</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">@T["admin.translations.col_key", "Key"] <span class="text-danger">*</span></label>
-                        <input name="Key" class="form-control font-monospace" placeholder="e.g. nav.courses or common.save" required
-                               pattern="^[a-z0-9_\.]+$" />
-                        <div class="form-text">@T["admin.translations.key_hint", "Lowercase letters, numbers, dot (.) and underscore (_) only"]</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">@T["admin.translations.en_value", "English value (base)"] <span class="text-danger">*</span></label>
-                        <input name="EnglishValue" class="form-control" placeholder="e.g. Courses" required />
-                        <div class="form-text">@T["admin.translations.en_hint", "Default English text used as fallback"]</div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel", "Cancel"]</button>
-                    <button type="submit" class="btn btn-bocconi">
-                        <i class="bi bi-plus-lg me-1"></i>@T["admin.translations.add_btn", "Add"]
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 @section Scripts {
     <script>

@@ -217,27 +217,6 @@ public class AdminController : Controller
         return View(rows);
     }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> AddTranslationKey(AddTranslationKeyViewModel model)
-    {
-        if (!ModelState.IsValid)
-        {
-            TempData["Error"] = "Dati non validi: " + string.Join(", ",
-                ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-            return RedirectToAction("Translations");
-        }
-        if (await _translations.KeyExistsAsync(model.Key))
-        {
-            TempData["Error"] = $"La chiave '{model.Key}' esiste già.";
-            return RedirectToAction("Translations");
-        }
-        await _translations.UpsertAsync("en", model.Key, model.EnglishValue.Trim());
-        _translationService.InvalidateCache();
-        TempData["Success"] = $"Chiave '{model.Key}' aggiunta.";
-        return RedirectToAction("Translations");
-    }
-
     [HttpGet]
     public async Task<IActionResult> EditTranslation(string key)
     {
