@@ -19,6 +19,7 @@ public class LoginFlowTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        await _db.CleanupOrphanTestDataAsync();
         var suffix = Guid.NewGuid().ToString("N")[..8];
         _studentId = await _db.CreateUserAsync(
             $"student_{suffix}@test.it",

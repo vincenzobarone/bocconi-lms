@@ -24,6 +24,7 @@ public class QuizFlowTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        await _db.CleanupOrphanTestDataAsync();
         var suffix = Guid.NewGuid().ToString("N")[..8];
         _teacherId = await _db.CreateUserAsync(
             $"quiz_teacher_{suffix}@test.it",

@@ -24,6 +24,7 @@ public class DocumentVersioningTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
+        await _db.CleanupOrphanTestDataAsync();
         var suffix = Guid.NewGuid().ToString("N")[..8];
         _teacherEmail = $"doc_teacher_{suffix}@test.it";
         _teacherId = await _db.CreateUserAsync(

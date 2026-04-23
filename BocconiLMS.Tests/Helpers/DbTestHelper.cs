@@ -207,4 +207,26 @@ public class DbTestHelper : IAsyncDisposable
             }
         }
     }
+
+    public async Task CleanupOrphanTestDataAsync()
+    {
+        using var conn = GetConnection();
+        await conn.OpenAsync();
+        var tables = new[]
+        {
+            ("quiz_attempts",   "user_id IN (SELECT id FROM users WHERE email LIKE '%@test.it')"),
+            ("lesson_progress", "user_id IN (SELECT id FROM users WHERE email LIKE '%@test.it')"),
+            ("enrollments",     "user_id IN (SELECT id FROM users WHERE email LIKE '%@test.it')"),
+            ("users",           "email LIKE '%@test.it'"),
+        };
+        foreach (var (table, condition) in tables)
+        {
+            try
+            {
+                using var cmd = new MySqlCommand($"DELETE FROM {table} WHERE {condition}", conn);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch { }
+        }
+    }
 }
