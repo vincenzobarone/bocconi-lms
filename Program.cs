@@ -90,6 +90,28 @@ catch
     // Database may not be configured yet; skip silently
 }
 
+// Remove orphaned translation keys left over from the deleted 'Add Key' modal
+try
+{
+    using var scope = app.Services.CreateScope();
+    var translationRepo = scope.ServiceProvider.GetRequiredService<TranslationRepository>();
+    var orphanedKeys = new[]
+    {
+        "admin.translations.add_key_btn",
+        "admin.translations.add_key_title",
+        "admin.translations.key_hint",
+        "admin.translations.en_value",
+        "admin.translations.en_hint",
+        "admin.translations.add_btn"
+    };
+    foreach (var key in orphanedKeys)
+        await translationRepo.DeleteKeyAsync(key);
+}
+catch
+{
+    // Database may not be configured yet; skip silently
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
