@@ -312,12 +312,8 @@ Le traduzioni sono salvate nella tabella `translations` (language_code, label_ke
 
 ### Come aggiungere una nuova chiave di traduzione
 
-**Via admin UI (scelta consigliata):**
-1. Accedere come admin → *Admin → Traduzioni*
-2. Clic su **Aggiungi chiave**
-3. Inserire la chiave (es. `course.subtitle`) e il valore inglese
-4. Clic su **Aggiungi**, poi su **Modifica** per aggiungere IT/ES/DE
-5. La cache viene invalidata automaticamente al salvataggio
+**Via codice (modo preferito):**
+Usare la sintassi `T["nuova.chiave", "Default EN"]` nella view Razor. Al primo caricamento della pagina la chiave viene inserita automaticamente nel DB con il valore inglese. Le traduzioni IT/ES/DE rimangono "Mancante" finché non vengono compilate dall'admin via ✏ Modifica nella tabella traduzioni.
 
 **Via SQL diretto:**
 ```sql

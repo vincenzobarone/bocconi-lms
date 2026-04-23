@@ -324,16 +324,17 @@ L'interfaccia di gestione traduzioni permette di vedere e modificare ogni etiche
 
 Le modifiche sono visibili immediatamente (la cache si aggiorna entro 30 minuti, oppure all'istante dopo il salvataggio).
 
-#### Aggiungere una nuova chiave
+#### Come nascono le nuove chiavi
 
-Questo è necessario quando si aggiungono nuove sezioni o funzionalità all'interfaccia.
+Le chiavi di traduzione **non si aggiungono manualmente dall'interfaccia**. Vengono create automaticamente dal sistema la prima volta che il codice usa la sintassi:
 
-1. Cliccare **Aggiungi chiave** in alto a destra
-2. Inserire:
-   - **Chiave**: identificatore in minuscolo con punto (es. `course.new_section`) — solo lettere, numeri, punto e underscore
-   - **Valore inglese**: il testo predefinito in inglese
-3. Cliccare **Aggiungi**
-4. La chiave appare nella tabella; cliccare **Modifica** per aggiungere le traduzioni nelle altre lingue
+```
+T["nuova.chiave", "Testo inglese di default"]
+```
+
+Alla prima visita della pagina che contiene quella chiamata, la chiave viene inserita nel DB con il valore inglese. Le traduzioni nelle altre lingue rimangono "Mancante" finché non vengono compilate tramite il pulsante ✏ **Modifica** nella tabella.
+
+> Per aggiungere chiavi direttamente senza passare dal codice, è necessario farlo via database (solo per sviluppatori/amministratori di sistema).
 
 #### Eliminare una chiave
 
