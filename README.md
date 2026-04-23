@@ -2,6 +2,13 @@
 
 Piattaforma E-Learning dell'Università Bocconi — ASP.NET Core 9 MVC + MySQL.
 
+## Documentazione
+
+| Guida | Destinatari | Contenuto |
+|---|---|---|
+| [Guida Tecnica](docs/TECHNICAL.md) | Sviluppatori, sistemisti | Setup, architettura, deploy, estensioni, test |
+| [Guida Utenti](docs/USER_GUIDE.md) | Studenti, Docenti, Admin | Come usare la piattaforma giorno per giorno |
+
 ## Stack tecnologico
 
 - **Backend**: ASP.NET Core 9 MVC (Razor Pages)
