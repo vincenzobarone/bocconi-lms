@@ -69,7 +69,7 @@ public class AdminController : Controller
             return View(model);
         }
 
-        var validRoles = new[] { "Student", "Teacher", "Admin" };
+        var validRoles = new[] { "Student", "Teacher" };
         var role = validRoles.Contains(model.Role) ? model.Role : "Student";
 
         var appUser = new ApplicationUser
@@ -113,17 +113,23 @@ public class AdminController : Controller
         if (user == null) return NotFound();
         user.FirstName = model.FirstName;
         user.LastName = model.LastName;
-        user.Role = model.Role;
+        if (user.Role != "Admin")
+        {
+            var allowed = new[] { "Student", "Teacher" };
+            user.Role = allowed.Contains(model.Role) ? model.Role : user.Role;
+        }
         user.IsActive = model.IsActive;
         await _users.UpdateAsync(user);
 
         var appUser = await _userManager.FindByIdAsync(model.Id.ToString());
-        if (appUser != null)
+        if (appUser != null && user.Role != "Admin")
         {
+            var allowedRoles = new[] { "Student", "Teacher" };
+            var newRole = allowedRoles.Contains(model.Role) ? model.Role : user.Role;
             var currentRoles = await _userManager.GetRolesAsync(appUser);
             await _userManager.RemoveFromRolesAsync(appUser, currentRoles);
-            await EnsureRoleExistsAsync(model.Role);
-            await _userManager.AddToRoleAsync(appUser, model.Role);
+            await EnsureRoleExistsAsync(newRole);
+            await _userManager.AddToRoleAsync(appUser, newRole);
         }
 
         TempData["Success"] = "Utente aggiornato.";
