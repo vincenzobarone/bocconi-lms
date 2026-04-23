@@ -80,17 +80,24 @@ try
     using var conn = dbHelper.GetConnection();
     await conn.OpenAsync();
 
-    // Add created_at to translations if missing
-    using var mig1 = new MySqlConnector.MySqlCommand(@"
-        ALTER TABLE translations
-        ADD COLUMN IF NOT EXISTS created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;", conn);
-    await mig1.ExecuteNonQueryAsync();
+    // Add created_at to translations if missing (compatible with MySQL 5.7+)
+    using var colCheck = new MySqlConnector.MySqlCommand(@"
+        SELECT COUNT(*) FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME   = 'translations'
+          AND COLUMN_NAME  = 'created_at';", conn);
+    var colExists = Convert.ToInt32(await colCheck.ExecuteScalarAsync()) > 0;
+    if (!colExists)
+    {
+        using var addCol = new MySqlConnector.MySqlCommand(
+            "ALTER TABLE translations ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;", conn);
+        await addCol.ExecuteNonQueryAsync();
 
-    // Back-fill existing rows that got DEFAULT (epoch) or are null
-    using var mig2 = new MySqlConnector.MySqlCommand(@"
-        UPDATE translations SET created_at = NOW()
-        WHERE created_at IS NULL OR created_at = '0001-01-01 00:00:00' OR created_at < '2020-01-01';", conn);
-    await mig2.ExecuteNonQueryAsync();
+        // Back-fill to today for all existing rows
+        using var backfill = new MySqlConnector.MySqlCommand(
+            "UPDATE translations SET created_at = NOW() WHERE created_at < '2020-01-01';", conn);
+        await backfill.ExecuteNonQueryAsync();
+    }
 }
 catch { }
 

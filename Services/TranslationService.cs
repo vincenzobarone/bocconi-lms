@@ -54,12 +54,30 @@ public class TranslationService
         var dict = GetCachedLanguage(lang);
         if (dict.TryGetValue(key, out var val)) return val;
 
+        // For non-English languages: if the specific translation is absent,
+        // show the key as placeholder (signals the developer that the
+        // translation is missing, instead of silently showing English).
         if (lang != "en")
         {
+            // Auto-insert EN row if it doesn't exist yet
             var enDict = GetCachedLanguage("en");
-            if (enDict.TryGetValue(key, out var enVal)) return enVal;
+            if (!enDict.ContainsKey(key) && !string.IsNullOrEmpty(defaultValue)
+                && _autoInserted.TryAdd(key, 0))
+            {
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        await _repo.UpsertAsync("en", key, defaultValue);
+                        _cache.Remove(CachePrefix + "en");
+                    }
+                    catch { }
+                });
+            }
+            return key;
         }
 
+        // Current language is EN: fall back to defaultValue (or key)
         if (!string.IsNullOrEmpty(defaultValue) && _autoInserted.TryAdd(key, 0))
         {
             _ = Task.Run(async () =>

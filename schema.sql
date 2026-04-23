@@ -216,6 +216,7 @@ CREATE TABLE IF NOT EXISTS translations (
     language_code VARCHAR(10)  NOT NULL,
     label_key     VARCHAR(255) NOT NULL,
     label_value   TEXT         NOT NULL,
+    created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     UNIQUE KEY uk_lang_key (language_code, label_key),
     INDEX idx_language (language_code)
