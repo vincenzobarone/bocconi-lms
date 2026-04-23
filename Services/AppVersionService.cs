@@ -17,12 +17,15 @@ public class AppVersionService
     {
         try
         {
+            var repoRoot = FindGitRoot(AppContext.BaseDirectory);
+            if (repoRoot == null) return "–";
+
             var psi = new ProcessStartInfo("git", "rev-parse --short HEAD")
             {
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
                 CreateNoWindow = true,
-                WorkingDirectory = AppContext.BaseDirectory
+                WorkingDirectory = repoRoot
             };
             using var proc = Process.Start(psi);
             var hash = proc?.StandardOutput.ReadToEnd().Trim() ?? "";
@@ -33,5 +36,17 @@ public class AppVersionService
         {
             return "–";
         }
+    }
+
+    private static string? FindGitRoot(string startPath)
+    {
+        var dir = new DirectoryInfo(startPath);
+        while (dir != null)
+        {
+            if (Directory.Exists(Path.Combine(dir.FullName, ".git")))
+                return dir.FullName;
+            dir = dir.Parent;
+        }
+        return null;
     }
 }
