@@ -15,11 +15,12 @@
 6. [Database: schema e migrazioni](#6-database-schema-e-migrazioni)
 7. [Sistema multilingua](#7-sistema-multilingua)
 8. [Configurazione email SMTP](#8-configurazione-email-smtp)
-9. [Test automatici](#9-test-automatici)
-10. [Deploy in produzione](#10-deploy-in-produzione)
-11. [Sicurezza](#11-sicurezza)
-12. [Estendere il sistema](#12-estendere-il-sistema)
-13. [Note e decisioni tecniche](#13-note-e-decisioni-tecniche)
+9. [Gestione utenti admin](#9-gestione-utenti-admin)
+10. [Test automatici](#10-test-automatici)
+11. [Deploy in produzione](#11-deploy-in-produzione)
+12. [Sicurezza](#12-sicurezza)
+13. [Estendere il sistema](#13-estendere-il-sistema)
+14. [Note e decisioni tecniche](#14-note-e-decisioni-tecniche)
 
 ---
 
@@ -347,7 +348,55 @@ I valori vengono salvati nella tabella `settings` con prefisso `Smtp:` e sovrasc
 
 ---
 
-## 9. Test automatici
+## 9. Gestione utenti admin
+
+L'interfaccia di gestione utenti è accessibile solo agli utenti con ruolo **Admin** all'URL `/Admin/Users`.
+
+### Percorso UI
+
+```
+Admin Dashboard (/Admin)
+  └── Gestione Utenti (/Admin/Users)
+        ├── Crea utente (/Admin/CreateUser)
+        └── Modifica utente (/Admin/EditUser/{id})
+```
+
+### Creare un nuovo utente
+
+`GET/POST /Admin/CreateUser`
+
+Viene compilato un `RegisterViewModel` con: `FirstName`, `LastName`, `Email`, `Password`, `Role`.  
+La password viene hashata tramite BCrypt al momento della creazione. Il `CustomUserStore` crea il record in `users` e poi `UserManager.AddToRoleAsync` inserisce la riga in `user_roles`.
+
+```csharp
+var appUser = new ApplicationUser { UserName = model.Email, Email = model.Email, ... };
+await _userManager.CreateAsync(appUser, model.Password);
+await _userManager.AddToRoleAsync(appUser, role);
+```
+
+### Modificare un utente
+
+`GET/POST /Admin/EditUser/{id}`
+
+Permette di aggiornare: nome, cognome, email, ruolo, stato attivo/inattivo.  
+Il cambio di ruolo aggiorna la tabella `user_roles` rimuovendo prima i ruoli esistenti e aggiungendo quello nuovo.
+
+### Attivare / disattivare un utente
+
+`POST /Admin/ToggleUser/{id}`
+
+Inverte il flag `is_active` nella tabella `users`. Un utente disattivato non riesce ad autenticarsi perché il `CustomUserStore` restituisce `null` dalla `FindByEmailAsync` (la query filtra `is_active = 1`).
+
+### Operazioni solo da DB
+
+Le seguenti operazioni **non hanno UI** e richiedono accesso diretto al database:
+- Eliminazione fisica di un utente (preserva storico quiz/progressi)
+- Reset password forzato (aggiornare `password_hash` con un hash BCrypt generato a mano)
+- Cambio email duplicata
+
+---
+
+## 10. Test automatici
 
 Il progetto di test `BocconiLMS.Tests` usa **xUnit** + `Microsoft.AspNetCore.Mvc.Testing` per test di integrazione end-to-end in-process.
 
@@ -381,15 +430,15 @@ dotnet test --logger "console;verbosity=detailed"
 
 ---
 
-## 10. Deploy in produzione
+## 11. Deploy in produzione
 
-### 10.1 Prerequisiti sul server
+### 11.1 Prerequisiti sul server
 
 - **.NET 9 Runtime** (o Hosting Bundle per IIS): [download](https://dotnet.microsoft.com/download/dotnet/9.0)
 - **MySQL 8** raggiungibile dalla macchina (IP whitelistato se necessario)
 - Schema già applicato al DB di produzione (`schema.sql`)
 
-### 10.2 Pubblicare da Visual Studio 2022
+### 11.2 Pubblicare da Visual Studio 2022
 
 1. Tasto destro sul progetto → **Publish**
 2. Scegliere il profilo:
@@ -402,7 +451,7 @@ Da CLI (equivalente):
 dotnet publish -c Release -o ./publish
 ```
 
-### 10.3 Deploy su IIS (Windows Server)
+### 11.3 Deploy su IIS (Windows Server)
 
 1. Installare **.NET 9 Hosting Bundle** sul server
 2. Creare un nuovo sito in IIS Manager che punta alla cartella `publish/`
@@ -424,7 +473,7 @@ Esempio `web.config` (generato automaticamente da `dotnet publish`):
 </aspNetCore>
 ```
 
-### 10.4 Deploy su Linux con systemd
+### 11.4 Deploy su Linux con systemd
 
 ```bash
 # Copia i file pubblicati sul server
@@ -464,7 +513,7 @@ sudo systemctl status bocconi-lms
 
 Configurare **nginx** come reverse proxy davanti alla porta 5000.
 
-### 10.5 Deploy su Azure App Service
+### 11.5 Deploy su Azure App Service
 
 1. In VS2022: tasto destro → Publish → Azure App Service
 2. Creare o selezionare un App Service (almeno B1, .NET 9)
@@ -474,7 +523,7 @@ Configurare **nginx** come reverse proxy davanti alla porta 5000.
 
 ---
 
-## 11. Sicurezza
+## 12. Sicurezza
 
 ### Cambio password admin post-deploy
 
@@ -510,7 +559,7 @@ I file vengono salvati in `wwwroot/uploads/` con nomi UUID per evitare conflitti
 
 ---
 
-## 12. Estendere il sistema
+## 13. Estendere il sistema
 
 ### Aggiungere un nuovo repository
 
@@ -538,7 +587,7 @@ I file vengono salvati in `wwwroot/uploads/` con nomi UUID per evitare conflitti
 
 ---
 
-## 13. Note e decisioni tecniche
+## 14. Note e decisioni tecniche
 
 | Decisione | Motivazione |
 |---|---|

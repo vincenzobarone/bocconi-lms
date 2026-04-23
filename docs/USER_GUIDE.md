@@ -41,6 +41,19 @@ Per cambiare lingua:
 
 La preferenza viene salvata nel browser per un anno. Se si usa un altro dispositivo, selezionare nuovamente la lingua.
 
+```
+┌─────────────────────────────────────────────────────────────┐
+│  🎓 Bocconi LMS   Corsi  Dashboard  Admin     🇮🇹 IT ▼  Mario│
+│                                              ┌────────────┐ │
+│                                              │ 🇬🇧 English │ │
+│                                              │ 🇮🇹 Italiano│ │
+│                                              │ 🇪🇸 Español │ │
+│                                              │ 🇩🇪 Deutsch  │ │
+│                                              └────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+  Dropdown lingua nel navbar — cliccare sulla bandiera corrente
+```
+
 ---
 
 ## Guida per gli Studenti
@@ -52,6 +65,24 @@ La dashboard mostra:
 - I corsi ai quali sei iscritto, con la progress bar di avanzamento
 - Le lezioni recenti completate
 - I quiz recenti con il punteggio ottenuto
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  La mia Dashboard                                            │
+│                                                              │
+│  I miei corsi                                                │
+│  ┌────────────────────────────────┐  ┌────────────────────┐  │
+│  │ Economia Aziendale             │  │ Diritto Commerciale │  │
+│  │ Docente: Prof. Rossi           │  │ Docente: Prof. Bini │  │
+│  │ ████████░░░░░░░░░░  40%        │  │ ██░░░░░░░░░░░░  10% │  │
+│  │ 4/10 lezioni completate        │  │ 1/8 lezioni         │  │
+│  └────────────────────────────────┘  └────────────────────┘  │
+│                                                              │
+│  Quiz recenti                                                │
+│  • Quiz Capitolo 1 · 23/04/2026 · Punteggio: 85% ✅         │
+│  • Quiz Introduzione · 20/04/2026 · Punteggio: 55% ❌        │
+└──────────────────────────────────────────────────────────────┘
+```
 
 ### Esplorare e iscriversi ai corsi
 
@@ -205,6 +236,23 @@ Dalla dashboard si accede a tutte le sezioni amministrative.
 #### Vedere tutti gli utenti
 
 Admin → **Gestione Utenti** → lista completa con nome, email, ruolo e stato (attivo/disattivato).
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  Gestione Utenti                              [ + Nuovo utente ]    │
+│                                                                     │
+│  🔍 Cerca...                                                         │
+│                                                                     │
+│  Nome              Email                   Ruolo    Stato  Azioni  │
+│  ─────────────────────────────────────────────────────────────────  │
+│  Mario Rossi       mario@studbocconi.it    Student  ✅     ✏️ 🔕    │
+│  Laura Bianchi     l.bianchi@bocconi.it    Teacher  ✅     ✏️ 🔕    │
+│  Admin Bocconi     admin@bocconi.it        Admin    ✅     ✏️ 🔕    │
+│  Pietro Verdi      p.verdi@studbocconi.it  Student  ❌     ✏️ ✅    │
+│                                                                     │
+│  ✏️ = Modifica   🔕 = Disattiva   ✅ = Attiva                       │
+└─────────────────────────────────────────────────────────────────────┘
+```
 
 #### Creare un nuovo utente
 
