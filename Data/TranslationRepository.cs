@@ -1,0 +1,136 @@
+using MySqlConnector;
+
+namespace BocconiLMS.Data;
+
+public class TranslationRepository
+{
+    private readonly DbHelper _db;
+
+    public TranslationRepository(DbHelper db) => _db = db;
+
+    public async Task<Dictionary<string, string>> GetByLanguageAsync(string languageCode)
+    {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT label_key, label_value FROM translations WHERE language_code=@lang", conn);
+        cmd.Parameters.AddWithValue("@lang", languageCode);
+        using var r = await cmd.ExecuteReaderAsync();
+        while (r.Read())
+            result[r.GetString(0)] = r.GetString(1);
+        return result;
+    }
+
+    public async Task<List<TranslationRow>> GetAllGroupedAsync()
+    {
+        var dict = new Dictionary<string, TranslationRow>(StringComparer.OrdinalIgnoreCase);
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT language_code, label_key, label_value FROM translations ORDER BY label_key, language_code", conn);
+        using var r = await cmd.ExecuteReaderAsync();
+        while (r.Read())
+        {
+            var lang = r.GetString("language_code");
+            var key = r.GetString("label_key");
+            var val = r.GetString("label_value");
+            if (!dict.TryGetValue(key, out var row))
+            {
+                row = new TranslationRow { Key = key };
+                dict[key] = row;
+            }
+            switch (lang)
+            {
+                case "en": row.En = val; break;
+                case "it": row.It = val; break;
+                case "es": row.Es = val; break;
+                case "de": row.De = val; break;
+            }
+        }
+        return dict.Values.OrderBy(x => x.Key).ToList();
+    }
+
+    public async Task<TranslationRow?> GetByKeyAsync(string key)
+    {
+        var rows = new Dictionary<string, string>();
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT language_code, label_value FROM translations WHERE label_key=@key", conn);
+        cmd.Parameters.AddWithValue("@key", key);
+        using var r = await cmd.ExecuteReaderAsync();
+        while (r.Read())
+            rows[r.GetString("language_code")] = r.GetString("label_value");
+        if (rows.Count == 0) return null;
+        return new TranslationRow
+        {
+            Key = key,
+            En = rows.GetValueOrDefault("en", ""),
+            It = rows.GetValueOrDefault("it", ""),
+            Es = rows.GetValueOrDefault("es", ""),
+            De = rows.GetValueOrDefault("de", "")
+        };
+    }
+
+    public async Task UpsertAsync(string languageCode, string key, string value)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            INSERT INTO translations (language_code, label_key, label_value)
+            VALUES (@lang, @key, @val)
+            ON DUPLICATE KEY UPDATE label_value=@val, updated_at=NOW()", conn);
+        cmd.Parameters.AddWithValue("@lang", languageCode);
+        cmd.Parameters.AddWithValue("@key", key);
+        cmd.Parameters.AddWithValue("@val", value);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task SaveRowAsync(TranslationRow row)
+    {
+        var langs = new[] { ("en", row.En), ("it", row.It), ("es", row.Es), ("de", row.De) };
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        foreach (var (lang, val) in langs)
+        {
+            if (string.IsNullOrWhiteSpace(val)) continue;
+            using var cmd = new MySqlCommand(@"
+                INSERT INTO translations (language_code, label_key, label_value)
+                VALUES (@lang, @key, @val)
+                ON DUPLICATE KEY UPDATE label_value=@val, updated_at=NOW()", conn);
+            cmd.Parameters.AddWithValue("@lang", lang);
+            cmd.Parameters.AddWithValue("@key", row.Key);
+            cmd.Parameters.AddWithValue("@val", val.Trim());
+            await cmd.ExecuteNonQueryAsync();
+        }
+    }
+
+    public async Task DeleteKeyAsync(string key)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand("DELETE FROM translations WHERE label_key=@key", conn);
+        cmd.Parameters.AddWithValue("@key", key);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task<bool> KeyExistsAsync(string key)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM translations WHERE label_key=@key LIMIT 1", conn);
+        cmd.Parameters.AddWithValue("@key", key);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
+    }
+}
+
+public class TranslationRow
+{
+    public string Key { get; set; } = "";
+    public string En { get; set; } = "";
+    public string It { get; set; } = "";
+    public string Es { get; set; } = "";
+    public string De { get; set; } = "";
+}

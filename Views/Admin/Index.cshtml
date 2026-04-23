@@ -1,12 +1,12 @@
 @model DashboardStats
 @{
-    ViewData["Title"] = "Dashboard Amministratore";
+    ViewData["Title"] = T["admin.dashboard"];
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-gear-fill me-2"></i>Dashboard Amministratore</h2>
+    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-gear-fill me-2"></i>@T["admin.dashboard"]</h2>
     <a asp-action="CreateUser" class="btn btn-bocconi">
-        <i class="bi bi-person-plus me-1"></i>Nuovo utente
+        <i class="bi bi-person-plus me-1"></i>@T["admin.new_user"]
     </a>
 </div>
 
@@ -14,25 +14,25 @@
     <div class="col-sm-6 col-lg-3">
         <div class="card stat-card text-center p-3">
             <div class="display-5 fw-bold text-bocconi">@Model.TotalCourses</div>
-            <div class="text-muted small"><i class="bi bi-book me-1"></i>Corsi totali</div>
+            <div class="text-muted small"><i class="bi bi-book me-1"></i>@T["admin.total_courses"]</div>
         </div>
     </div>
     <div class="col-sm-6 col-lg-3">
         <div class="card stat-card text-center p-3">
             <div class="display-5 fw-bold text-bocconi">@Model.TotalUsers</div>
-            <div class="text-muted small"><i class="bi bi-people me-1"></i>Utenti totali</div>
+            <div class="text-muted small"><i class="bi bi-people me-1"></i>@T["admin.total_users"]</div>
         </div>
     </div>
     <div class="col-sm-6 col-lg-3">
         <div class="card stat-card gold text-center p-3">
             <div class="display-5 fw-bold" style="color:#c8a96e;">@Model.ActiveStudents</div>
-            <div class="text-muted small"><i class="bi bi-person-check me-1"></i>Studenti attivi</div>
+            <div class="text-muted small"><i class="bi bi-person-check me-1"></i>@T["admin.active_students"]</div>
         </div>
     </div>
     <div class="col-sm-6 col-lg-3">
         <div class="card stat-card text-center p-3">
             <div class="display-5 fw-bold text-bocconi">@Model.TotalEnrollments</div>
-            <div class="text-muted small"><i class="bi bi-journal-check me-1"></i>Iscrizioni</div>
+            <div class="text-muted small"><i class="bi bi-journal-check me-1"></i>@T["admin.enrollments"]</div>
         </div>
     </div>
 </div>
@@ -42,9 +42,9 @@
         <div class="card">
             <div class="card-body text-center p-4">
                 <i class="bi bi-people-fill display-4 text-bocconi mb-3 d-block"></i>
-                <h5 class="fw-bold">Gestione Utenti</h5>
-                <p class="text-muted">Crea, modifica e gestisci gli account degli utenti</p>
-                <a asp-action="Users" class="btn btn-bocconi">Gestisci utenti</a>
+                <h5 class="fw-bold">@T["admin.users"]</h5>
+                <p class="text-muted">@T["admin.users_desc"]</p>
+                <a asp-action="Users" class="btn btn-bocconi">@T["admin.manage_users"]</a>
             </div>
         </div>
     </div>
@@ -52,9 +52,9 @@
         <div class="card">
             <div class="card-body text-center p-4">
                 <i class="bi bi-book-fill display-4 text-bocconi mb-3 d-block"></i>
-                <h5 class="fw-bold">Tutti i Corsi</h5>
-                <p class="text-muted">Visualizza e gestisci tutti i corsi della piattaforma</p>
-                <a asp-controller="Course" asp-action="Index" class="btn btn-bocconi">Vedi corsi</a>
+                <h5 class="fw-bold">@T["admin.courses"]</h5>
+                <p class="text-muted">@T["admin.courses_desc"]</p>
+                <a asp-controller="Course" asp-action="Index" class="btn btn-bocconi">@T["admin.view_courses"]</a>
             </div>
         </div>
     </div>
@@ -65,9 +65,19 @@
         <div class="card">
             <div class="card-body text-center p-4">
                 <i class="bi bi-envelope-gear display-4 text-bocconi mb-3 d-block"></i>
-                <h5 class="fw-bold">Impostazioni Email</h5>
-                <p class="text-muted">Configura il server SMTP e invia email di test</p>
-                <a asp-action="EmailSettings" class="btn btn-bocconi">Configura email</a>
+                <h5 class="fw-bold">@T["admin.email_settings"]</h5>
+                <p class="text-muted">@T["admin.email_settings_desc"]</p>
+                <a asp-action="EmailSettings" class="btn btn-bocconi">@T["admin.configure_email"]</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-translate display-4 text-bocconi mb-3 d-block"></i>
+                <h5 class="fw-bold">@T["admin.translations"]</h5>
+                <p class="text-muted">@T["admin.translations_desc"]</p>
+                <a asp-action="Translations" class="btn btn-bocconi">@T["admin.manage_translations"]</a>
             </div>
         </div>
     </div>
@@ -76,13 +86,13 @@
 <div class="row g-3 mt-1">
     <div class="col-md-4">
         <div class="card p-3">
-            <div class="text-muted small mb-1">Docenti attivi</div>
+            <div class="text-muted small mb-1">@T["admin.active_teachers"]</div>
             <div class="fw-bold fs-4">@Model.ActiveTeachers</div>
         </div>
     </div>
     <div class="col-md-4">
         <div class="card p-3">
-            <div class="text-muted small mb-1">Tentativi quiz totali</div>
+            <div class="text-muted small mb-1">@T["admin.total_attempts"]</div>
             <div class="fw-bold fs-4">@Model.TotalQuizAttempts</div>
         </div>
     </div>

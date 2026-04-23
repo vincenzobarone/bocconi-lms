@@ -17,6 +17,7 @@ builder.Services.AddScoped<EnrollmentRepository>();
 builder.Services.AddScoped<ProgressRepository>();
 builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<SettingsRepository>();
+builder.Services.AddScoped<TranslationRepository>();
 
 builder.Services.AddScoped<IUserStore<ApplicationUser>, CustomUserStore>();
 builder.Services.AddScoped<IRoleStore<ApplicationRole>, CustomRoleStore>();
@@ -47,6 +48,10 @@ builder.Services.Configure<SmtpSettings>(
     builder.Configuration.GetSection("Smtp"));
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddHostedService<LessonReminderHostedService>();
+
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<TranslationService>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddSession(options =>

@@ -135,6 +135,16 @@ public class EmailSettingsViewModel
     public string? TestEmailRecipient { get; set; }
 }
 
+public class AddTranslationKeyViewModel
+{
+    [Required(ErrorMessage = "Key obbligatoria")]
+    [RegularExpression(@"^[a-z0-9_\.]+$", ErrorMessage = "Solo lettere minuscole, numeri, punto e underscore")]
+    public string Key { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Valore inglese obbligatorio")]
+    public string EnglishValue { get; set; } = string.Empty;
+}
+
 public class StudentDashboard
 {
     public List<Enrollment> Enrollments { get; set; } = new();

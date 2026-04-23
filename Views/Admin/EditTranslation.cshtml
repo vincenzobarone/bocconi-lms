@@ -1,0 +1,79 @@
+@using BocconiLMS.Data
+@model TranslationRow
+@{
+    ViewData["Title"] = $"Modifica: {Model.Key}";
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Admin</a></li>
+        <li class="breadcrumb-item"><a asp-action="Translations">Traduzioni</a></li>
+        <li class="breadcrumb-item active font-monospace">@Model.Key</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <h2 class="fw-bold text-bocconi mb-1">
+            <i class="bi bi-translate me-2"></i>Modifica traduzioni
+        </h2>
+        <p class="text-muted mb-4 font-monospace small">@Model.Key</p>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form asp-action="EditTranslation" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="Key" value="@Model.Key" />
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <span class="me-2">🇬🇧</span>English (base)
+                            <span class="badge bg-secondary ms-1 fw-normal">EN</span>
+                        </label>
+                        <input name="En" class="form-control" value="@Model.En"
+                               placeholder="English default value" />
+                        <div class="form-text">Valore base usato come fallback se la traduzione manca</div>
+                    </div>
+
+                    <hr class="my-3" />
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <span class="me-2">🇮🇹</span>Italiano
+                            <span class="badge bg-success ms-1 fw-normal">IT</span>
+                        </label>
+                        <input name="It" class="form-control" value="@Model.It"
+                               placeholder="Traduzione italiana" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            <span class="me-2">🇪🇸</span>Español
+                            <span class="badge bg-danger ms-1 fw-normal">ES</span>
+                        </label>
+                        <input name="Es" class="form-control" value="@Model.Es"
+                               placeholder="Traducción española" />
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            <span class="me-2">🇩🇪</span>Deutsch
+                            <span class="badge bg-warning text-dark ms-1 fw-normal">DE</span>
+                        </label>
+                        <input name="De" class="form-control" value="@Model.De"
+                               placeholder="Deutsche Übersetzung" />
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-bocconi px-4">
+                            <i class="bi bi-check-lg me-1"></i>Salva traduzioni
+                        </button>
+                        <a asp-action="Translations" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>Indietro
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

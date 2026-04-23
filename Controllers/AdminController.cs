@@ -16,6 +16,8 @@ public class AdminController : Controller
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly SettingsRepository _settings;
     private readonly EmailService _emailService;
+    private readonly TranslationRepository _translations;
+    private readonly TranslationService _translationService;
 
     public AdminController(
         UserRepository users,
@@ -23,7 +25,9 @@ public class AdminController : Controller
         UserManager<ApplicationUser> userManager,
         RoleManager<ApplicationRole> roleManager,
         SettingsRepository settings,
-        EmailService emailService)
+        EmailService emailService,
+        TranslationRepository translations,
+        TranslationService translationService)
     {
         _users = users;
         _courses = courses;
@@ -31,6 +35,8 @@ public class AdminController : Controller
         _roleManager = roleManager;
         _settings = settings;
         _emailService = emailService;
+        _translations = translations;
+        _translationService = translationService;
     }
 
     public async Task<IActionResult> Index()
@@ -203,6 +209,63 @@ public class AdminController : Controller
         }
 
         return RedirectToAction("EmailSettings");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Translations()
+    {
+        var rows = await _translations.GetAllGroupedAsync();
+        return View(rows);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddTranslationKey(AddTranslationKeyViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Dati non validi: " + string.Join(", ",
+                ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+            return RedirectToAction("Translations");
+        }
+        if (await _translations.KeyExistsAsync(model.Key))
+        {
+            TempData["Error"] = $"La chiave '{model.Key}' esiste già.";
+            return RedirectToAction("Translations");
+        }
+        await _translations.UpsertAsync("en", model.Key, model.EnglishValue.Trim());
+        _translationService.InvalidateCache();
+        TempData["Success"] = $"Chiave '{model.Key}' aggiunta.";
+        return RedirectToAction("Translations");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EditTranslation(string key)
+    {
+        var row = await _translations.GetByKeyAsync(key);
+        if (row == null) return NotFound();
+        return View(row);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditTranslation(TranslationRow model)
+    {
+        if (string.IsNullOrWhiteSpace(model.Key)) return BadRequest();
+        await _translations.SaveRowAsync(model);
+        _translationService.InvalidateCache();
+        TempData["Success"] = $"Traduzioni per '{model.Key}' salvate.";
+        return RedirectToAction("Translations");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteTranslationKey(string key)
+    {
+        await _translations.DeleteKeyAsync(key);
+        _translationService.InvalidateCache();
+        TempData["Success"] = $"Chiave '{key}' eliminata.";
+        return RedirectToAction("Translations");
     }
 
     private async Task EnsureRoleExistsAsync(string roleName)

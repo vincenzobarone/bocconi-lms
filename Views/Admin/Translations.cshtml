@@ -1,0 +1,138 @@
+@using BocconiLMS.Data
+@model List<TranslationRow>
+@{
+    ViewData["Title"] = "Gestione Traduzioni";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-bocconi mb-0">
+        <i class="bi bi-translate me-2"></i>Gestione Traduzioni
+    </h2>
+    <button class="btn btn-bocconi" data-bs-toggle="modal" data-bs-target="#addKeyModal">
+        <i class="bi bi-plus-lg me-1"></i>Aggiungi chiave
+    </button>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2">
+        <div class="d-flex align-items-center gap-3 flex-wrap text-muted small">
+            <span><i class="bi bi-info-circle me-1"></i>Base: <strong>Inglese</strong> (EN)</span>
+            <span>|</span>
+            <span>Totale chiavi: <strong>@Model.Count</strong></span>
+            <span>|</span>
+            <span>Traduzioni: IT · ES · DE</span>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover table-sm mb-0" id="translationsTable">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width:22%">Chiave</th>
+                        <th style="width:24%">🇬🇧 English</th>
+                        <th style="width:18%">🇮🇹 Italiano</th>
+                        <th style="width:18%">🇪🇸 Español</th>
+                        <th style="width:14%">🇩🇪 Deutsch</th>
+                        <th style="width:4%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var row in Model)
+                    {
+                        <tr>
+                            <td class="font-monospace small text-muted align-middle">@row.Key</td>
+                            <td class="align-middle">@row.En</td>
+                            <td class="align-middle">
+                                @if (string.IsNullOrEmpty(row.It))
+                                {
+                                    <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>Mancante</span>
+                                }
+                                else { @row.It }
+                            </td>
+                            <td class="align-middle">
+                                @if (string.IsNullOrEmpty(row.Es))
+                                {
+                                    <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>Mancante</span>
+                                }
+                                else { @row.Es }
+                            </td>
+                            <td class="align-middle">
+                                @if (string.IsNullOrEmpty(row.De))
+                                {
+                                    <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>Mancante</span>
+                                }
+                                else { @row.De }
+                            </td>
+                            <td class="align-middle text-end">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <a asp-action="EditTranslation" asp-route-key="@row.Key"
+                                       class="btn btn-sm btn-outline-secondary" title="Modifica">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form asp-action="DeleteTranslationKey" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="key" value="@row.Key" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                title="Elimina"
+                                                onclick="return confirm('Eliminare la chiave @row.Key e tutte le sue traduzioni?')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addKeyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form asp-action="AddTranslationKey" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Aggiungi nuova chiave</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Chiave <span class="text-danger">*</span></label>
+                        <input name="Key" class="form-control font-monospace" placeholder="es. nav.courses oppure common.save" required
+                               pattern="^[a-z0-9_\.]+$" />
+                        <div class="form-text">Solo lettere minuscole, numeri, punto (.) e underscore (_)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Valore inglese (base) <span class="text-danger">*</span></label>
+                        <input name="EnglishValue" class="form-control" placeholder="es. Courses" required />
+                        <div class="form-text">Il testo predefinito in inglese usato come fallback</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+                    <button type="submit" class="btn btn-bocconi">
+                        <i class="bi bi-plus-lg me-1"></i>Aggiungi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#translationsTable').DataTable({
+                language: { url: 'https://cdn.datatables.net/plug-ins/2.0.3/i18n/it-IT.json' },
+                pageLength: 25,
+                columnDefs: [{ orderable: false, targets: 5 }],
+                order: [[0, 'asc']]
+            });
+        });
+    </script>
+}
