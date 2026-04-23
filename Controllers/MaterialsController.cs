@@ -1,0 +1,272 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using BocconiLMS.Data;
+using BocconiLMS.Models;
+using System.Security.Claims;
+
+namespace BocconiLMS.Controllers;
+
+[Authorize(Roles = "Teacher,Admin")]
+public class MaterialsController : Controller
+{
+    private readonly MaterialRepository _materials;
+    private readonly DocumentTypeRepository _docTypes;
+    private readonly UserRepository _users;
+    private readonly IWebHostEnvironment _env;
+
+    public MaterialsController(
+        MaterialRepository materials,
+        DocumentTypeRepository docTypes,
+        UserRepository users,
+        IWebHostEnvironment env)
+    {
+        _materials = materials;
+        _docTypes  = docTypes;
+        _users     = users;
+        _env       = env;
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    private int CurrentUserId() =>
+        int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    private async Task PopulateDropdownsAsync()
+    {
+        ViewBag.DocumentTypes   = await _docTypes.GetAllAsync();
+        ViewBag.Languages       = Material.Languages;
+        ViewBag.AvailableOwners = await _users.GetTeachersAndAdminsAsync();
+    }
+
+    // ── Index ─────────────────────────────────────────────────────────────
+
+    public async Task<IActionResult> Index(
+        string? q = null,
+        string? lang = null,
+        int? typeId = null)
+    {
+        var materials = await _materials.GetAllAsync(q, lang, typeId);
+        var vm = new MaterialsIndexViewModel
+        {
+            Materials      = materials,
+            SearchTitle    = q,
+            FilterLanguage = lang,
+            FilterTypeId   = typeId,
+            DocumentTypes  = await _docTypes.GetAllAsync()
+        };
+        return View(vm);
+    }
+
+    // ── Details (version history) ─────────────────────────────────────────
+
+    public async Task<IActionResult> Details(int id)
+    {
+        var material = await _materials.GetByIdAsync(id);
+        if (material == null) return NotFound();
+        var versions = await _materials.GetVersionsAsync(id);
+        ViewBag.Versions = versions;
+        return View(material);
+    }
+
+    // ── Create ────────────────────────────────────────────────────────────
+
+    [HttpGet]
+    public async Task<IActionResult> Create()
+    {
+        await PopulateDropdownsAsync();
+        var vm = new MaterialFormViewModel { OwnerId = CurrentUserId() };
+        return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(MaterialFormViewModel vm)
+    {
+        if (!ModelState.IsValid)
+        {
+            await PopulateDropdownsAsync();
+            return View(vm);
+        }
+
+        if (await _materials.TitleExistsAsync(vm.Title))
+        {
+            ModelState.AddModelError(nameof(vm.Title), "Esiste già un materiale con questo titolo.");
+            await PopulateDropdownsAsync();
+            return View(vm);
+        }
+
+        var matId = await _materials.CreateAsync(vm.Title, vm.OwnerId, vm.Language, vm.DocumentTypeId);
+
+        if (vm.File != null && vm.File.Length > 0)
+            await SaveVersionAsync(matId, vm.File, vm.Notes);
+
+        TempData["Success"] = $"Materiale «{vm.Title}» creato con successo.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    // ── Edit ──────────────────────────────────────────────────────────────
+
+    [HttpGet]
+    public async Task<IActionResult> Edit(int id)
+    {
+        var material = await _materials.GetByIdAsync(id);
+        if (material == null) return NotFound();
+        await PopulateDropdownsAsync();
+        var vm = new MaterialFormViewModel
+        {
+            Id             = material.Id,
+            Title          = material.Title,
+            OwnerId        = material.OwnerId,
+            Language       = material.Language,
+            DocumentTypeId = material.DocumentTypeId
+        };
+        ViewBag.Material = material;
+        return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Edit(int id, MaterialFormViewModel vm)
+    {
+        if (!ModelState.IsValid)
+        {
+            var mat = await _materials.GetByIdAsync(id);
+            ViewBag.Material = mat;
+            await PopulateDropdownsAsync();
+            return View(vm);
+        }
+
+        if (await _materials.TitleExistsAsync(vm.Title, id))
+        {
+            ModelState.AddModelError(nameof(vm.Title), "Esiste già un materiale con questo titolo.");
+            var mat = await _materials.GetByIdAsync(id);
+            ViewBag.Material = mat;
+            await PopulateDropdownsAsync();
+            return View(vm);
+        }
+
+        await _materials.UpdateAsync(id, vm.Title, vm.OwnerId, vm.Language, vm.DocumentTypeId);
+
+        if (vm.File != null && vm.File.Length > 0)
+            await SaveVersionAsync(id, vm.File, vm.Notes);
+
+        TempData["Success"] = "Materiale aggiornato.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    // ── Upload new version (from Details page) ────────────────────────────
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UploadVersion(int id, IFormFile file, string? notes)
+    {
+        var material = await _materials.GetByIdAsync(id);
+        if (material == null) return NotFound();
+        if (file == null || file.Length == 0)
+        {
+            TempData["Error"] = "Seleziona un file da caricare.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+        await SaveVersionAsync(id, file, notes);
+        TempData["Success"] = "Nuova versione caricata.";
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    // ── Restore version ───────────────────────────────────────────────────
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Restore(int materialId, int versionId)
+    {
+        var material = await _materials.GetByIdAsync(materialId);
+        if (material == null) return NotFound();
+        await _materials.RestoreVersionAsync(materialId, versionId);
+        TempData["Success"] = "Versione ripristinata.";
+        return RedirectToAction(nameof(Details), new { id = materialId });
+    }
+
+    // ── Download ──────────────────────────────────────────────────────────
+
+    [Authorize]
+    public async Task<IActionResult> Download(int versionId)
+    {
+        var version = await _materials.GetVersionByIdAsync(versionId);
+        if (version == null) return NotFound();
+        var fullPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/'));
+        if (!System.IO.File.Exists(fullPath)) return NotFound();
+        var contentType = "application/octet-stream";
+        return PhysicalFile(fullPath, contentType, version.FileName);
+    }
+
+    // ── Delete ────────────────────────────────────────────────────────────
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(int id)
+    {
+        var material = await _materials.GetByIdAsync(id);
+        if (material == null) return NotFound();
+
+        var versions = await _materials.GetVersionsAsync(id);
+        foreach (var v in versions)
+        {
+            var fullPath = Path.Combine(_env.WebRootPath, v.FilePath.TrimStart('/'));
+            if (System.IO.File.Exists(fullPath))
+                System.IO.File.Delete(fullPath);
+        }
+
+        var dirPath = Path.Combine(_env.WebRootPath, "uploads", "mat_" + id);
+        if (Directory.Exists(dirPath)) Directory.Delete(dirPath, true);
+
+        await _materials.DeleteAsync(id);
+        TempData["Success"] = $"Materiale «{material.Title}» eliminato.";
+        return RedirectToAction(nameof(Index));
+    }
+
+    // ── Lesson integration ────────────────────────────────────────────────
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> LinkToLesson(int lessonId, int materialId)
+    {
+        await _materials.LinkToLessonAsync(lessonId, materialId, CurrentUserId());
+        TempData["Success"] = "Materiale collegato alla lezione.";
+        return RedirectToAction("Details", "Lesson", new { id = lessonId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UnlinkFromLesson(int lessonId, int materialId)
+    {
+        await _materials.UnlinkFromLessonAsync(lessonId, materialId);
+        TempData["Success"] = "Materiale rimosso dalla lezione.";
+        return RedirectToAction("Details", "Lesson", new { id = lessonId });
+    }
+
+    // ── Private: save file ────────────────────────────────────────────────
+
+    private async Task SaveVersionAsync(int materialId, IFormFile file, string? notes)
+    {
+        var nextVer = await _materials.GetNextVersionNumberAsync(materialId);
+        var ext     = Path.GetExtension(file.FileName).TrimStart('.').ToUpperInvariant();
+        var safeFile = $"v{nextVer}_{Path.GetFileNameWithoutExtension(file.FileName)}{Path.GetExtension(file.FileName)}";
+        var relDir  = Path.Combine("uploads", $"mat_{materialId}");
+        var absDir  = Path.Combine(_env.WebRootPath, relDir);
+        Directory.CreateDirectory(absDir);
+        var absPath = Path.Combine(absDir, safeFile);
+        using (var fs = new FileStream(absPath, FileMode.Create))
+            await file.CopyToAsync(fs);
+
+        await _materials.AddVersionAsync(new MaterialVersion
+        {
+            MaterialId      = materialId,
+            VersionNumber   = nextVer,
+            FileName        = file.FileName,
+            FilePath        = "/" + relDir.Replace('\\', '/') + "/" + safeFile,
+            FileType        = ext,
+            FileSizeBytes   = file.Length,
+            UploadedBy      = CurrentUserId(),
+            Notes           = notes
+        });
+    }
+}

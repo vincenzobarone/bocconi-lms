@@ -19,6 +19,7 @@ public class AdminController : Controller
     private readonly EmailService _emailService;
     private readonly TranslationRepository _translations;
     private readonly TranslationService _translationService;
+    private readonly DocumentTypeRepository _docTypes;
 
     public AdminController(
         UserRepository users,
@@ -29,7 +30,8 @@ public class AdminController : Controller
         SettingsRepository settings,
         EmailService emailService,
         TranslationRepository translations,
-        TranslationService translationService)
+        TranslationService translationService,
+        DocumentTypeRepository docTypes)
     {
         _users = users;
         _courses = courses;
@@ -40,6 +42,7 @@ public class AdminController : Controller
         _emailService = emailService;
         _translations = translations;
         _translationService = translationService;
+        _docTypes = docTypes;
     }
 
     public async Task<IActionResult> Index()
@@ -509,6 +512,72 @@ public class AdminController : Controller
         await _roleManager.DeleteAsync(role);
         TempData["Success"] = $"Ruolo '{role.Name}' eliminato.";
         return RedirectToAction(nameof(Roles));
+    }
+
+    // ── Document Types ────────────────────────────────────────────────────
+
+    public async Task<IActionResult> DocumentTypes()
+    {
+        var types = await _docTypes.GetAllAsync();
+        ViewBag.NewType = new DocumentTypeFormViewModel();
+        return View(types);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateDocumentType(DocumentTypeFormViewModel vm)
+    {
+        if (!ModelState.IsValid)
+        {
+            TempData["Error"] = "Nome non valido.";
+            return RedirectToAction(nameof(DocumentTypes));
+        }
+        if (await _docTypes.NameExistsAsync(vm.Name))
+        {
+            TempData["Error"] = $"Esiste già un tipo chiamato '{vm.Name}'.";
+            return RedirectToAction(nameof(DocumentTypes));
+        }
+        await _docTypes.CreateAsync(vm.Name);
+        TempData["Success"] = $"Tipo '{vm.Name}' creato.";
+        return RedirectToAction(nameof(DocumentTypes));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EditDocumentType(int id)
+    {
+        var t = await _docTypes.GetByIdAsync(id);
+        if (t == null) return NotFound();
+        return View(new DocumentTypeFormViewModel { Id = t.Id, Name = t.Name });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditDocumentType(int id, DocumentTypeFormViewModel vm)
+    {
+        if (!ModelState.IsValid) return View(vm);
+        if (await _docTypes.NameExistsAsync(vm.Name, id))
+        {
+            ModelState.AddModelError(nameof(vm.Name), $"Esiste già un tipo chiamato '{vm.Name}'.");
+            return View(vm);
+        }
+        await _docTypes.UpdateAsync(id, vm.Name);
+        TempData["Success"] = "Tipo documento aggiornato.";
+        return RedirectToAction(nameof(DocumentTypes));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteDocumentType(int id)
+    {
+        var count = await _docTypes.CountMaterialsAsync(id);
+        if (count > 0)
+        {
+            TempData["Error"] = $"Impossibile eliminare: {count} materiale/i usa questo tipo.";
+            return RedirectToAction(nameof(DocumentTypes));
+        }
+        await _docTypes.DeleteAsync(id);
+        TempData["Success"] = "Tipo documento eliminato.";
+        return RedirectToAction(nameof(DocumentTypes));
     }
 
     private async Task EnsureRoleExistsAsync(string roleName)

@@ -1,0 +1,149 @@
+@model BocconiLMS.Models.Material
+@{
+    ViewData["Title"] = Model.Title;
+    var versions = ViewBag.Versions as List<BocconiLMS.Models.MaterialVersion> ?? new();
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Materiali</a></li>
+        <li class="breadcrumb-item active">@Model.Title</li>
+    </ol>
+</nav>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <h2 class="fw-bold">@Model.Title</h2>
+            <div class="d-flex gap-2">
+                <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-pencil me-1"></i>Modifica
+                </a>
+                <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                            data-confirm="Eliminare «@Model.Title» e tutte le sue versioni?"
+                            title="Elimina">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        @* Versions list *@
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span class="fw-semibold"><i class="bi bi-clock-history me-2"></i>Versioni (@versions.Count)</span>
+            </div>
+            <div class="card-body p-0">
+                @if (!versions.Any())
+                {
+                    <p class="text-muted p-3 mb-0">Nessun file caricato ancora.</p>
+                }
+                else
+                {
+                    <div class="list-group list-group-flush">
+                        @foreach (var v in versions)
+                        {
+                            <div class="list-group-item @(v.IsActive ? "bg-light" : "")">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="version-badge">v@(v.VersionNumber)</span>
+                                        @if (v.IsActive)
+                                        {
+                                            <span class="badge bg-success">Attiva</span>
+                                        }
+                                        <div>
+                                            <div class="fw-semibold small">@v.FileName</div>
+                                            <div class="text-muted" style="font-size:.75rem;">
+                                                @v.FileSizeFormatted &middot;
+                                                @v.UploadedAt.ToString("dd/MM/yyyy HH:mm") &middot;
+                                                @v.UploaderName
+                                            </div>
+                                            @if (!string.IsNullOrEmpty(v.Notes))
+                                            {
+                                                <div class="text-secondary fst-italic" style="font-size:.75rem;">@v.Notes</div>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a asp-action="Download" asp-route-versionId="@v.Id"
+                                           class="btn btn-sm btn-outline-primary"><i class="bi bi-download"></i></a>
+                                        @if (!v.IsActive)
+                                        {
+                                            <form asp-action="Restore" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="materialId" value="@Model.Id" />
+                                                <input type="hidden" name="versionId" value="@v.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-warning"
+                                                        data-confirm="Ripristinare la versione v@(v.VersionNumber)?"
+                                                        title="Ripristina">
+                                                    <i class="bi bi-arrow-counterclockwise"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        @* Upload new version *@
+        <div class="card">
+            <div class="card-header fw-semibold">
+                <i class="bi bi-upload me-2"></i>Carica nuova versione
+            </div>
+            <div class="card-body">
+                <form asp-action="UploadVersion" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold">File</label>
+                            <input type="file" name="file" class="form-control form-control-sm" required />
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold">Note</label>
+                            <input type="text" name="notes" class="form-control form-control-sm" placeholder="Cosa cambia?" />
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-bocconi btn-sm w-100">
+                                <i class="bi bi-upload me-1"></i>Carica
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-info-circle me-1"></i>Informazioni</h6>
+                <dl class="row mb-0 small">
+                    <dt class="col-5 text-muted">Tipo</dt>
+                    <dd class="col-7">@(string.IsNullOrEmpty(Model.DocumentTypeName) ? "—" : Model.DocumentTypeName)</dd>
+                    <dt class="col-5 text-muted">Lingua</dt>
+                    <dd class="col-7">@Model.Language</dd>
+                    <dt class="col-5 text-muted">Autore</dt>
+                    <dd class="col-7">@(string.IsNullOrEmpty(Model.OwnerName) ? "—" : Model.OwnerName)</dd>
+                    <dt class="col-5 text-muted">Versione</dt>
+                    <dd class="col-7">
+                        @if (Model.CurrentVersion > 0)
+                        { <span class="version-badge">v@(Model.CurrentVersion)</span> }
+                        else { <span class="text-muted">—</span> }
+                    </dd>
+                    <dt class="col-5 text-muted">Creato</dt>
+                    <dd class="col-7">@Model.CreatedAt.ToString("dd/MM/yyyy")</dd>
+                </dl>
+                <hr />
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm w-100">
+                    <i class="bi bi-arrow-left me-1"></i>Torna ai Materiali
+                </a>
+            </div>
+        </div>
+    </div>
+</div>

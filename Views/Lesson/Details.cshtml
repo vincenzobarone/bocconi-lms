@@ -4,6 +4,8 @@
     var documents = ViewBag.Documents as List<Document> ?? new();
     var quizzes = ViewBag.Quizzes as List<Quiz> ?? new();
     var isOwner = (bool)(ViewBag.IsOwner ?? false);
+    var linkedMaterials = ViewBag.LinkedMaterials as List<BocconiLMS.Models.Material> ?? new();
+    var availableMaterials = ViewBag.AvailableMaterials as List<BocconiLMS.Models.Material> ?? new();
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -135,6 +137,96 @@
             }
         }
 
+        @* ── MATERIALI LIBRERIA ───────────────────────────────────── *@
+        @if (linkedMaterials.Any() || isOwner)
+        {
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-semibold mb-0">
+                    <i class="bi bi-collection me-2"></i>Materiali
+                </h4>
+                @if (isOwner)
+                {
+                    <button type="button" class="btn btn-sm btn-bocconi" data-bs-toggle="modal" data-bs-target="#addMaterialModal">
+                        <i class="bi bi-link-45deg me-1"></i>Aggiungi dalla libreria
+                    </button>
+                }
+            </div>
+
+            @if (linkedMaterials.Any())
+            {
+                <div class="list-group mb-4">
+                    @foreach (var m in linkedMaterials)
+                    {
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center gap-2">
+                                    @if (m.ActiveVersion?.IsVideo == true)
+                                    {
+                                        <i class="bi bi-play-circle-fill text-bocconi fs-5"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-file-earmark-text text-bocconi fs-5"></i>
+                                    }
+                                    <div>
+                                        <strong>@m.Title</strong>
+                                        @if (m.CurrentVersion > 0)
+                                        {
+                                            <span class="version-badge ms-2">v@(m.CurrentVersion)</span>
+                                        }
+                                        @if (m.ActiveVersion != null)
+                                        {
+                                            <span class="badge bg-secondary ms-1" style="font-size:.7rem;">@m.ActiveVersion.FileType.ToUpper()</span>
+                                        }
+                                        <div class="text-muted" style="font-size:.75rem;">
+                                            @m.Language
+                                            @if (!string.IsNullOrEmpty(m.DocumentTypeName))
+                                            {
+                                                <span class="ms-2">· @m.DocumentTypeName</span>
+                                            }
+                                            @if (!string.IsNullOrEmpty(m.OwnerName))
+                                            {
+                                                <span class="ms-2">· @m.OwnerName</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    @if (m.ActiveVersion != null && !m.ActiveVersion.IsVideo)
+                                    {
+                                        <a asp-controller="Materials" asp-action="Download"
+                                           asp-route-versionId="@m.ActiveVersion.Id"
+                                           class="btn btn-sm btn-bocconi"><i class="bi bi-download"></i></a>
+                                    }
+                                    <a asp-controller="Materials" asp-action="Details" asp-route-id="@m.Id"
+                                       class="btn btn-sm btn-outline-secondary" title="Dettagli">
+                                        <i class="bi bi-info-circle"></i>
+                                    </a>
+                                    @if (isOwner)
+                                    {
+                                        <form asp-controller="Materials" asp-action="UnlinkFromLesson" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="lessonId" value="@Model.Id" />
+                                            <input type="hidden" name="materialId" value="@m.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-warning"
+                                                    data-confirm="Rimuovere «@m.Title» da questa lezione?"
+                                                    title="Scollega">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (isOwner)
+            {
+                <p class="text-muted small mb-4">Nessun materiale collegato a questa lezione. Usa il pulsante per aggiungere dalla libreria.</p>
+            }
+        }
+
         @* ── QUIZ ─────────────────────────────────────────────────── *@
         @if (quizzes.Any() || isOwner)
         {
@@ -210,3 +302,88 @@
         </div>
     </div>
 </div>
+
+@* ── Modal: aggiungi materiale dalla libreria ────────────────── *@
+@if (isOwner)
+{
+<div class="modal fade" id="addMaterialModal" tabindex="-1" aria-labelledby="addMaterialModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addMaterialModalLabel">
+                    <i class="bi bi-collection me-2"></i>Aggiungi materiale dalla libreria
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                @if (!availableMaterials.Any())
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-collection display-4 d-block mb-3"></i>
+                        <p>Tutti i materiali della libreria sono già collegati a questa lezione,<br/>oppure la libreria è vuota.</p>
+                        <a asp-controller="Materials" asp-action="Create" class="btn btn-bocconi btn-sm">
+                            <i class="bi bi-plus-lg me-1"></i>Crea nuovo materiale
+                        </a>
+                    </div>
+                }
+                else
+                {
+                    <div class="mb-2">
+                        <input type="text" id="materialSearch" class="form-control form-control-sm" placeholder="Cerca per titolo…" />
+                    </div>
+                    <div class="list-group" id="materialList" style="max-height:380px; overflow-y:auto;">
+                        @foreach (var m in availableMaterials)
+                        {
+                            <div class="list-group-item material-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <div class="fw-semibold">@m.Title</div>
+                                        <div class="text-muted" style="font-size:.75rem;">
+                                            @m.Language
+                                            @if (!string.IsNullOrEmpty(m.DocumentTypeName))
+                                            {<span class="ms-2">· @m.DocumentTypeName</span>}
+                                            @if (!string.IsNullOrEmpty(m.OwnerName))
+                                            {<span class="ms-2">· @m.OwnerName</span>}
+                                            @if (m.CurrentVersion > 0)
+                                            {<span class="ms-2 version-badge">v@(m.CurrentVersion)</span>}
+                                        </div>
+                                    </div>
+                                    <form asp-controller="Materials" asp-action="LinkToLesson" method="post" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="lessonId" value="@Model.Id" />
+                                        <input type="hidden" name="materialId" value="@m.Id" />
+                                        <button type="submit" class="btn btn-sm btn-bocconi">
+                                            <i class="bi bi-link-45deg me-1"></i>Aggiungi
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+            <div class="modal-footer">
+                <a asp-controller="Materials" asp-action="Index" class="btn btn-outline-secondary btn-sm" target="_blank">
+                    <i class="bi bi-box-arrow-up-right me-1"></i>Vai alla libreria
+                </a>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Chiudi</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function() {
+    var input = document.getElementById('materialSearch');
+    if (!input) return;
+    input.addEventListener('input', function() {
+        var q = this.value.toLowerCase();
+        document.querySelectorAll('.material-item').forEach(function(el) {
+            el.style.display = el.textContent.toLowerCase().includes(q) ? '' : 'none';
+        });
+    });
+})();
+</script>
+}
+}

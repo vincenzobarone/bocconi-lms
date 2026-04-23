@@ -213,3 +213,42 @@ public class RoleFormViewModel
     [RegularExpression(@"^[a-zA-Z0-9_\s]+$", ErrorMessage = "Solo lettere, numeri, underscore e spazi")]
     public string Name { get; set; } = string.Empty;
 }
+
+public class MaterialFormViewModel
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Il titolo è obbligatorio")]
+    [MaxLength(255, ErrorMessage = "Massimo 255 caratteri")]
+    public string Title { get; set; } = string.Empty;
+
+    public int? OwnerId { get; set; }
+
+    [Required(ErrorMessage = "La lingua è obbligatoria")]
+    public string Language { get; set; } = "Italiano";
+
+    [Required(ErrorMessage = "Il tipo documento è obbligatorio")]
+    public int? DocumentTypeId { get; set; }
+
+    public string? Notes { get; set; }
+
+    public IFormFile? File { get; set; }
+}
+
+public class DocumentTypeFormViewModel
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Il nome del tipo è obbligatorio")]
+    [MaxLength(255, ErrorMessage = "Massimo 255 caratteri")]
+    public string Name { get; set; } = string.Empty;
+}
+
+public class MaterialsIndexViewModel
+{
+    public List<Material> Materials { get; set; } = new();
+    public string? SearchTitle { get; set; }
+    public string? FilterLanguage { get; set; }
+    public int? FilterTypeId { get; set; }
+    public List<DocumentType> DocumentTypes { get; set; } = new();
+}

@@ -18,11 +18,13 @@ public class LessonController : Controller
     private readonly ProgressRepository _progress;
     private readonly EmailService _email;
     private readonly ILogger<LessonController> _logger;
+    private readonly MaterialRepository _materials;
 
     public LessonController(LessonRepository lessons, CourseRepository courses,
         DocumentRepository documents, QuizRepository quizzes,
         EnrollmentRepository enrollments, ProgressRepository progress,
-        EmailService email, ILogger<LessonController> logger)
+        EmailService email, ILogger<LessonController> logger,
+        MaterialRepository materials)
     {
         _lessons = lessons;
         _courses = courses;
@@ -32,6 +34,7 @@ public class LessonController : Controller
         _progress = progress;
         _email = email;
         _logger = logger;
+        _materials = materials;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -64,13 +67,19 @@ public class LessonController : Controller
 
         var documents = await _documents.GetByLessonAsync(id);
         var quizzes = await _quizzes.GetByLessonAsync(id);
+        var linkedMaterials = await _materials.GetByLessonAsync(id);
 
         if (CurrentRole == "Student")
             await _progress.MarkLessonCompletedAsync(CurrentUserId, id);
 
         ViewBag.Documents = documents;
         ViewBag.Quizzes = quizzes;
+        ViewBag.LinkedMaterials = linkedMaterials;
         ViewBag.IsOwner = isOwner;
+
+        if (isOwner)
+            ViewBag.AvailableMaterials = await _materials.GetNotLinkedToLessonAsync(id);
+
         return View(lesson);
     }
 

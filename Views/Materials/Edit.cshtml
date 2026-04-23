@@ -1,0 +1,117 @@
+@model MaterialFormViewModel
+@{
+    ViewData["Title"] = "Modifica materiale";
+    var material = ViewBag.Material as BocconiLMS.Models.Material;
+    var docTypes = ViewBag.DocumentTypes as List<BocconiLMS.Models.DocumentType> ?? new();
+    var languages = ViewBag.Languages as string[] ?? BocconiLMS.Models.Material.Languages;
+    var owners = ViewBag.AvailableOwners as List<BocconiLMS.Models.User> ?? new();
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Materiali</a></li>
+        @if (material != null)
+        {
+            <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@material.Id">@material.Title</a></li>
+        }
+        <li class="breadcrumb-item active">Modifica</li>
+    </ol>
+</nav>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-bocconi text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil me-2"></i>Modifica materiale</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" id="valSummary"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Title" class="form-label fw-semibold">Titolo <span class="text-danger">*</span></label>
+                        <input asp-for="Title" class="form-control" />
+                        <span asp-validation-for="Title" class="text-danger small"></span>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="DocumentTypeId" class="form-label fw-semibold">Tipo documento <span class="text-danger">*</span></label>
+                            <select asp-for="DocumentTypeId" class="form-select">
+                                <option value="">— Seleziona un tipo —</option>
+                                @foreach (var t in docTypes)
+                                {
+                                    <option value="@t.Id" selected="@(Model.DocumentTypeId == t.Id ? "selected" : null)">@t.Name</option>
+                                }
+                            </select>
+                            <span asp-validation-for="DocumentTypeId" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Language" class="form-label fw-semibold">Lingua <span class="text-danger">*</span></label>
+                            <select asp-for="Language" class="form-select">
+                                @foreach (var l in languages)
+                                {
+                                    <option value="@l" selected="@(Model.Language == l ? "selected" : null)">@l</option>
+                                }
+                            </select>
+                            <span asp-validation-for="Language" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="OwnerId" class="form-label fw-semibold">Autore / Responsabile</label>
+                        <select asp-for="OwnerId" class="form-select">
+                            <option value="">— Nessuno —</option>
+                            @foreach (var u in owners)
+                            {
+                                <option value="@u.Id" selected="@(Model.OwnerId == u.Id ? "selected" : null)">@u.LastName @u.FirstName (@u.Role)</option>
+                            }
+                        </select>
+                    </div>
+
+                    <hr />
+                    <h6 class="text-muted mb-3"><i class="bi bi-upload me-1"></i>Carica nuova versione file (opzionale)</h6>
+                    @if (material?.ActiveVersion != null)
+                    {
+                        <div class="alert alert-info py-2 mb-3">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Versione attiva: <strong>v@(material.CurrentVersion)</strong> — @material.ActiveVersion.FileName
+                            (@material.ActiveVersion.FileSizeFormatted)
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label asp-for="File" class="form-label fw-semibold">Nuovo file</label>
+                        <input asp-for="File" type="file" class="form-control" />
+                        <div class="form-text">Lascia vuoto per non aggiornare il file.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label asp-for="Notes" class="form-label fw-semibold">Note nuova versione</label>
+                        <input asp-for="Notes" class="form-control" placeholder="Cosa cambia in questa versione?" />
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
+                            <i class="bi bi-x me-1"></i>Annulla
+                        </a>
+                        <button type="submit" class="btn btn-bocconi">
+                            <i class="bi bi-check-lg me-1"></i>Salva modifiche
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var summary = document.getElementById('valSummary');
+            if (summary && summary.querySelectorAll('li').length > 0)
+                summary.classList.remove('d-none');
+        })();
+    </script>
+}

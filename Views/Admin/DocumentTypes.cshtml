@@ -1,0 +1,93 @@
+@model List<BocconiLMS.Models.DocumentType>
+@{
+    ViewData["Title"] = "Tipi Documento";
+    var newType = ViewBag.NewType as BocconiLMS.Models.DocumentTypeFormViewModel ?? new();
+}
+
+<nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a asp-action="Index">Amministrazione</a></li>
+        <li class="breadcrumb-item active">Tipi Documento</li>
+    </ol>
+</nav>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-tags me-2"></i>Tipi Documento</h2>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                @if (!Model.Any())
+                {
+                    <p class="text-muted p-4">Nessun tipo presente.</p>
+                }
+                else
+                {
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>Nome</th>
+                                <th class="text-center">Materiali</th>
+                                <th class="text-end">Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in Model)
+                            {
+                                <tr>
+                                    <td class="text-muted small">@t.SortOrder</td>
+                                    <td class="fw-semibold">@t.Name</td>
+                                    <td class="text-center">
+                                        <span class="badge @(t.MaterialCount > 0 ? "bg-primary" : "bg-light text-dark border")">
+                                            @t.MaterialCount
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            <a asp-action="EditDocumentType" asp-route-id="@t.Id"
+                                               class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form asp-action="DeleteDocumentType" asp-route-id="@t.Id" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        data-confirm="Eliminare il tipo «@t.Name»?"
+                                                        title="Elimina"
+                                                        @(t.MaterialCount > 0 ? "disabled" : "")>
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">
+                <i class="bi bi-plus-circle me-1"></i>Aggiungi tipo
+            </div>
+            <div class="card-body">
+                <form asp-action="CreateDocumentType" method="post">
+                    @Html.AntiForgeryToken()
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
+                        <input asp-for="@newType.Name" name="Name" class="form-control" placeholder="Nome tipo documento…" maxlength="255" required />
+                    </div>
+                    <button type="submit" class="btn btn-bocconi w-100">
+                        <i class="bi bi-plus-lg me-1"></i>Crea tipo
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

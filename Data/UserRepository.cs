@@ -204,6 +204,20 @@ public class UserRepository
         return list;
     }
 
+    public async Task<List<User>> GetTeachersAndAdminsAsync()
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT * FROM users WHERE role IN ('Teacher','Admin') AND is_active = 1 ORDER BY last_name, first_name",
+            conn);
+        var list = new List<User>();
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+            list.Add(MapUser(reader));
+        return list;
+    }
+
     private static User MapUser(MySqlDataReader r) => new()
     {
         Id = r.GetInt32("id"),
