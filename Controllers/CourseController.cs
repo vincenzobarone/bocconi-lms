@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
+using BocconiLMS.Services;
 
 namespace BocconiLMS.Controllers;
 
@@ -12,12 +13,24 @@ public class CourseController : Controller
     private readonly CourseRepository _courses;
     private readonly LessonRepository _lessons;
     private readonly EnrollmentRepository _enrollments;
+    private readonly UserRepository _users;
+    private readonly EmailService _email;
+    private readonly ILogger<CourseController> _logger;
 
-    public CourseController(CourseRepository courses, LessonRepository lessons, EnrollmentRepository enrollments)
+    public CourseController(
+        CourseRepository courses,
+        LessonRepository lessons,
+        EnrollmentRepository enrollments,
+        UserRepository users,
+        EmailService email,
+        ILogger<CourseController> logger)
     {
         _courses = courses;
         _lessons = lessons;
         _enrollments = enrollments;
+        _users = users;
+        _email = email;
+        _logger = logger;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -77,7 +90,34 @@ public class CourseController : Controller
         bool isOwner = CurrentRole is "Admin" || course.TeacherId == CurrentUserId;
         if (!course.IsPublished && !isOwner)
             return NotFound();
+
+        bool alreadyEnrolled = await _enrollments.IsEnrolledAsync(CurrentUserId, id);
         await _enrollments.EnrollAsync(CurrentUserId, id);
+
+        if (!alreadyEnrolled)
+        {
+            var student = await _users.GetByIdAsync(CurrentUserId);
+            if (student != null)
+            {
+                int capturedStudentId = CurrentUserId;
+                int capturedCourseId = id;
+                _ = _email.SendWelcomeEmailAsync(
+                        student.Email, student.FullName,
+                        course.Title, course.TeacherName)
+                    .ContinueWith(t =>
+                    {
+                        if (t.IsFaulted)
+                            _logger.LogError(t.Exception,
+                                "Failed to send welcome email to student {StudentId} for course {CourseId}.",
+                                capturedStudentId, capturedCourseId);
+                        else
+                            _logger.LogInformation(
+                                "Welcome email sent to student {StudentId} for course {CourseId}.",
+                                capturedStudentId, capturedCourseId);
+                    }, TaskScheduler.Default);
+            }
+        }
+
         TempData["Success"] = "Iscrizione completata!";
         return RedirectToAction("Details", new { id });
     }

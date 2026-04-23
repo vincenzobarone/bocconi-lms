@@ -1,4 +1,5 @@
 using BocconiLMS.Data;
+using BocconiLMS.Services;
 using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,6 +41,11 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
 });
+
+builder.Services.Configure<SmtpSettings>(
+    builder.Configuration.GetSection("Smtp"));
+builder.Services.AddScoped<EmailService>();
+builder.Services.AddHostedService<LessonReminderHostedService>();
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddSession(options =>

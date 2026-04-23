@@ -3,6 +3,16 @@ using BocconiLMS.Models;
 
 namespace BocconiLMS.Data;
 
+public class EnrollmentReminderInfo
+{
+    public int UserId { get; set; }
+    public string UserEmail { get; set; } = string.Empty;
+    public string UserFirstName { get; set; } = string.Empty;
+    public int CourseId { get; set; }
+    public string CourseTitle { get; set; } = string.Empty;
+    public int IncompleteLessons { get; set; }
+}
+
 public class EnrollmentRepository
 {
     private readonly DbHelper _db;
@@ -110,6 +120,39 @@ public class EnrollmentRepository
                 TotalLessons = total,
                 CompletedLessons = completed,
                 ProgressPercent = total > 0 ? (int)Math.Round((double)completed / total * 100) : 0
+            });
+        }
+        return list;
+    }
+
+    public async Task<List<EnrollmentReminderInfo>> GetIncompleteEnrollmentsForReminderAsync()
+    {
+        var list = new List<EnrollmentReminderInfo>();
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            SELECT e.user_id, u.email, u.first_name, e.course_id, c.title AS course_title,
+                   (SELECT COUNT(*) FROM lessons l
+                    WHERE l.course_id=e.course_id AND l.is_published=1
+                      AND NOT EXISTS(SELECT 1 FROM lesson_progress lp WHERE lp.lesson_id=l.id AND lp.user_id=e.user_id)
+                   ) AS incomplete_lessons
+            FROM enrollments e
+            JOIN users u ON u.id=e.user_id
+            JOIN courses c ON c.id=e.course_id
+            WHERE u.is_active=1 AND c.is_published=1
+            HAVING incomplete_lessons > 0
+            ORDER BY u.last_name, u.first_name, c.title", conn);
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (reader.Read())
+        {
+            list.Add(new EnrollmentReminderInfo
+            {
+                UserId = reader.GetInt32("user_id"),
+                UserEmail = reader.GetString("email"),
+                UserFirstName = reader.GetString("first_name"),
+                CourseId = reader.GetInt32("course_id"),
+                CourseTitle = reader.GetString("course_title"),
+                IncompleteLessons = reader.GetInt32("incomplete_lessons")
             });
         }
         return list;

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
+using BocconiLMS.Services;
 
 namespace BocconiLMS.Controllers;
 
@@ -13,14 +14,26 @@ public class QuizController : Controller
     private readonly LessonRepository _lessons;
     private readonly CourseRepository _courses;
     private readonly EnrollmentRepository _enrollments;
+    private readonly UserRepository _users;
+    private readonly EmailService _email;
+    private readonly ILogger<QuizController> _logger;
 
-    public QuizController(QuizRepository quizzes, LessonRepository lessons,
-        CourseRepository courses, EnrollmentRepository enrollments)
+    public QuizController(
+        QuizRepository quizzes,
+        LessonRepository lessons,
+        CourseRepository courses,
+        EnrollmentRepository enrollments,
+        UserRepository users,
+        EmailService email,
+        ILogger<QuizController> logger)
     {
         _quizzes = quizzes;
         _lessons = lessons;
         _courses = courses;
         _enrollments = enrollments;
+        _users = users;
+        _email = email;
+        _logger = logger;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -77,7 +90,69 @@ public class QuizController : Controller
         if (access != null) return access;
 
         var attempt = await _quizzes.SubmitAttemptAsync(id, CurrentUserId, answers);
+
+        int capturedQuizId = id;
+        int capturedAttemptId = attempt.Id;
+        _ = NotifyTeacherOfQuizResultAsync(capturedQuizId, attempt)
+            .ContinueWith(t =>
+            {
+                if (t.IsFaulted)
+                    _logger.LogError(t.Exception,
+                        "Unhandled failure in NotifyTeacherOfQuizResultAsync for quiz {QuizId}, attempt {AttemptId}.",
+                        capturedQuizId, capturedAttemptId);
+            }, TaskScheduler.Default);
+
         return RedirectToAction("Result", new { attemptId = attempt.Id });
+    }
+
+    private async Task NotifyTeacherOfQuizResultAsync(int quizId, QuizAttempt attempt)
+    {
+        try
+        {
+            var (quiz, lesson, courseId) = await GetQuizContextAsync(quizId);
+            if (quiz == null || courseId == 0)
+            {
+                _logger.LogWarning("Quiz notification skipped: quiz {QuizId} or course not found.", quizId);
+                return;
+            }
+
+            var course = await _courses.GetByIdAsync(courseId);
+            if (course == null)
+            {
+                _logger.LogWarning("Quiz notification skipped: course {CourseId} not found for quiz {QuizId}.", courseId, quizId);
+                return;
+            }
+
+            var teacher = await _users.GetByIdAsync(course.TeacherId);
+            if (teacher == null)
+            {
+                _logger.LogWarning("Quiz notification skipped: teacher {TeacherId} not found for course {CourseId}.", course.TeacherId, courseId);
+                return;
+            }
+
+            var student = await _users.GetByIdAsync(attempt.UserId);
+            if (student == null)
+            {
+                _logger.LogWarning("Quiz notification skipped: student {UserId} not found for attempt {AttemptId}.", attempt.UserId, attempt.Id);
+                return;
+            }
+
+            await _email.SendQuizResultToTeacherAsync(
+                teacher.Email, teacher.FullName,
+                student.FullName, student.Email,
+                attempt.QuizTitle, course.Title,
+                attempt.Score, attempt.Passed);
+
+            _logger.LogInformation(
+                "Quiz result notification sent: student {StudentId} scored {Score}% ({Passed}) on quiz {QuizId}, notified teacher {TeacherId}.",
+                attempt.UserId, attempt.Score, attempt.Passed ? "passed" : "failed", quizId, teacher.Id);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Failed to send quiz result notification. QuizId={QuizId}, AttemptId={AttemptId}, StudentId={StudentId}.",
+                quizId, attempt.Id, attempt.UserId);
+        }
     }
 
     public async Task<IActionResult> Result(int attemptId)
