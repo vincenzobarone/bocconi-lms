@@ -52,9 +52,12 @@
 
                 @{
                     var currentLang = T.CurrentLanguage;
-                    var allLangs = BocconiLMS.Services.TranslationService.AllLanguages;
-                    var currentLangInfo = allLangs.FirstOrDefault(l => l.Code == currentLang);
+                    var enabledLangs = T.EnabledLanguages;
+                    var currentLangInfo = enabledLangs.FirstOrDefault(l => l.Code == currentLang);
+                    if (currentLangInfo == default) currentLangInfo = enabledLangs.First();
                 }
+                @if (enabledLangs.Count > 1)
+                {
                 <li class="nav-item dropdown me-2">
                     <a class="nav-link dropdown-toggle d-flex align-items-center gap-1" href="#"
                        data-bs-toggle="dropdown" title="Language / Lingua">
@@ -62,7 +65,7 @@
                         <span class="text-uppercase small fw-semibold">@currentLang</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        @foreach (var lang in allLangs)
+                        @foreach (var lang in enabledLangs)
                         {
                             <li>
                                 <form asp-controller="Language" asp-action="Set" method="post" class="d-inline">
@@ -79,6 +82,7 @@
                         }
                     </ul>
                 </li>
+                }
 
                 @if (User.Identity?.IsAuthenticated == true)
                 {

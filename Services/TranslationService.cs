@@ -6,32 +6,45 @@ namespace BocconiLMS.Services;
 public class TranslationService
 {
     private readonly TranslationRepository _repo;
+    private readonly SettingsRepository _settings;
     private readonly IMemoryCache _cache;
     private readonly IHttpContextAccessor _httpContext;
 
-    private static readonly string[] SupportedLanguages = ["en", "it", "es", "de"];
+    public static readonly string[] AllSupportedCodes = ["en", "it", "es", "de"];
     private const string CachePrefix = "translations_";
+    private const string EnabledLangsCacheKey = "enabled_languages";
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(30);
+    private static readonly TimeSpan LangCacheDuration = TimeSpan.FromMinutes(10);
 
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte>
         _autoInserted = new(StringComparer.OrdinalIgnoreCase);
 
     public TranslationService(
         TranslationRepository repo,
+        SettingsRepository settings,
         IMemoryCache cache,
         IHttpContextAccessor httpContext)
     {
         _repo = repo;
+        _settings = settings;
         _cache = cache;
         _httpContext = httpContext;
     }
+
+    public IReadOnlyList<string> EnabledCodes =>
+        _cache.GetOrCreate(EnabledLangsCacheKey, entry =>
+        {
+            entry.AbsoluteExpirationRelativeToNow = LangCacheDuration;
+            return (IReadOnlyList<string>)_settings.GetEnabledLanguagesAsync().GetAwaiter().GetResult();
+        }) ?? (IReadOnlyList<string>)AllSupportedCodes;
 
     public string CurrentLanguage
     {
         get
         {
             var cookie = _httpContext.HttpContext?.Request.Cookies["lang"] ?? "en";
-            return SupportedLanguages.Contains(cookie) ? cookie : "en";
+            var enabled = EnabledCodes;
+            return enabled.Contains(cookie) ? cookie : "en";
         }
     }
 
@@ -68,8 +81,9 @@ public class TranslationService
 
     public void InvalidateCache()
     {
-        foreach (var lang in SupportedLanguages)
-            _cache.Remove(CachePrefix + lang);
+        foreach (var code in AllSupportedCodes)
+            _cache.Remove(CachePrefix + code);
+        _cache.Remove(EnabledLangsCacheKey);
     }
 
     private Dictionary<string, string> GetCachedLanguage(string lang)
@@ -88,4 +102,13 @@ public class TranslationService
         ("es", "🇪🇸", "Español"),
         ("de", "🇩🇪", "Deutsch")
     ];
+
+    public IReadOnlyList<(string Code, string Flag, string Name)> EnabledLanguages
+    {
+        get
+        {
+            var enabled = EnabledCodes;
+            return AllLanguages.Where(l => enabled.Contains(l.Code)).ToList();
+        }
+    }
 }

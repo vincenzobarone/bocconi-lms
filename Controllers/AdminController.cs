@@ -319,7 +319,32 @@ public class AdminController : Controller
     public async Task<IActionResult> Translations()
     {
         var rows = await _translations.GetAllGroupedAsync();
+        ViewBag.EnabledLanguages = await _settings.GetEnabledLanguagesAsync();
+        ViewBag.MissingCounts = await _translations.GetMissingCountsAsync();
         return View(rows);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveLanguageSettings(List<string> enabledLanguages)
+    {
+        if (enabledLanguages == null || !enabledLanguages.Contains("en"))
+            enabledLanguages = (enabledLanguages ?? new()) .Prepend("en").ToList();
+        await _settings.SaveEnabledLanguagesAsync(enabledLanguages);
+        _translationService.InvalidateCache();
+        TempData["Success"] = "Language settings saved.";
+        return RedirectToAction("Translations");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> FillMissingTranslations()
+    {
+        var enabled = await _settings.GetEnabledLanguagesAsync();
+        var count = await _translations.FillMissingAsync(enabled.Where(l => l != "en"));
+        _translationService.InvalidateCache();
+        TempData["Success"] = $"Filled {count} missing translation(s) with English defaults.";
+        return RedirectToAction("Translations");
     }
 
     [HttpGet]

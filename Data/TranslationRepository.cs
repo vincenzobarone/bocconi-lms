@@ -124,6 +124,46 @@ public class TranslationRepository
         cmd.Parameters.AddWithValue("@key", key);
         return Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
     }
+
+    public async Task<int> FillMissingAsync(IEnumerable<string> targetLanguages)
+    {
+        int total = 0;
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        foreach (var lang in targetLanguages.Where(l => l != "en"))
+        {
+            using var cmd = new MySqlCommand(@"
+                INSERT IGNORE INTO translations (language_code, label_key, label_value, created_at, updated_at)
+                SELECT @lang, label_key, label_value, NOW(), NOW()
+                FROM translations
+                WHERE language_code = 'en'
+                  AND label_key NOT IN (
+                      SELECT label_key FROM translations WHERE language_code = @lang
+                  )", conn);
+            cmd.Parameters.AddWithValue("@lang", lang);
+            total += await cmd.ExecuteNonQueryAsync();
+        }
+        return total;
+    }
+
+    public async Task<Dictionary<string, int>> GetMissingCountsAsync()
+    {
+        var result = new Dictionary<string, int>();
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        foreach (var lang in new[] { "it", "es", "de" })
+        {
+            using var cmd = new MySqlCommand(@"
+                SELECT COUNT(*) FROM translations en
+                WHERE en.language_code = 'en'
+                  AND NOT EXISTS (
+                      SELECT 1 FROM translations WHERE language_code=@lang AND label_key=en.label_key
+                  )", conn);
+            cmd.Parameters.AddWithValue("@lang", lang);
+            result[lang] = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        }
+        return result;
+    }
 }
 
 public class TranslationRow

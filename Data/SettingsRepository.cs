@@ -66,6 +66,28 @@ public class SettingsRepository
         await cmd.ExecuteNonQueryAsync();
     }
 
+    private const string EnabledLangsKey = "Languages:Enabled";
+
+    public async Task<List<string>> GetEnabledLanguagesAsync()
+    {
+        var raw = await GetAsync(EnabledLangsKey);
+        if (string.IsNullOrWhiteSpace(raw))
+            return new List<string> { "en", "it", "es", "de" };
+
+        var codes = raw.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                       .Select(c => c.ToLower())
+                       .ToList();
+        if (!codes.Contains("en")) codes.Insert(0, "en");
+        return codes;
+    }
+
+    public async Task SaveEnabledLanguagesAsync(IEnumerable<string> codes)
+    {
+        var list = codes.Select(c => c.ToLower()).Distinct().ToList();
+        if (!list.Contains("en")) list.Insert(0, "en");
+        await SetAsync(EnabledLangsKey, string.Join(",", list));
+    }
+
     public async Task<Dictionary<string, string?>> GetByPrefixAsync(string prefix)
     {
         var result = new Dictionary<string, string?>();
