@@ -290,11 +290,11 @@ Colonne:
 - Il campo EN è in sola lettura (è la base)
 - Salvare aggiorna solo le lingue modificate
 
-### Fill missing (chiavi mancanti)
-La barra informativa mostra il numero totale di voci mancanti nelle lingue attive. Se > 0, appare il pulsante **"Compila mancanti con valori inglesi"**: copia il valore EN come placeholder per le traduzioni assenti. Le traduzioni così create sono in inglese e vanno poi affinate.
+### Filtro chiavi mancanti
+La barra informativa mostra il numero totale di voci mancanti nelle lingue attive. Se > 0, appare il pulsante **"Mostra solo mancanti"** (icona imbuto): filtra la tabella mostrando solo le righe con almeno una traduzione assente. Cliccarlo di nuovo rimuove il filtro. Le traduzioni mancanti vanno inserite manualmente tramite il pulsante ✏ Modifica.
 
 ### Aggiunta automatica chiavi
-Quando il codice utilizza `T["nuova.chiave", "Default EN"]` e la chiave non esiste nel DB, viene creata automaticamente con il valore di default inglese al primo caricamento della pagina. Le traduzioni per le altre lingue rimangono "Mancante" finché non vengono aggiunte manualmente o tramite "Fill missing".
+Quando il codice utilizza `T["nuova.chiave", "Default EN"]` e la chiave non esiste nel DB, viene creata automaticamente con il valore di default inglese al primo caricamento della pagina. Le traduzioni per le altre lingue rimangono "Mancante" finché non vengono aggiunte manualmente tramite il pulsante ✏ Modifica.
 
 ### Eliminazione chiave
 Il pulsante 🗑 elimina la chiave e **tutte** le sue traduzioni in tutte le lingue. Azione irreversibile.
@@ -337,8 +337,7 @@ artifacts/bocconi-lms/
 │   ├── CourseController.cs     # CRUD corsi, lezioni, studenti
 │   ├── DocumentController.cs  # Upload, versioning, eliminazione documenti
 │   ├── QuizController.cs      # CRUD quiz, svolgimento, cronologia
-│   ├── AccountController.cs   # Login, logout, profilo, reset password
-│   └── HelpController.cs      # Pagina guida utente
+│   └── AccountController.cs   # Login, logout, profilo, reset password
 ├── Data/
 │   ├── DbHelper.cs            # Factory connessioni MySQL
 │   ├── TranslationRepository.cs
@@ -358,10 +357,9 @@ artifacts/bocconi-lms/
 │   ├── Course/
 │   ├── Lesson/
 │   ├── Quiz/
-│   ├── Help/Guide.cshtml       # Guida utente web (role-aware, accordion)
 │   └── Shared/_Layout.cshtml
 ├── Program.cs                  # DI, Kestrel (500 MB upload), startup migrations
-└── schema.sql                  # Schema completo + seed EN/IT/ES/DE
+└── schema.sql                  # DDL puro (niente seed — traduzioni gestite via Admin UI)
 ```
 
 ### Sistema di traduzione
