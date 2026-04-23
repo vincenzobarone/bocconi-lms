@@ -112,6 +112,26 @@ public class EmailService
         await SendAsync(teacherEmail, teacherName, subject, body);
     }
 
+    public async Task SendNewLessonNotificationAsync(string toEmail, string toName, string lessonTitle, string courseTitle)
+    {
+        var subject = $"Nuova lezione disponibile in \"{courseTitle}\"";
+        var body = $@"
+<html><body style='font-family: Arial, sans-serif; color: #333;'>
+<div style='max-width:600px; margin:0 auto; padding:24px;'>
+  <h2 style='color:#003366;'>Nuova lezione disponibile</h2>
+  <p>Ciao <strong>{HtmlEncode(toName)}</strong>,</p>
+  <p>È stata pubblicata una nuova lezione nel corso <strong>{HtmlEncode(courseTitle)}</strong> a cui sei iscritto/a:</p>
+  <div style='background:#f5f7fa;border-left:4px solid #003366;padding:12px 16px;margin:16px 0;border-radius:4px;'>
+    <strong style='font-size:16px;'>{HtmlEncode(lessonTitle)}</strong>
+  </div>
+  <p>Accedi alla piattaforma per visualizzare la lezione e continuare il tuo percorso formativo.</p>
+  <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
+  <p style='color:#888;font-size:12px;'>Bocconi LMS – notifica automatica</p>
+</div>
+</body></html>";
+        await SendAsync(toEmail, toName, subject, body);
+    }
+
     public async Task SendLessonReminderAsync(string toEmail, string toName, string courseTitle, int incompleteLessons)
     {
         var subject = $"Promemoria: hai lezioni da completare in \"{courseTitle}\"";

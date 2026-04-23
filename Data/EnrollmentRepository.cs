@@ -13,6 +13,14 @@ public class EnrollmentReminderInfo
     public int IncompleteLessons { get; set; }
 }
 
+public class EnrolledStudentContact
+{
+    public int UserId { get; set; }
+    public string Email { get; set; } = string.Empty;
+    public string FirstName { get; set; } = string.Empty;
+    public string FullName { get; set; } = string.Empty;
+}
+
 public class EnrollmentRepository
 {
     private readonly DbHelper _db;
@@ -120,6 +128,33 @@ public class EnrollmentRepository
                 TotalLessons = total,
                 CompletedLessons = completed,
                 ProgressPercent = total > 0 ? (int)Math.Round((double)completed / total * 100) : 0
+            });
+        }
+        return list;
+    }
+
+    public async Task<List<EnrolledStudentContact>> GetEnrolledStudentContactsAsync(int courseId)
+    {
+        var list = new List<EnrolledStudentContact>();
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            SELECT u.id AS user_id, u.email, u.first_name,
+                   CONCAT(u.first_name, ' ', u.last_name) AS full_name
+            FROM enrollments e
+            JOIN users u ON u.id = e.user_id
+            WHERE e.course_id = @cid AND u.is_active = 1
+            ORDER BY u.last_name, u.first_name", conn);
+        cmd.Parameters.AddWithValue("@cid", courseId);
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (reader.Read())
+        {
+            list.Add(new EnrolledStudentContact
+            {
+                UserId = reader.GetInt32("user_id"),
+                Email = reader.GetString("email"),
+                FirstName = reader.GetString("first_name"),
+                FullName = reader.GetString("full_name")
             });
         }
         return list;
