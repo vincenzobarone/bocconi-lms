@@ -312,17 +312,7 @@ Le traduzioni sono salvate nella tabella `translations` (language_code, label_ke
 
 ### Come aggiungere una nuova chiave di traduzione
 
-**Via codice (modo preferito):**
-Usare la sintassi `T["nuova.chiave", "Default EN"]` nella view Razor. Al primo caricamento della pagina la chiave viene inserita automaticamente nel DB con il valore inglese. Le traduzioni IT/ES/DE rimangono "Mancante" finché non vengono compilate dall'admin via ✏ Modifica nella tabella traduzioni.
-
-**Via SQL diretto:**
-```sql
-INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
-  ('en', 'course.subtitle', 'Course subtitle'),
-  ('it', 'course.subtitle', 'Sottotitolo del corso'),
-  ('es', 'course.subtitle', 'Subtítulo del curso'),
-  ('de', 'course.subtitle', 'Kurs-Untertitel');
-```
+Usare la sintassi `T["nuova.chiave", "Default EN"]` nella view Razor. Al primo caricamento della pagina la chiave viene inserita automaticamente nel DB con il valore inglese. Le traduzioni IT/ES/DE rimangono "Mancante" finché non vengono compilate dall'admin via ✏ **Modifica** nella tabella traduzioni (Admin → Translations).
 
 ### Come usare le chiavi nelle Razor View
 
