@@ -1,12 +1,12 @@
 @model StudentDashboard
 @{
-    ViewData["Title"] = "La mia Dashboard";
+    ViewData["Title"] = T["student.dashboard_title","My Dashboard"];
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-speedometer2 me-2"></i>Dashboard Studente</h2>
+    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-speedometer2 me-2"></i>@T["student.dashboard_title","My Dashboard"]</h2>
     <a asp-controller="Course" asp-action="Index" class="btn btn-bocconi">
-        <i class="bi bi-search me-1"></i>Esplora corsi
+        <i class="bi bi-search me-1"></i>@T["student.explore_courses","Explore courses"]
     </a>
 </div>
 
@@ -14,24 +14,24 @@
     <div class="col-sm-4">
         <div class="card stat-card p-3 text-center">
             <div class="display-5 fw-bold text-bocconi">@Model.Enrollments.Count</div>
-            <div class="text-muted small">Corsi iscritto</div>
+            <div class="text-muted small">@T["student.stat_enrolled","Enrolled courses"]</div>
         </div>
     </div>
     <div class="col-sm-4">
         <div class="card stat-card gold p-3 text-center">
             <div class="display-5 fw-bold" style="color:#c8a96e;">@Model.TotalCompleted</div>
-            <div class="text-muted small">Corsi completati</div>
+            <div class="text-muted small">@T["student.stat_completed","Completed courses"]</div>
         </div>
     </div>
     <div class="col-sm-4">
         <div class="card stat-card p-3 text-center">
             <div class="display-5 fw-bold text-bocconi">@Model.RecentAttempts.Count(a => a.Passed)</div>
-            <div class="text-muted small">Quiz superati</div>
+            <div class="text-muted small">@T["student.stat_quiz_passed","Passed quizzes"]</div>
         </div>
     </div>
 </div>
 
-<h4 class="fw-semibold mb-3">I miei corsi</h4>
+<h4 class="fw-semibold mb-3">@T["student.my_courses","My courses"]</h4>
 @if (Model.Enrollments.Any())
 {
     <div class="row g-3 mb-4">
@@ -42,14 +42,14 @@
                     <div class="card-body">
                         <h6 class="fw-bold">@e.CourseTitle</h6>
                         <div class="d-flex justify-content-between small text-muted mb-2">
-                            <span>@e.CompletedLessons / @e.TotalLessons lezioni</span>
+                            <span>@e.CompletedLessons / @e.TotalLessons @T["common.lessons","lessons"]</span>
                             <span class="fw-semibold @(e.ProgressPercent == 100 ? "text-success" : "text-bocconi")">@e.ProgressPercent%</span>
                         </div>
                         <div class="progress mb-3">
                             <div class="progress-bar bg-bocconi" style="width:@e.ProgressPercent%; background-color:var(--bocconi-blue)!important;"></div>
                         </div>
                         <a asp-controller="Course" asp-action="Details" asp-route-id="@e.CourseId"
-                           class="btn btn-sm btn-outline-secondary w-100">Continua</a>
+                           class="btn btn-sm btn-outline-secondary w-100">@T["student.continue_btn","Continue"]</a>
                     </div>
                 </div>
             </div>
@@ -59,22 +59,22 @@
 else
 {
     <div class="alert alert-info">
-        <i class="bi bi-info-circle me-2"></i>Non sei iscritto a nessun corso.
-        <a asp-controller="Course" asp-action="Index">Esplora il catalogo</a>.
+        <i class="bi bi-info-circle me-2"></i>@T["student.no_courses","You are not enrolled in any course."]
+        <a asp-controller="Course" asp-action="Index">@T["student.explore_catalog","Explore the catalogue"]</a>.
     </div>
 }
 
 @if (Model.RecentAttempts.Any())
 {
-    <h4 class="fw-semibold mb-3">Ultimi quiz</h4>
+    <h4 class="fw-semibold mb-3">@T["student.recent_quizzes","Recent quizzes"]</h4>
     <div class="table-responsive">
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>Quiz</th>
-                    <th>Punteggio</th>
-                    <th>Esito</th>
-                    <th>Data</th>
+                    <th>@T["quiz.col_quiz","Quiz"]</th>
+                    <th>@T["quiz.col_score","Score"]</th>
+                    <th>@T["quiz.col_result","Result"]</th>
+                    <th>@T["quiz.col_date","Date"]</th>
                 </tr>
             </thead>
             <tbody>
@@ -86,11 +86,11 @@ else
                         <td>
                             @if (a.Passed)
                             {
-                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Superato</span>
+                                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>@T["quiz.passed","Passed"]</span>
                             }
                             else
                             {
-                                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Non superato</span>
+                                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>@T["quiz.failed","Failed"]</span>
                             }
                         </td>
                         <td class="text-muted small">@a.AttemptedAt.ToString("dd/MM/yyyy HH:mm")</td>

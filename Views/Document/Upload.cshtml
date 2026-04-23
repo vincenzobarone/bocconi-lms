@@ -1,14 +1,16 @@
 @model DocumentUploadViewModel
 @{
     var existingDoc = ViewBag.ExistingDoc as Document;
-    ViewData["Title"] = existingDoc != null ? $"Nuova versione - {existingDoc.Title}" : "Carica documento";
+    ViewData["Title"] = existingDoc != null
+        ? $"{T["doc.new_version_title","New version"]} - {existingDoc.Title}"
+        : T["doc.upload_title","Upload document"];
 }
 
 <div class="row justify-content-center">
     <div class="col-lg-6">
         <h2 class="fw-bold text-bocconi mb-1">
             <i class="bi bi-upload me-2"></i>
-            @(existingDoc != null ? $"Nuova versione: {existingDoc.Title}" : "Carica documento")
+            @(existingDoc != null ? $"{T["doc.new_version_title","New version"]}: {existingDoc.Title}" : T["doc.upload_title","Upload document"])
         </h2>
         <p class="text-muted mb-4"><i class="bi bi-book me-1"></i>@ViewBag.LessonTitle</p>
 
@@ -22,8 +24,8 @@
                     @if (existingDoc == null)
                     {
                         <div class="mb-3">
-                            <label asp-for="Title" class="form-label fw-semibold">Titolo documento *</label>
-                            <input asp-for="Title" class="form-control" placeholder="Es: Slide Lezione 1" />
+                            <label asp-for="Title" class="form-label fw-semibold">@T["doc.form.title","Document title"] *</label>
+                            <input asp-for="Title" class="form-control" placeholder="@T["doc.form.title_placeholder","e.g. Lecture 1 Slides"]" />
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
                     }
@@ -32,13 +34,13 @@
                         <input type="hidden" asp-for="Title" value="@existingDoc.Title" />
                         <div class="alert alert-info small mb-3">
                             <i class="bi bi-info-circle me-1"></i>
-                            Versione attuale: <strong>v@existingDoc.CurrentVersion</strong>.
-                            La nuova versione sarà <strong>v@(existingDoc.CurrentVersion + 1)</strong>.
+                            @T["doc.current_version","Current version"]: <strong>v@existingDoc.CurrentVersion</strong>.
+                            @T["doc.new_version_will_be","The new version will be"] <strong>v@(existingDoc.CurrentVersion + 1)</strong>.
                         </div>
                     }
 
                     <div class="mb-3">
-                        <label asp-for="File" class="form-label fw-semibold">File *</label>
+                        <label asp-for="File" class="form-label fw-semibold">@T["doc.form.file","File"] *</label>
                         <input asp-for="File" type="file" class="form-control"
                                accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt" />
                         <div class="form-text">PDF, Word, PowerPoint, Excel, TXT (max 50MB)</div>
@@ -46,17 +48,17 @@
                     </div>
 
                     <div class="mb-4">
-                        <label asp-for="Notes" class="form-label fw-semibold">Note (opzionale)</label>
+                        <label asp-for="Notes" class="form-label fw-semibold">@T["doc.form.notes","Notes (optional)"]</label>
                         <textarea asp-for="Notes" class="form-control" rows="2"
-                                  placeholder="Cosa è cambiato in questa versione?"></textarea>
+                                  placeholder="@T["doc.form.notes_placeholder","What changed in this version?"]"></textarea>
                     </div>
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-bocconi px-4">
-                            <i class="bi bi-upload me-2"></i>Carica
+                            <i class="bi bi-upload me-2"></i>@T["doc.upload_btn","Upload"]
                         </button>
                         <a asp-controller="Lesson" asp-action="Details" asp-route-id="@Model.LessonId"
-                           class="btn btn-outline-secondary">Annulla</a>
+                           class="btn btn-outline-secondary">@T["common.cancel","Cancel"]</a>
                     </div>
                 </form>
             </div>

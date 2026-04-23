@@ -1,11 +1,11 @@
 @model QuizFormViewModel
 @{
-    ViewData["Title"] = "Crea quiz";
+    ViewData["Title"] = T["quiz.create_title","Create quiz"];
 }
 
 <div class="row">
     <div class="col-lg-10 mx-auto">
-        <h2 class="fw-bold text-bocconi mb-1"><i class="bi bi-clipboard2-plus me-2"></i>Crea quiz</h2>
+        <h2 class="fw-bold text-bocconi mb-1"><i class="bi bi-clipboard2-plus me-2"></i>@T["quiz.create_title","Create quiz"]</h2>
         <p class="text-muted mb-4"><i class="bi bi-book me-1"></i>@ViewBag.LessonTitle</p>
 
         <form asp-action="Create" method="post" id="quizForm">
@@ -13,25 +13,25 @@
             <input type="hidden" asp-for="LessonId" />
 
             <div class="card mb-4">
-                <div class="card-header fw-semibold">Impostazioni quiz</div>
+                <div class="card-header fw-semibold">@T["quiz.form.settings","Quiz settings"]</div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label asp-for="Title" class="form-label fw-semibold">Titolo *</label>
-                        <input asp-for="Title" class="form-control" placeholder="Es: Verifica lezione 1" />
+                        <label asp-for="Title" class="form-label fw-semibold">@T["quiz.form.title","Title"] *</label>
+                        <input asp-for="Title" class="form-control" placeholder="@T["quiz.form.title_placeholder","e.g. Lesson 1 test"]" />
                         <span asp-validation-for="Title" class="text-danger small"></span>
                     </div>
                     <div class="mb-3">
-                        <label asp-for="Description" class="form-label fw-semibold">Descrizione</label>
+                        <label asp-for="Description" class="form-label fw-semibold">@T["quiz.form.description","Description"]</label>
                         <textarea asp-for="Description" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label asp-for="TimeLimitMinutes" class="form-label fw-semibold">Tempo limite (minuti)</label>
+                            <label asp-for="TimeLimitMinutes" class="form-label fw-semibold">@T["quiz.form.time_limit","Time limit (minutes)"]</label>
                             <input asp-for="TimeLimitMinutes" type="number" class="form-control" min="5" max="180" />
                             <span asp-validation-for="TimeLimitMinutes" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label asp-for="PassingScore" class="form-label fw-semibold">Punteggio sufficienza (%)</label>
+                            <label asp-for="PassingScore" class="form-label fw-semibold">@T["quiz.form.passing_score","Passing score (%)"]</label>
                             <input asp-for="PassingScore" type="number" class="form-control" min="1" max="100" />
                             <span asp-validation-for="PassingScore" class="text-danger small"></span>
                         </div>
@@ -42,15 +42,15 @@
             <div id="questionsContainer"></div>
 
             <button type="button" class="btn btn-outline-secondary mb-4" onclick="addQuestion()">
-                <i class="bi bi-plus-circle me-1"></i>Aggiungi domanda
+                <i class="bi bi-plus-circle me-1"></i>@T["quiz.add_question_btn","Add question"]
             </button>
 
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-bocconi px-4">
-                    <i class="bi bi-check-lg me-2"></i>Salva quiz
+                    <i class="bi bi-check-lg me-2"></i>@T["quiz.save_btn","Save quiz"]
                 </button>
                 <a asp-controller="Lesson" asp-action="Details" asp-route-id="@Model.LessonId"
-                   class="btn btn-outline-secondary">Annulla</a>
+                   class="btn btn-outline-secondary">@T["common.cancel","Cancel"]</a>
             </div>
         </form>
     </div>
@@ -59,28 +59,32 @@
 @section Scripts {
 <script>
 var qCount = 0;
+var lblQuestion = '@T["quiz.js.question","Question"]';
+var lblQuestionText = '@T["quiz.js.question_text","Question text"] *';
+var lblQuestionPlaceholder = '@T["quiz.js.question_placeholder","Enter the question..."]';
+var lblOptions = '@T["quiz.js.options","Options"]';
+var lblOptionsHint = '@T["quiz.js.options_hint","(select the circle of the correct answer)"]';
+var lblOptionPlaceholder = '@T["quiz.js.option_placeholder","Option"]';
+var lblAtLeastOne = '@T["quiz.js.at_least_one","Please add at least one question to the quiz."]';
 
 function addQuestion() {
     var idx = qCount;
     qCount++;
-    // Each question gets its own radio group name: correctOpt with index in form array
-    // correctOpt[idx] = 1..4 (which option is correct for this question)
-    var groupName = 'correctOpt';
     var html = '<div class="card mb-3" id="qcard-' + idx + '" data-qidx="' + idx + '">' +
         '<div class="card-header d-flex justify-content-between align-items-center">' +
-        '<span class="fw-semibold">Domanda ' + (idx + 1) + '</span>' +
+        '<span class="fw-semibold">' + lblQuestion + ' ' + (idx + 1) + '</span>' +
         '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestion(' + idx + ')"><i class="bi bi-trash"></i></button>' +
         '</div><div class="card-body">' +
-        '<div class="mb-3"><label class="form-label fw-semibold">Testo domanda *</label>' +
-        '<input type="text" name="questionTexts" class="form-control" placeholder="Inserisci la domanda..." required /></div>' +
-        '<div class="mb-2 fw-semibold small text-muted">Opzioni <span class="text-danger">(seleziona il cerchio della risposta corretta)</span></div>' +
+        '<div class="mb-3"><label class="form-label fw-semibold">' + lblQuestionText + '</label>' +
+        '<input type="text" name="questionTexts" class="form-control" placeholder="' + lblQuestionPlaceholder + '" required /></div>' +
+        '<div class="mb-2 fw-semibold small text-muted">' + lblOptions + ' <span class="text-danger">(' + lblOptionsHint + ')</span></div>' +
         [1,2,3,4].map(function(i) {
             return '<div class="input-group mb-2">' +
                 '<div class="input-group-text">' +
                 '<input type="radio" class="qradio" data-qidx="' + idx + '" value="' + i + '"' +
                 (i === 1 ? ' checked' : '') + ' />' +
                 '</div>' +
-                '<input type="text" name="opt' + i + '" class="form-control" placeholder="Opzione ' + i + '" required />' +
+                '<input type="text" name="opt' + i + '" class="form-control" placeholder="' + lblOptionPlaceholder + ' ' + i + '" required />' +
                 '</div>';
         }).join('') +
         '</div></div>';
@@ -95,14 +99,12 @@ function removeQuestion(idx) {
 }
 
 function reindexAll() {
-    // Assign unique name per question position so only one radio per question can be selected
     var cards = document.querySelectorAll('#questionsContainer .card[data-qidx]');
     cards.forEach(function(card, pos) {
         var radios = card.querySelectorAll('.qradio');
         radios.forEach(function(r) {
             r.name = 'correctOpt_q' + pos;
         });
-        // Hidden field to carry the selected value as correctOpt for the server
         var hidden = card.querySelector('.correctOpt-hidden');
         if (!hidden) {
             hidden = document.createElement('input');
@@ -111,14 +113,10 @@ function reindexAll() {
             hidden.className = 'correctOpt-hidden';
             card.querySelector('.card-body').appendChild(hidden);
         }
-        // Set current value from checked radio
         var checked = card.querySelector('.qradio:checked');
         hidden.value = checked ? checked.value : '1';
-        // Update hidden on radio change
         radios.forEach(function(r) {
-            r.onchange = function() {
-                hidden.value = r.value;
-            };
+            r.onchange = function() { hidden.value = r.value; };
         });
     });
 }
@@ -127,7 +125,7 @@ document.getElementById('quizForm').addEventListener('submit', function(e) {
     var cards = document.querySelectorAll('#questionsContainer .card[data-qidx]');
     if (cards.length === 0) {
         e.preventDefault();
-        alert('Aggiungi almeno una domanda al quiz.');
+        alert(lblAtLeastOne);
         return;
     }
     reindexAll();

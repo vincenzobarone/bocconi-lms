@@ -1,6 +1,6 @@
 @model QuizAttempt
 @{
-    ViewData["Title"] = "Risultato quiz";
+    ViewData["Title"] = T["quiz.result_title","Quiz result"];
 }
 
 <div class="row justify-content-center">
@@ -10,12 +10,12 @@
                 @if (Model.Passed)
                 {
                     <i class="bi bi-trophy-fill display-1 text-warning mb-3 d-block"></i>
-                    <h2 class="fw-bold text-success">Quiz superato!</h2>
+                    <h2 class="fw-bold text-success">@T["quiz.result_passed","Quiz passed!"]</h2>
                 }
                 else
                 {
                     <i class="bi bi-x-circle-fill display-1 text-danger mb-3 d-block"></i>
-                    <h2 class="fw-bold text-danger">Quiz non superato</h2>
+                    <h2 class="fw-bold text-danger">@T["quiz.result_failed","Quiz not passed"]</h2>
                 }
 
                 <div class="display-4 fw-bold @(Model.Passed ? "text-success" : "text-danger") my-3">
@@ -23,8 +23,8 @@
                 </div>
 
                 <p class="text-muted mb-4">
-                    Risposte corrette: <strong>@Model.CorrectAnswers / @Model.TotalQuestions</strong><br/>
-                    Punteggio minimo: @Model.PassingScore%
+                    @T["quiz.correct_answers","Correct answers"]: <strong>@Model.CorrectAnswers / @Model.TotalQuestions</strong><br/>
+                    @T["quiz.passing_score","Passing score"]: @Model.PassingScore%
                 </p>
 
                 <div class="progress mb-4" style="height:16px;">
@@ -34,10 +34,10 @@
 
                 <div class="d-flex gap-3 justify-content-center">
                     <a asp-action="Take" asp-route-id="@Model.QuizId" class="btn btn-outline-secondary">
-                        <i class="bi bi-arrow-repeat me-1"></i>Ritenta
+                        <i class="bi bi-arrow-repeat me-1"></i>@T["quiz.retry_btn","Retry"]
                     </a>
                     <a asp-action="History" asp-route-quizId="@Model.QuizId" class="btn btn-bocconi">
-                        <i class="bi bi-list-ul me-1"></i>Storico tentativi
+                        <i class="bi bi-list-ul me-1"></i>@T["quiz.history_btn","Attempt history"]
                     </a>
                 </div>
             </div>

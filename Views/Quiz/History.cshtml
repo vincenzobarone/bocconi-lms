@@ -1,17 +1,17 @@
 @model List<QuizAttempt>
 @{
     var quiz = ViewBag.Quiz as Quiz;
-    ViewData["Title"] = $"Storico - {quiz?.Title}";
+    ViewData["Title"] = $"{T["quiz.history_title","History"]} - {quiz?.Title}";
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-controller="Lesson" asp-action="Details" asp-route-id="@quiz?.LessonId">Lezione</a></li>
-        <li class="breadcrumb-item active">Storico quiz</li>
+        <li class="breadcrumb-item"><a asp-controller="Lesson" asp-action="Details" asp-route-id="@quiz?.LessonId">@T["common.lesson","Lesson"]</a></li>
+        <li class="breadcrumb-item active">@T["quiz.history_title","Quiz history"]</li>
     </ol>
 </nav>
 
-<h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-list-ul me-2"></i>Storico: @quiz?.Title</h2>
+<h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-list-ul me-2"></i>@T["quiz.history_heading","History"]: @quiz?.Title</h2>
 
 @if (Model.Any())
 {
@@ -21,10 +21,10 @@
                 <thead class="table-light">
                     <tr>
                         <th>#</th>
-                        <th>Punteggio</th>
-                        <th>Risposte corrette</th>
-                        <th>Esito</th>
-                        <th>Data</th>
+                        <th>@T["quiz.col_score","Score"]</th>
+                        <th>@T["quiz.col_correct_answers","Correct answers"]</th>
+                        <th>@T["quiz.col_result","Result"]</th>
+                        <th>@T["quiz.col_date","Date"]</th>
                         <th></th>
                     </tr>
                 </thead>
@@ -39,15 +39,15 @@
                             <td>
                                 @if (a.Passed)
                                 {
-                                    <span class="badge bg-success">Superato</span>
+                                    <span class="badge bg-success">@T["quiz.passed","Passed"]</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-danger">Non superato</span>
+                                    <span class="badge bg-danger">@T["quiz.failed","Failed"]</span>
                                 }
                             </td>
                             <td class="text-muted small">@a.AttemptedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                            <td><a asp-action="Take" asp-route-id="@a.QuizId" class="btn btn-sm btn-outline-secondary">Ritenta</a></td>
+                            <td><a asp-action="Take" asp-route-id="@a.QuizId" class="btn btn-sm btn-outline-secondary">@T["quiz.retry_btn","Retry"]</a></td>
                         </tr>
                     }
                 </tbody>
@@ -57,5 +57,5 @@
 }
 else
 {
-    <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>Nessun tentativo effettuato.</div>
+    <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>@T["quiz.no_attempts","No attempts made yet."]</div>
 }
