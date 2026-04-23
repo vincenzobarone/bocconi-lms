@@ -113,23 +113,53 @@ public class AdminController : Controller
         if (user == null) return NotFound();
         user.FirstName = model.FirstName;
         user.LastName = model.LastName;
+
+        string resolvedRole = user.Role;
         if (user.Role != "Admin")
         {
             var allowed = new[] { "Student", "Teacher" };
-            user.Role = allowed.Contains(model.Role) ? model.Role : user.Role;
+            var requestedRole = allowed.Contains(model.Role) ? model.Role : user.Role;
+
+            if (requestedRole != user.Role)
+            {
+                // Block Teacher → * if they have active courses
+                if (user.Role == "Teacher")
+                {
+                    var courseCount = await _users.GetActiveCourseCountAsync(user.Id);
+                    if (courseCount > 0)
+                    {
+                        ModelState.AddModelError("Role",
+                            $"Cannot change role: this teacher has {courseCount} active course(s). Reassign or delete the courses first.");
+                        return View(user);
+                    }
+                }
+                // Block Student → * if they are enrolled in any course
+                else if (user.Role == "Student")
+                {
+                    var enrollments = await _enrollments.GetByUserAsync(user.Id);
+                    if (enrollments.Count > 0)
+                    {
+                        ModelState.AddModelError("Role",
+                            $"Cannot change role: this student is enrolled in {enrollments.Count} course(s). Unenroll them first.");
+                        return View(user);
+                    }
+                }
+                resolvedRole = requestedRole;
+            }
+
+            user.Role = resolvedRole;
         }
+
         user.IsActive = model.IsActive;
         await _users.UpdateAsync(user);
 
         var appUser = await _userManager.FindByIdAsync(model.Id.ToString());
         if (appUser != null && user.Role != "Admin")
         {
-            var allowedRoles = new[] { "Student", "Teacher" };
-            var newRole = allowedRoles.Contains(model.Role) ? model.Role : user.Role;
             var currentRoles = await _userManager.GetRolesAsync(appUser);
             await _userManager.RemoveFromRolesAsync(appUser, currentRoles);
-            await EnsureRoleExistsAsync(newRole);
-            await _userManager.AddToRoleAsync(appUser, newRole);
+            await EnsureRoleExistsAsync(resolvedRole);
+            await _userManager.AddToRoleAsync(appUser, resolvedRole);
         }
 
         TempData["Success"] = "Utente aggiornato.";
