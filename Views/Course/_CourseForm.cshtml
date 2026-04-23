@@ -1,42 +1,42 @@
 @model CourseFormViewModel
 
 <div class="mb-3">
-    <label asp-for="Title" class="form-label fw-semibold">Titolo *</label>
-    <input asp-for="Title" class="form-control" placeholder="Es: Economia Aziendale I" />
+    <label asp-for="Title" class="form-label fw-semibold">@T["course.form.title","Title"] *</label>
+    <input asp-for="Title" class="form-control" placeholder="@T["course.form.title_placeholder","e.g. Business Economics I"]" />
     <span asp-validation-for="Title" class="text-danger small"></span>
 </div>
 <div class="mb-3">
-    <label asp-for="Description" class="form-label fw-semibold">Descrizione *</label>
-    <textarea asp-for="Description" class="form-control" rows="4" placeholder="Descrivi il contenuto del corso..."></textarea>
+    <label asp-for="Description" class="form-label fw-semibold">@T["course.form.description","Description"] *</label>
+    <textarea asp-for="Description" class="form-control" rows="4" placeholder="@T["course.form.description_placeholder","Describe the course content..."]"></textarea>
     <span asp-validation-for="Description" class="text-danger small"></span>
 </div>
 <div class="mb-3">
-    <label asp-for="Category" class="form-label fw-semibold">Categoria *</label>
+    <label asp-for="Category" class="form-label fw-semibold">@T["course.form.category","Category"] *</label>
     <select asp-for="Category" class="form-select">
-        <option value="">Seleziona categoria...</option>
-        <option>Economia</option>
-        <option>Management</option>
-        <option>Finanza</option>
-        <option>Marketing</option>
-        <option>Diritto</option>
-        <option>Informatica</option>
-        <option>Statistica</option>
-        <option>Lingue</option>
-        <option>Altro</option>
+        <option value="">@T["course.form.select_category","Select a category..."]</option>
+        <option>@T["cat.economics","Economics"]</option>
+        <option>@T["cat.management","Management"]</option>
+        <option>@T["cat.finance","Finance"]</option>
+        <option>@T["cat.marketing","Marketing"]</option>
+        <option>@T["cat.law","Law"]</option>
+        <option>@T["cat.it","Computer Science"]</option>
+        <option>@T["cat.statistics","Statistics"]</option>
+        <option>@T["cat.languages","Languages"]</option>
+        <option>@T["cat.other","Other"]</option>
     </select>
     <span asp-validation-for="Category" class="text-danger small"></span>
 </div>
 <div class="row">
     <div class="col-md-6 mb-3">
-        <label asp-for="StartDate" class="form-label fw-semibold">Data inizio</label>
+        <label asp-for="StartDate" class="form-label fw-semibold">@T["course.form.start_date","Start date"]</label>
         <input asp-for="StartDate" type="date" class="form-control" />
     </div>
     <div class="col-md-6 mb-3">
-        <label asp-for="EndDate" class="form-label fw-semibold">Data fine</label>
+        <label asp-for="EndDate" class="form-label fw-semibold">@T["course.form.end_date","End date"]</label>
         <input asp-for="EndDate" type="date" class="form-control" />
     </div>
 </div>
 <div class="form-check">
     <input asp-for="IsPublished" class="form-check-input" type="checkbox" />
-    <label asp-for="IsPublished" class="form-check-label">Pubblica immediatamente (visibile agli studenti)</label>
+    <label asp-for="IsPublished" class="form-check-label">@T["course.form.publish","Publish immediately (visible to students)"]</label>
 </div>
