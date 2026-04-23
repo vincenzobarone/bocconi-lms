@@ -26,7 +26,7 @@ public class RegisterViewModel
     public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = "Password obbligatoria")]
-    [MinLength(6, ErrorMessage = "Minimo 6 caratteri")]
+    [MinLength(8, ErrorMessage = "Minimo 8 caratteri")]
     [DataType(DataType.Password)]
     public string Password { get; set; } = string.Empty;
 

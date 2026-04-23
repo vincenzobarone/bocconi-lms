@@ -10,6 +10,12 @@
             <div class="card-body p-4">
                 <form asp-action="CreateUser" method="post">
                     @Html.AntiForgeryToken()
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger py-2 mb-3">
+                            @Html.ValidationSummary(false, null, new { @class = "mb-0" })
+                        </div>
+                    }
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label asp-for="FirstName" class="form-label fw-semibold">@T["common.first_name", "First Name"] *</label>
@@ -30,6 +36,7 @@
                     <div class="mb-3">
                         <label asp-for="Password" class="form-label fw-semibold">Password *</label>
                         <input asp-for="Password" type="password" class="form-control" />
+                        <div class="form-text">@T["admin.users.password_hint","Minimum 8 characters"]</div>
                         <span asp-validation-for="Password" class="text-danger small"></span>
                     </div>
                     <div class="mb-4">
