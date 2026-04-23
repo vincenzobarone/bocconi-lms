@@ -1,3 +1,4 @@
+@inject BocconiLMS.Services.AppVersionService _ver
 <!DOCTYPE html>
 <html lang="@T.CurrentLanguage">
 <head>
@@ -135,6 +136,9 @@
 <footer class="footer mt-auto py-3 bg-light border-top">
     <div class="container text-center text-muted small">
         &copy; @DateTime.Now.Year Università Bocconi — @T["footer.copyright"]
+        <span class="footer-rev" title="@_ver.Environment">
+            &nbsp;·&nbsp;<span class="@(_ver.Environment == "Development" ? "rev-dev" : "rev-prod")">&#9679;</span>&nbsp;<code>@_ver.CommitHash</code>
+        </span>
     </div>
 </footer>
 
@@ -156,10 +160,5 @@ window.dtIT = {
 window.dtLang = function() { return window.currentLang === 'it' ? window.dtIT : {}; };
 </script>
 @await RenderSectionAsync("Scripts", required: false)
-@inject BocconiLMS.Services.AppVersionService _ver
-<div id="build-badge" title="Build: @_ver.CommitHash — @_ver.Environment">
-    <span class="badge-dot @(_ver.Environment == "Development" ? "badge-dev" : "badge-prod")"></span>
-    <span class="badge-text">@_ver.CommitHash</span>
-</div>
 </body>
 </html>

@@ -90,35 +90,10 @@ html { min-height: 100%; }
 body { display: flex; flex-direction: column; min-height: 100vh; }
 main { flex: 1; }
 
-#build-badge {
-    position: fixed;
-    bottom: 10px;
-    right: 12px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    background: rgba(0,0,0,0.45);
-    color: rgba(255,255,255,0.85);
-    font-family: monospace;
-    font-size: 11px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    z-index: 9999;
-    cursor: default;
-    user-select: none;
-    backdrop-filter: blur(2px);
+.footer-rev {
+    opacity: 0.6;
+    font-size: 0.8em;
 }
 
-#build-badge:hover {
-    background: rgba(0,0,0,0.65);
-}
-
-.badge-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    flex-shrink: 0;
-}
-
-.badge-dev  { background: #f5a623; }
-.badge-prod { background: #4caf50; }
+.rev-dev  { color: #f5a623; font-size: 0.85em; }
+.rev-prod { color: #4caf50; font-size: 0.85em; }
