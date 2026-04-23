@@ -16,6 +16,7 @@ builder.Services.AddScoped<QuizRepository>();
 builder.Services.AddScoped<EnrollmentRepository>();
 builder.Services.AddScoped<ProgressRepository>();
 builder.Services.AddScoped<UserRepository>();
+builder.Services.AddScoped<SettingsRepository>();
 
 builder.Services.AddScoped<IUserStore<ApplicationUser>, CustomUserStore>();
 builder.Services.AddScoped<IRoleStore<ApplicationRole>, CustomRoleStore>();

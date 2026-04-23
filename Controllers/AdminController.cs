@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
+using BocconiLMS.Services;
 
 namespace BocconiLMS.Controllers;
 
@@ -13,17 +14,23 @@ public class AdminController : Controller
     private readonly CourseRepository _courses;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<ApplicationRole> _roleManager;
+    private readonly SettingsRepository _settings;
+    private readonly EmailService _emailService;
 
     public AdminController(
         UserRepository users,
         CourseRepository courses,
         UserManager<ApplicationUser> userManager,
-        RoleManager<ApplicationRole> roleManager)
+        RoleManager<ApplicationRole> roleManager,
+        SettingsRepository settings,
+        EmailService emailService)
     {
         _users = users;
         _courses = courses;
         _userManager = userManager;
         _roleManager = roleManager;
+        _settings = settings;
+        _emailService = emailService;
     }
 
     public async Task<IActionResult> Index()
@@ -125,6 +132,77 @@ public class AdminController : Controller
         await _users.UpdateAsync(user);
         TempData["Success"] = user.IsActive ? "Utente attivato." : "Utente disattivato.";
         return RedirectToAction("Users");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EmailSettings()
+    {
+        var current = await _emailService.GetEffectiveSettingsAsync();
+        var vm = new EmailSettingsViewModel
+        {
+            Enabled   = current.Enabled,
+            Host      = current.Host,
+            Port      = current.Port,
+            Username  = current.Username,
+            FromEmail = current.FromEmail,
+            FromName  = current.FromName,
+            UseSsl    = current.UseSsl,
+        };
+        return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EmailSettings(EmailSettingsViewModel model)
+    {
+        ModelState.Remove("TestEmailRecipient");
+        if (!ModelState.IsValid) return View(model);
+
+        try
+        {
+            await _settings.SetAsync("Smtp:Enabled",   model.Enabled.ToString().ToLower());
+            await _settings.SetAsync("Smtp:Host",      model.Host ?? "");
+            await _settings.SetAsync("Smtp:Port",      model.Port.ToString());
+            await _settings.SetAsync("Smtp:Username",  model.Username ?? "");
+            await _settings.SetAsync("Smtp:FromEmail", model.FromEmail ?? "");
+            await _settings.SetAsync("Smtp:FromName",  model.FromName ?? "Bocconi LMS");
+            await _settings.SetAsync("Smtp:UseSsl",    model.UseSsl.ToString().ToLower());
+
+            if (!string.IsNullOrWhiteSpace(model.Password))
+                await _settings.SetAsync("Smtp:Password", model.Password);
+
+            TempData["Success"] = "Impostazioni email salvate con successo.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = $"Errore nel salvataggio: {ex.Message}";
+        }
+
+        return RedirectToAction("EmailSettings");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SendTestEmail(EmailSettingsViewModel model)
+    {
+        if (string.IsNullOrWhiteSpace(model.TestEmailRecipient))
+        {
+            TempData["Error"] = "Inserire un indirizzo email per il test.";
+            return RedirectToAction("EmailSettings");
+        }
+
+        try
+        {
+            var settings = await _emailService.GetEffectiveSettingsAsync();
+            await _emailService.SendTestEmailAsync(model.TestEmailRecipient, settings);
+            TempData["Success"] = $"Email di test inviata a {model.TestEmailRecipient}.";
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = $"Invio fallito: {ex.Message}";
+        }
+
+        return RedirectToAction("EmailSettings");
     }
 
     private async Task EnsureRoleExistsAsync(string roleName)

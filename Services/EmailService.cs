@@ -2,6 +2,7 @@ using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
 using Microsoft.Extensions.Options;
+using BocconiLMS.Data;
 
 namespace BocconiLMS.Services;
 
@@ -19,13 +20,46 @@ public class SmtpSettings
 
 public class EmailService
 {
-    private readonly SmtpSettings _settings;
+    private readonly SmtpSettings _defaults;
+    private readonly SettingsRepository _settingsRepo;
     private readonly ILogger<EmailService> _logger;
 
-    public EmailService(IOptions<SmtpSettings> settings, ILogger<EmailService> logger)
+    public EmailService(
+        IOptions<SmtpSettings> defaults,
+        SettingsRepository settingsRepo,
+        ILogger<EmailService> logger)
     {
-        _settings = settings.Value;
+        _defaults = defaults.Value;
+        _settingsRepo = settingsRepo;
         _logger = logger;
+    }
+
+    public async Task<SmtpSettings> GetEffectiveSettingsAsync()
+    {
+        var db = await _settingsRepo.GetByPrefixAsync("Smtp:");
+
+        string Get(string key, string fallback) =>
+            db.TryGetValue("Smtp:" + key, out var v) && !string.IsNullOrEmpty(v) ? v! : fallback;
+
+        bool GetBool(string key, bool fallback) =>
+            db.TryGetValue("Smtp:" + key, out var v) && !string.IsNullOrEmpty(v)
+                ? v!.Equals("true", StringComparison.OrdinalIgnoreCase)
+                : fallback;
+
+        int GetInt(string key, int fallback) =>
+            db.TryGetValue("Smtp:" + key, out var v) && int.TryParse(v, out var n) ? n : fallback;
+
+        return new SmtpSettings
+        {
+            Enabled  = GetBool("Enabled",   _defaults.Enabled),
+            Host     = Get("Host",           _defaults.Host),
+            Port     = GetInt("Port",        _defaults.Port),
+            Username = Get("Username",       _defaults.Username),
+            Password = Get("Password",       _defaults.Password),
+            FromEmail= Get("FromEmail",      _defaults.FromEmail),
+            FromName = Get("FromName",       _defaults.FromName),
+            UseSsl   = GetBool("UseSsl",     _defaults.UseSsl),
+        };
     }
 
     public async Task SendWelcomeEmailAsync(string toEmail, string toName, string courseTitle, string teacherName)
@@ -96,37 +130,70 @@ public class EmailService
         await SendAsync(toEmail, toName, subject, body);
     }
 
+    public async Task SendTestEmailAsync(string toEmail, SmtpSettings? overrideSettings = null)
+    {
+        var settings = overrideSettings ?? await GetEffectiveSettingsAsync();
+        var subject = "Bocconi LMS – Email di test";
+        var body = $@"
+<html><body style='font-family: Arial, sans-serif; color: #333;'>
+<div style='max-width:600px; margin:0 auto; padding:24px;'>
+  <h2 style='color:#003366;'>Email di test</h2>
+  <p>Questa è un'email di prova inviata dalla piattaforma <strong>Bocconi LMS</strong>.</p>
+  <p>La configurazione SMTP funziona correttamente.</p>
+  <p><strong>Host:</strong> {HtmlEncode(settings.Host)}:{settings.Port}<br/>
+     <strong>From:</strong> {HtmlEncode(settings.FromName)} &lt;{HtmlEncode(settings.FromEmail)}&gt;</p>
+  <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
+  <p style='color:#888;font-size:12px;'>Bocconi LMS – test invio email</p>
+</div>
+</body></html>";
+        await SendWithSettingsAsync(settings, toEmail, toEmail, subject, body, skipEnabledCheck: true);
+    }
+
     private async Task SendAsync(string toEmail, string toName, string subject, string htmlBody)
     {
-        if (!_settings.Enabled)
+        var settings = await GetEffectiveSettingsAsync();
+        await SendWithSettingsAsync(settings, toEmail, toName, subject, htmlBody);
+    }
+
+    private async Task SendWithSettingsAsync(
+        SmtpSettings settings,
+        string toEmail,
+        string toName,
+        string subject,
+        string htmlBody,
+        bool skipEnabledCheck = false)
+    {
+        if (!skipEnabledCheck && !settings.Enabled)
         {
             _logger.LogInformation("Email not sent (SMTP disabled). To: {Email}, Subject: {Subject}", toEmail, subject);
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(_settings.Host))
+        if (string.IsNullOrWhiteSpace(settings.Host))
         {
             _logger.LogWarning("SMTP host not configured. Skipping email to {Email}", toEmail);
+            if (skipEnabledCheck)
+                throw new InvalidOperationException("Host SMTP non configurato.");
             return;
         }
 
         try
         {
             var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(_settings.FromName, _settings.FromEmail));
+            message.From.Add(new MailboxAddress(settings.FromName, settings.FromEmail));
             message.To.Add(new MailboxAddress(toName, toEmail));
             message.Subject = subject;
             message.Body = new TextPart("html") { Text = htmlBody };
 
             using var client = new SmtpClient();
-            var secureOption = _settings.UseSsl
+            var secureOption = settings.UseSsl
                 ? SecureSocketOptions.SslOnConnect
                 : SecureSocketOptions.StartTlsWhenAvailable;
 
-            await client.ConnectAsync(_settings.Host, _settings.Port, secureOption);
+            await client.ConnectAsync(settings.Host, settings.Port, secureOption);
 
-            if (!string.IsNullOrWhiteSpace(_settings.Username))
-                await client.AuthenticateAsync(_settings.Username, _settings.Password);
+            if (!string.IsNullOrWhiteSpace(settings.Username))
+                await client.AuthenticateAsync(settings.Username, settings.Password);
 
             await client.SendAsync(message);
             await client.DisconnectAsync(true);

@@ -102,6 +102,39 @@ public class QuizSubmitViewModel
     public Dictionary<int, int> Answers { get; set; } = new();
 }
 
+public class EmailSettingsViewModel
+{
+    public bool Enabled { get; set; }
+
+    [Display(Name = "Host SMTP")]
+    public string Host { get; set; } = string.Empty;
+
+    [Display(Name = "Porta")]
+    [Range(1, 65535, ErrorMessage = "Porta non valida")]
+    public int Port { get; set; } = 587;
+
+    [Display(Name = "Username")]
+    public string Username { get; set; } = string.Empty;
+
+    [Display(Name = "Password")]
+    [DataType(DataType.Password)]
+    public string Password { get; set; } = string.Empty;
+
+    [Display(Name = "Email mittente")]
+    [EmailAddress(ErrorMessage = "Email non valida")]
+    public string FromEmail { get; set; } = string.Empty;
+
+    [Display(Name = "Nome mittente")]
+    public string FromName { get; set; } = "Bocconi LMS";
+
+    [Display(Name = "Usa SSL")]
+    public bool UseSsl { get; set; }
+
+    [Display(Name = "Email destinatario test")]
+    [EmailAddress(ErrorMessage = "Email non valida")]
+    public string? TestEmailRecipient { get; set; }
+}
+
 public class StudentDashboard
 {
     public List<Enrollment> Enrollments { get; set; } = new();
