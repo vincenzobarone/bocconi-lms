@@ -1,5 +1,3 @@
-using System.Diagnostics;
-
 namespace BocconiLMS.Services;
 
 public class AppVersionService
@@ -17,20 +15,28 @@ public class AppVersionService
     {
         try
         {
-            var repoRoot = FindGitRoot(AppContext.BaseDirectory);
-            if (repoRoot == null) return "–";
+            var gitDir = FindGitDir(AppContext.BaseDirectory);
+            if (gitDir == null) return "–";
 
-            var psi = new ProcessStartInfo("git", "rev-parse --short HEAD")
+            var headFile = Path.Combine(gitDir, "HEAD");
+            if (!File.Exists(headFile)) return "–";
+
+            var head = File.ReadAllText(headFile).Trim();
+            string hash;
+
+            if (head.StartsWith("ref: "))
             {
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                WorkingDirectory = repoRoot
-            };
-            using var proc = Process.Start(psi);
-            var hash = proc?.StandardOutput.ReadToEnd().Trim() ?? "";
-            proc?.WaitForExit();
-            return string.IsNullOrEmpty(hash) ? "–" : hash;
+                var refRelative = head[5..].Replace('/', Path.DirectorySeparatorChar);
+                var refFile = Path.Combine(gitDir, refRelative);
+                if (!File.Exists(refFile)) return "–";
+                hash = File.ReadAllText(refFile).Trim();
+            }
+            else
+            {
+                hash = head;
+            }
+
+            return hash.Length >= 7 ? hash[..7] : hash;
         }
         catch
         {
@@ -38,13 +44,13 @@ public class AppVersionService
         }
     }
 
-    private static string? FindGitRoot(string startPath)
+    private static string? FindGitDir(string startPath)
     {
         var dir = new DirectoryInfo(startPath);
         while (dir != null)
         {
-            if (Directory.Exists(Path.Combine(dir.FullName, ".git")))
-                return dir.FullName;
+            var gitPath = Path.Combine(dir.FullName, ".git");
+            if (Directory.Exists(gitPath)) return gitPath;
             dir = dir.Parent;
         }
         return null;
