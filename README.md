@@ -50,7 +50,7 @@ MYSQL_CONNECTION_STRING=Server=HOST;Port=3306;Database=bocconi_lms;User=UTENTE;P
 
 **Replit**: avviare il workflow `bocconi-lms`
 
-**Visual Studio 2022**: aprire `BocconiLMS.csproj`, premere F5
+**Visual Studio 2026**: aprire `BocconiLMS.csproj`, premere F5
 
 **Dotnet CLI**:
 ```bash
@@ -70,7 +70,7 @@ BocconiLMS/
 │   ├── css/site.css     # Stili personalizzati Bocconi
 │   └── uploads/         # File caricati (non in versioning Git)
 ├── schema.sql           # Script SQL per creare il database
-└── BocconiLMS.csproj    # Progetto apribile in VS2022
+└── BocconiLMS.csproj    # Progetto apribile in VS2026
 ```
 
 ## Ruoli utente
@@ -88,11 +88,11 @@ BocconiLMS/
 - **Tracking progressi**: le lezioni si segnano automaticamente come completate; progress bar per corso
 - **Dashboard per ruolo**: studente, docente e amministratore hanno viste diverse
 
-## Compatibilità Visual Studio 2022
+## Compatibilità Visual Studio 2026
 
-Il progetto è un classico ASP.NET Core MVC, apribile nativamente in VS2022:
+Il progetto è un classico ASP.NET Core MVC, apribile nativamente in VS2026:
 
 1. Clonare/copiare la cartella `artifacts/bocconi-lms/`
-2. Aprire `BocconiLMS.csproj` in VS2022
+2. Aprire `BocconiLMS.csproj` in VS2026
 3. Configurare la connection string in `appsettings.json` o User Secrets
 4. F5 per avviare

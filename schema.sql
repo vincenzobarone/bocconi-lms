@@ -9,7 +9,6 @@ USE bocconi_lms;
 -- Utenti
 CREATE TABLE IF NOT EXISTS users (
     id              INT AUTO_INCREMENT PRIMARY KEY,
-    username        VARCHAR(100) NOT NULL UNIQUE,
     email           VARCHAR(255) NOT NULL UNIQUE,
     password_hash   VARCHAR(255) NOT NULL,
     first_name      VARCHAR(100) NOT NULL,
@@ -182,9 +181,8 @@ INSERT IGNORE INTO roles (name, normalized_name) VALUES
 -- Password: Admin@Bocconi2024 (modificare subito dopo il primo accesso)
 -- Hash BCrypt generato con work factor 11
 -- ============================================================
-INSERT IGNORE INTO users (username, email, password_hash, first_name, last_name, role, is_active)
+INSERT IGNORE INTO users (email, password_hash, first_name, last_name, role, is_active)
 VALUES (
-    'admin',
     'admin@bocconi.it',
     '$2a$11$WZy52/EXaD5C8z9nzCj9mujeMW8S.UV1/JCysJznILfQm2fI2sdOm',
     'Admin',

@@ -8,7 +8,7 @@
 ## Indice
 
 1. [Prerequisiti](#1-prerequisiti)
-2. [Setup locale in Visual Studio 2022](#2-setup-locale-in-visual-studio-2022)
+2. [Setup locale in Visual Studio 2026](#2-setup-locale-in-visual-studio-2026)
 3. [Setup locale da riga di comando](#3-setup-locale-da-riga-di-comando)
 4. [Struttura del progetto](#4-struttura-del-progetto)
 5. [Architettura dell'applicazione](#5-architettura-dellapplicazione)
@@ -37,18 +37,35 @@
 
 ---
 
-## 2. Setup locale in Visual Studio 2022
+## 2. Setup locale in Visual Studio 2026
+
+> **Flusso consigliato:** si lavora il codice su Replit (ambiente cloud), che salva automaticamente i commit su GitHub ad ogni task. Su Visual Studio 2026 basta fare **Git → Pull** per ricevere le modifiche aggiornate — tutto tramite GUI, senza usare la riga di comando.
 
 ### 2.1 Ottenere il codice sorgente
 
-**Opzione A — Clone dell'intero monorepo:**
+**Prima volta — Clone da VS2026 (GUI):**
+
+1. `Git → Clone Repository...`
+2. Incollare l'URL: `https://github.com/vincenzobarone/bocconi-lms.git`
+3. Scegliere la cartella locale e cliccare **Clone**
+4. Una volta clonato: `File → Open → Project/Solution` → selezionare `artifacts/bocconi-lms/BocconiLMS.csproj`
+
+**Aggiornamenti successivi — Pull da VS2026 (GUI):**
+
+1. Aprire il pannello **Git Changes** (`Visualizza → Git Changes`)
+2. Cliccare la freccia **Pull** (⬇) per scaricare le ultime modifiche da Replit
+
+Non è necessaria alcuna riga di comando: VS2026 gestisce tutto Git in modo nativo.
+
+---
+
+**Alternativa CLI — Clone dell'intero monorepo:**
 ```bash
 git clone https://github.com/vincenzobarone/bocconi-lms.git
 cd bocconi-lms
 ```
-In VS2022: `File → Open → Project/Solution` → selezionare `artifacts/bocconi-lms/BocconiLMS.csproj`
 
-**Opzione B — Sparse checkout (solo la cartella LMS):**
+**Alternativa CLI — Sparse checkout (solo la cartella LMS):**
 ```bash
 git clone --no-checkout https://github.com/vincenzobarone/bocconi-lms.git
 cd bocconi-lms
@@ -56,7 +73,7 @@ git sparse-checkout init --cone
 git sparse-checkout set artifacts/bocconi-lms
 git checkout main
 ```
-Poi aprire `artifacts/bocconi-lms/BocconiLMS.csproj` in VS2022.
+Poi aprire `artifacts/bocconi-lms/BocconiLMS.csproj` in VS2026.
 
 ### 2.2 Preparare il database
 
@@ -73,7 +90,7 @@ Lo script è idempotente: usa `CREATE TABLE IF NOT EXISTS` e `INSERT IGNORE`, qu
 
 **Metodo consigliato — User Secrets (non finisce in Git):**
 
-In VS2022, tasto destro sul progetto → `Manage User Secrets`, poi incollare:
+In VS2026, tasto destro sul progetto → `Manage User Secrets`, poi incollare:
 ```json
 {
   "ConnectionStrings": {
@@ -94,7 +111,7 @@ MYSQL_CONNECTION_STRING=Server=HOST;Port=3306;Database=NOME_DB;User=UTENTE;Passw
 
 ### 2.4 Avviare l'applicazione
 
-Premere `F5` in VS2022 oppure da CLI:
+Premere `F5` in VS2026 oppure da CLI:
 ```bash
 cd artifacts/bocconi-lms
 dotnet run
@@ -192,7 +209,7 @@ artifacts/bocconi-lms/
 ├── schema.sql                     # DDL completo + seed iniziale
 ├── appsettings.json               # Configurazione base (SMTP placeholder)
 ├── Program.cs                     # Entry point, DI registration
-└── BocconiLMS.csproj              # File progetto VS2022 (.NET 9)
+└── BocconiLMS.csproj              # File progetto VS2026 (.NET 9)
 ```
 
 ---
@@ -438,7 +455,7 @@ dotnet test --logger "console;verbosity=detailed"
 - **MySQL 8** raggiungibile dalla macchina (IP whitelistato se necessario)
 - Schema già applicato al DB di produzione (`schema.sql`)
 
-### 11.2 Pubblicare da Visual Studio 2022
+### 11.2 Pubblicare da Visual Studio 2026
 
 1. Tasto destro sul progetto → **Publish**
 2. Scegliere il profilo:
@@ -515,7 +532,7 @@ Configurare **nginx** come reverse proxy davanti alla porta 5000.
 
 ### 11.5 Deploy su Azure App Service
 
-1. In VS2022: tasto destro → Publish → Azure App Service
+1. In VS2026: tasto destro → Publish → Azure App Service
 2. Creare o selezionare un App Service (almeno B1, .NET 9)
 3. In *Configurazione → Impostazioni applicazione* aggiungere:
    - `MYSQL_CONNECTION_STRING` = connection string di produzione

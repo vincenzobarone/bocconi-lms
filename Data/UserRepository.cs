@@ -14,7 +14,7 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(
-            "SELECT id, username, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE email = @email LIMIT 1", conn);
+            "SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE email = @email LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@email", email);
         using var reader = await cmd.ExecuteReaderAsync();
         return reader.Read() ? MapUser(reader) : null;
@@ -25,7 +25,7 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(
-            "SELECT id, username, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE id = @id LIMIT 1", conn);
+            "SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE id = @id LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@id", id);
         using var reader = await cmd.ExecuteReaderAsync();
         return reader.Read() ? MapUser(reader) : null;
@@ -37,7 +37,7 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(
-            "SELECT id, username, email, password_hash, first_name, last_name, role, is_active, created_at FROM users ORDER BY last_name, first_name", conn);
+            "SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at FROM users ORDER BY last_name, first_name", conn);
         using var reader = await cmd.ExecuteReaderAsync();
         while (reader.Read()) users.Add(MapUser(reader));
         return users;
@@ -48,8 +48,7 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(
-            "INSERT INTO users (username, email, password_hash, first_name, last_name, role, is_active, created_at) VALUES (@username, @email, @hash, @fn, @ln, @role, 1, NOW()); SELECT LAST_INSERT_ID();", conn);
-        cmd.Parameters.AddWithValue("@username", user.Username);
+            "INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, created_at) VALUES (@email, @hash, @fn, @ln, @role, 1, NOW()); SELECT LAST_INSERT_ID();", conn);
         cmd.Parameters.AddWithValue("@email", user.Email);
         cmd.Parameters.AddWithValue("@hash", user.PasswordHash);
         cmd.Parameters.AddWithValue("@fn", user.FirstName);
@@ -63,8 +62,7 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(
-            "UPDATE users SET username=@username, first_name=@fn, last_name=@ln, role=@role, is_active=@active WHERE id=@id", conn);
-        cmd.Parameters.AddWithValue("@username", user.Username);
+            "UPDATE users SET first_name=@fn, last_name=@ln, role=@role, is_active=@active WHERE id=@id", conn);
         cmd.Parameters.AddWithValue("@fn", user.FirstName);
         cmd.Parameters.AddWithValue("@ln", user.LastName);
         cmd.Parameters.AddWithValue("@role", user.Role);
@@ -110,7 +108,6 @@ public class UserRepository
     private static User MapUser(MySqlDataReader r) => new()
     {
         Id = r.GetInt32("id"),
-        Username = r.GetString("username"),
         Email = r.GetString("email"),
         PasswordHash = r.GetString("password_hash"),
         FirstName = r.GetString("first_name"),

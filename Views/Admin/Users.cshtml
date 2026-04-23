@@ -27,10 +27,7 @@
                 @foreach (var u in Model)
                 {
                     <tr>
-                        <td>
-                            <strong>@u.FullName</strong>
-                            <div class="text-muted small">@u.Username</div>
-                        </td>
+                        <td><strong>@u.FullName</strong></td>
                         <td>@u.Email</td>
                         <td>
                             @{
@@ -59,13 +56,14 @@
                                    class="btn btn-sm btn-outline-secondary">
                                     <i class="bi bi-pencil"></i>
                                 </a>
-                                <form asp-action="ToggleUser" asp-route-id="@u.Id" method="post" class="d-inline">
-                                    @Html.AntiForgeryToken()
-                                    <button type="submit" class="btn btn-sm @(u.IsActive ? "btn-outline-warning" : "btn-outline-success")"
-                                            onclick="return confirm('@(u.IsActive ? "Disattivare" : "Attivare") @u.FullName?')">
-                                        <i class="bi @(u.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
-                                    </button>
-                                </form>
+                                <button type="button"
+                                        class="btn btn-sm @(u.IsActive ? "btn-outline-warning" : "btn-outline-success")"
+                                        data-bs-toggle="modal" data-bs-target="#toggleModal"
+                                        data-user-id="@u.Id"
+                                        data-user-name="@u.FullName"
+                                        data-action="@(u.IsActive ? "Disattivare" : "Attivare")">
+                                    <i class="bi @(u.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -75,6 +73,38 @@
     </div>
 </div>
 
+<div class="modal fade" id="toggleModal" tabindex="-1" aria-labelledby="toggleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="toggleModalLabel">Conferma operazione</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="toggleModalBody"></div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annulla</button>
+                <form id="toggleForm" method="post">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-bocconi">Conferma</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
-    <script>$(document).ready(function(){ $('#usersTable').DataTable({ language: { url: '//cdn.datatables.net/plug-ins/2.0.3/i18n/it-IT.json' } }); });</script>
+    <script>
+        $(document).ready(function () {
+            $('#usersTable').DataTable({ language: window.dtIT });
+
+            $('#toggleModal').on('show.bs.modal', function (e) {
+                var btn = $(e.relatedTarget);
+                var userId = btn.data('user-id');
+                var userName = btn.data('user-name');
+                var action = btn.data('action');
+                $('#toggleModalBody').text(action + ' l\'utente "' + userName + '"?');
+                $('#toggleForm').attr('action', '/Admin/ToggleUser/' + userId);
+            });
+        });
+    </script>
 }

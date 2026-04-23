@@ -128,7 +128,7 @@
     <script>
         $(document).ready(function () {
             $('#translationsTable').DataTable({
-                language: { url: 'https://cdn.datatables.net/plug-ins/2.0.3/i18n/it-IT.json' },
+                language: window.dtIT,
                 pageLength: 25,
                 columnDefs: [{ orderable: false, targets: 5 }],
                 order: [[0, 'asc']]

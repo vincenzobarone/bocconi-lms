@@ -110,7 +110,6 @@ public class AdminController : Controller
         if (user == null) return NotFound();
         user.FirstName = model.FirstName;
         user.LastName = model.LastName;
-        user.Username = model.Username;
         user.Role = model.Role;
         user.IsActive = model.IsActive;
         await _users.UpdateAsync(user);

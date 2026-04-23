@@ -18,10 +18,9 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(@"
-            INSERT INTO users (username, email, password_hash, first_name, last_name, role, is_active, created_at)
-            VALUES (@un, @email, @hash, @fn, @ln, 'Student', 1, NOW());
+            INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, created_at)
+            VALUES (@email, @hash, @fn, @ln, 'Student', 1, NOW());
             SELECT LAST_INSERT_ID();", conn);
-        cmd.Parameters.AddWithValue("@un", user.UserName ?? user.Email);
         cmd.Parameters.AddWithValue("@email", user.Email);
         cmd.Parameters.AddWithValue("@hash", user.PasswordHash ?? "");
         cmd.Parameters.AddWithValue("@fn", user.FirstName);
@@ -35,10 +34,9 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(@"
-            UPDATE users SET username=@un, email=@email, password_hash=@hash,
+            UPDATE users SET email=@email, password_hash=@hash,
                 first_name=@fn, last_name=@ln, is_active=@active
             WHERE id=@id", conn);
-        cmd.Parameters.AddWithValue("@un", user.UserName ?? user.Email);
         cmd.Parameters.AddWithValue("@email", user.Email);
         cmd.Parameters.AddWithValue("@hash", user.PasswordHash ?? "");
         cmd.Parameters.AddWithValue("@fn", user.FirstName);
@@ -65,7 +63,7 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(
-            "SELECT id, username, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE id=@id LIMIT 1", conn);
+            "SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE id=@id LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@id", id);
         using var r = await cmd.ExecuteReaderAsync(ct);
         return r.Read() ? MapUser(r) : null;
@@ -76,7 +74,7 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(
-            "SELECT id, username, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE UPPER(email)=@un OR UPPER(username)=@un LIMIT 1", conn);
+            "SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE UPPER(email)=@un LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@un", normalizedUserName);
         using var r = await cmd.ExecuteReaderAsync(ct);
         return r.Read() ? MapUser(r) : null;
@@ -87,7 +85,7 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(
-            "SELECT id, username, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE UPPER(email)=@email LIMIT 1", conn);
+            "SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE UPPER(email)=@email LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@email", normalizedEmail);
         using var r = await cmd.ExecuteReaderAsync(ct);
         return r.Read() ? MapUser(r) : null;
@@ -218,7 +216,7 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(@"
-            SELECT u.id, u.username, u.email, u.password_hash, u.first_name, u.last_name, u.role, u.is_active, u.created_at
+            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.role, u.is_active, u.created_at
             FROM users u
             JOIN user_roles ur ON ur.user_id=u.id
             JOIN roles r ON r.id=ur.role_id

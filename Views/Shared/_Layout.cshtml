@@ -139,6 +139,15 @@
 <script src="https://cdn.datatables.net/2.0.3/js/dataTables.bootstrap5.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.21.0/dist/jquery.validate.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jquery-validation-unobtrusive@4.0.0/dist/jquery.validate.unobtrusive.min.js"></script>
+<script>
+window.dtIT = {
+    search: "Cerca:", lengthMenu: "Mostra _MENU_ righe",
+    info: "Da _START_ a _END_ di _TOTAL_ elementi",
+    infoEmpty: "Nessun elemento", infoFiltered: "(su _MAX_ totali)",
+    zeroRecords: "Nessun risultato trovato", emptyTable: "Tabella vuota",
+    paginate: { first: "Primo", last: "Ultimo", next: "Succ.", previous: "Prec." }
+};
+</script>
 @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
