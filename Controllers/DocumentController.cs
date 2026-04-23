@@ -123,11 +123,11 @@ public class DocumentController : Controller
             return View(model);
         }
 
-        var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".txt" };
+        var allowedExtensions = new[] { ".pdf", ".doc", ".docx", ".ppt", ".pptx", ".xls", ".xlsx", ".txt", ".mp4", ".webm", ".mov", ".avi", ".mkv" };
         var ext = Path.GetExtension(model.File.FileName).ToLowerInvariant();
         if (!allowedExtensions.Contains(ext))
         {
-            ModelState.AddModelError("File", "Tipo file non supportato.");
+            ModelState.AddModelError("File", "Unsupported file type.");
             return View(model);
         }
 
@@ -180,12 +180,44 @@ public class DocumentController : Controller
         if (!System.IO.File.Exists(physPath)) return NotFound();
         var mimeType = version.FileType.ToLower() switch
         {
-            "pdf" => "application/pdf",
+            "pdf"  => "application/pdf",
             "doc" or "docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "ppt" or "pptx" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "mp4"  => "video/mp4",
+            "webm" => "video/webm",
+            "mov"  => "video/quicktime",
+            "avi"  => "video/x-msvideo",
+            "mkv"  => "video/x-matroska",
             _ => "application/octet-stream"
         };
         return PhysicalFile(physPath, mimeType, version.FileName);
+    }
+
+    [Authorize(Roles = "Teacher,Admin")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteDocument(int id)
+    {
+        var (lesson, courseId, doc) = await GetDocContextAsync(id);
+        if (doc == null || lesson == null) return NotFound();
+        if (!await IsOwnerOrAdminOfCourseAsync(courseId)) return Forbid();
+
+        var filePaths = await _documents.GetVersionFilePathsAsync(id);
+        await _documents.DeleteDocumentAsync(id);
+
+        foreach (var relativePath in filePaths)
+        {
+            var physPath = Path.Combine(_env.WebRootPath,
+                relativePath.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+            if (System.IO.File.Exists(physPath))
+                System.IO.File.Delete(physPath);
+        }
+        var uploadsDir = Path.Combine(_env.WebRootPath, "uploads", id.ToString());
+        if (Directory.Exists(uploadsDir) && !Directory.EnumerateFileSystemEntries(uploadsDir).Any())
+            Directory.Delete(uploadsDir);
+
+        TempData["Success"] = $"Document \"{doc.Title}\" deleted.";
+        return RedirectToAction("Details", "Lesson", new { id = lesson.Id });
     }
 
     [Authorize(Roles = "Teacher,Admin")]

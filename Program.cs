@@ -4,6 +4,15 @@ using Microsoft.AspNetCore.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Allow up to 500 MB uploads (for video files)
+builder.WebHost.ConfigureKestrel(k =>
+    k.Limits.MaxRequestBodySize = 500 * 1024 * 1024);
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
+{
+    o.MultipartBodyLengthLimit = 500 * 1024 * 1024;
+    o.ValueLengthLimit = int.MaxValue;
+});
+
 var connectionString = Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING")
     ?? builder.Configuration.GetConnectionString("MySQL")
     ?? "Server=localhost;Port=3306;Database=bocconi_lms;User=root;Password=;";

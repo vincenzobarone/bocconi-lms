@@ -30,4 +30,19 @@ public class DocumentVersion
     public string FileSizeFormatted => FileSizeBytes < 1024 * 1024
         ? $"{FileSizeBytes / 1024.0:F1} KB"
         : $"{FileSizeBytes / (1024.0 * 1024):F2} MB";
+
+    private static readonly HashSet<string> _videoTypes =
+        new(StringComparer.OrdinalIgnoreCase) { "MP4", "WEBM", "MOV", "AVI", "MKV" };
+
+    public bool IsVideo => _videoTypes.Contains(FileType);
+
+    public string VideoMimeType => FileType.ToUpperInvariant() switch
+    {
+        "MP4"  => "video/mp4",
+        "WEBM" => "video/webm",
+        "MOV"  => "video/quicktime",
+        "AVI"  => "video/x-msvideo",
+        "MKV"  => "video/x-matroska",
+        _      => "video/octet-stream"
+    };
 }

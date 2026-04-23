@@ -131,6 +131,46 @@ public class DocumentRepository
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
 
+    public async Task<List<string>> GetVersionFilePathsAsync(int documentId)
+    {
+        var paths = new List<string>();
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT file_path FROM document_versions WHERE document_id=@did", conn);
+        cmd.Parameters.AddWithValue("@did", documentId);
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (reader.Read())
+            paths.Add(reader.GetString(0));
+        return paths;
+    }
+
+    public async Task DeleteDocumentAsync(int documentId)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var tx = await conn.BeginTransactionAsync();
+        try
+        {
+            using var del1 = new MySqlCommand(
+                "DELETE FROM document_versions WHERE document_id=@did", conn, tx);
+            del1.Parameters.AddWithValue("@did", documentId);
+            await del1.ExecuteNonQueryAsync();
+
+            using var del2 = new MySqlCommand(
+                "DELETE FROM documents WHERE id=@did", conn, tx);
+            del2.Parameters.AddWithValue("@did", documentId);
+            await del2.ExecuteNonQueryAsync();
+
+            await tx.CommitAsync();
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+    }
+
     public async Task<bool> RestoreVersionAsync(int documentId, int versionId)
     {
         using var conn = _db.GetConnection();

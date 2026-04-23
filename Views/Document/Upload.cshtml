@@ -42,8 +42,12 @@
                     <div class="mb-3">
                         <label asp-for="File" class="form-label fw-semibold">@T["doc.form.file","File"] *</label>
                         <input asp-for="File" type="file" class="form-control"
-                               accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt" />
-                        <div class="form-text">PDF, Word, PowerPoint, Excel, TXT (max 50MB)</div>
+                               accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.mp4,.webm,.mov,.avi,.mkv" />
+                        <div class="form-text">
+                            <i class="bi bi-file-earmark me-1"></i>PDF, Word, PowerPoint, Excel, TXT —
+                            <i class="bi bi-play-circle me-1"></i>@T["doc.form.video_types","Video: MP4, WebM, MOV, AVI, MKV"]
+                            (max 500 MB)
+                        </div>
                         <span asp-validation-for="File" class="text-danger small"></span>
                     </div>
 
