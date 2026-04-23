@@ -1,0 +1,119 @@
+@model List<RoleViewModel>
+@{
+    ViewData["Title"] = "Gestione Ruoli";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-bocconi mb-0">
+        <i class="bi bi-shield-lock me-2"></i>Gestione Ruoli
+    </h2>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>@T["common.back", "Back"]
+    </a>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header bg-white fw-semibold py-3">
+        <i class="bi bi-plus-circle me-2 text-bocconi"></i>Aggiungi nuovo ruolo
+    </div>
+    <div class="card-body">
+        <form asp-action="CreateRole" method="post" class="d-flex gap-2 align-items-start">
+            @Html.AntiForgeryToken()
+            <div class="flex-grow-1">
+                <input type="text" name="name" class="form-control"
+                       placeholder="Nome ruolo (es. Tutor, Supervisore…)"
+                       maxlength="50" autocomplete="off" />
+            </div>
+            <button type="submit" class="btn btn-bocconi">
+                <i class="bi bi-plus me-1"></i>Crea ruolo
+            </button>
+        </form>
+        <div class="form-text mt-1">Solo lettere, numeri, underscore e spazi. Il ruolo Admin è riservato.</div>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="ps-3">Nome</th>
+                    <th class="text-center" style="width:130px">Utenti</th>
+                    <th style="width:110px"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var r in Model)
+                {
+                    <tr>
+                        <td class="ps-3 fw-semibold">
+                            @r.Name
+                            @if (r.IsAdmin)
+                            {
+                                <span class="badge bg-secondary ms-2 fw-normal">protetto</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            @if (r.UserCount > 0)
+                            {
+                                <a asp-action="Users" class="badge bg-bocconi text-decoration-none">@r.UserCount</a>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">0</span>
+                            }
+                        </td>
+                        <td class="pe-3">
+                            @if (!r.IsAdmin)
+                            {
+                                <div class="d-flex gap-1 justify-content-end">
+                                    <a asp-action="EditRole" asp-route-id="@r.Id"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="Modifica nome ruolo">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    @if (r.UserCount > 0)
+                                    {
+                                        <button type="button" disabled
+                                                class="btn btn-sm btn-outline-secondary"
+                                                title="Impossibile eliminare: @r.UserCount utente/i ha questo ruolo">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <form asp-action="DeleteRole" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@r.Id" />
+                                            <button type="submit"
+                                                    class="btn btn-sm btn-outline-danger"
+                                                    title="Elimina ruolo"
+                                                    onclick="return confirm('Eliminare il ruolo \'@r.Name\'?')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

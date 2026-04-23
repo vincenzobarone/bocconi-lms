@@ -1,0 +1,43 @@
+@model RoleFormViewModel
+@{
+    ViewData["Title"] = "Modifica Ruolo";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-5">
+        <h2 class="fw-bold text-bocconi mb-4">
+            <i class="bi bi-shield-lock me-2"></i>Modifica Ruolo
+        </h2>
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <form asp-action="EditRole" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Id" />
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger py-2 mb-3">
+                            @Html.ValidationSummary(false, null, new { @class = "mb-0" })
+                        </div>
+                    }
+
+                    <div class="mb-4">
+                        <label asp-for="Name" class="form-label fw-semibold">Nome ruolo *</label>
+                        <input asp-for="Name" class="form-control" maxlength="50" autocomplete="off" />
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                        <div class="form-text">Solo lettere, numeri, underscore e spazi.</div>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-bocconi px-4">
+                            <i class="bi bi-check2 me-1"></i>@T["common.save", "Save"]
+                        </button>
+                        <a asp-action="Roles" class="btn btn-outline-secondary">
+                            @T["common.cancel", "Cancel"]
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

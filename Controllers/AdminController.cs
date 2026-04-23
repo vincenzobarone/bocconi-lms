@@ -55,22 +55,31 @@ public class AdminController : Controller
     }
 
     [HttpGet]
-    public IActionResult CreateUser() => View(new RegisterViewModel());
+    public async Task<IActionResult> CreateUser()
+    {
+        ViewBag.AvailableRoles = await _users.GetNonAdminRoleNamesAsync();
+        return View(new RegisterViewModel());
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateUser(RegisterViewModel model)
     {
-        if (!ModelState.IsValid) return View(model);
+        var availableRoles = await _users.GetNonAdminRoleNamesAsync();
+        if (!ModelState.IsValid)
+        {
+            ViewBag.AvailableRoles = availableRoles;
+            return View(model);
+        }
 
         if (await _userManager.FindByEmailAsync(model.Email) != null)
         {
             ModelState.AddModelError("Email", "Email già in uso.");
+            ViewBag.AvailableRoles = availableRoles;
             return View(model);
         }
 
-        var validRoles = new[] { "Student", "Teacher" };
-        var role = validRoles.Contains(model.Role) ? model.Role : "Student";
+        var role = availableRoles.Contains(model.Role) ? model.Role : availableRoles.FirstOrDefault() ?? "Student";
 
         var appUser = new ApplicationUser
         {
@@ -102,6 +111,7 @@ public class AdminController : Controller
     {
         var user = await _users.GetByIdAsync(id);
         if (user == null) return NotFound();
+        ViewBag.AvailableRoles = await _users.GetNonAdminRoleNamesAsync();
         return View(user);
     }
 
@@ -114,11 +124,11 @@ public class AdminController : Controller
         user.FirstName = model.FirstName;
         user.LastName = model.LastName;
 
+        var nonAdminRoles = await _users.GetNonAdminRoleNamesAsync();
         string resolvedRole = user.Role;
         if (user.Role != "Admin")
         {
-            var allowed = new[] { "Student", "Teacher" };
-            var requestedRole = allowed.Contains(model.Role) ? model.Role : user.Role;
+            var requestedRole = nonAdminRoles.Contains(model.Role) ? model.Role : user.Role;
 
             if (requestedRole != user.Role)
             {
@@ -130,6 +140,7 @@ public class AdminController : Controller
                     {
                         ModelState.AddModelError("Role",
                             $"Cannot change role: this teacher has {courseCount} active course(s). Reassign or delete the courses first.");
+                        ViewBag.AvailableRoles = nonAdminRoles;
                         return View(user);
                     }
                 }
@@ -141,6 +152,7 @@ public class AdminController : Controller
                     {
                         ModelState.AddModelError("Role",
                             $"Cannot change role: this student is enrolled in {enrollments.Count} course(s). Unenroll them first.");
+                        ViewBag.AvailableRoles = nonAdminRoles;
                         return View(user);
                     }
                 }
@@ -397,6 +409,106 @@ public class AdminController : Controller
         _translationService.InvalidateCache();
         TempData["Success"] = $"Chiave '{key}' eliminata.";
         return RedirectToAction("Translations");
+    }
+
+    // ── ROLE MANAGEMENT ─────────────────────────────────────────────────────
+
+    public async Task<IActionResult> Roles()
+    {
+        var roles = await _users.GetAllRolesWithCountAsync();
+        return View(roles);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateRole(string name)
+    {
+        name = (name ?? "").Trim();
+        if (string.IsNullOrEmpty(name))
+        {
+            TempData["Error"] = "Il nome del ruolo è obbligatorio.";
+            return RedirectToAction(nameof(Roles));
+        }
+        if (name.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Error"] = "Il ruolo Admin è protetto e non può essere creato manualmente.";
+            return RedirectToAction(nameof(Roles));
+        }
+        if (await _roleManager.RoleExistsAsync(name))
+        {
+            TempData["Error"] = $"Esiste già un ruolo con il nome '{name}'.";
+            return RedirectToAction(nameof(Roles));
+        }
+        await _roleManager.CreateAsync(new ApplicationRole { Name = name, NormalizedName = name.ToUpperInvariant() });
+        TempData["Success"] = $"Ruolo '{name}' creato con successo.";
+        return RedirectToAction(nameof(Roles));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> EditRole(int id)
+    {
+        var role = await _roleManager.FindByIdAsync(id.ToString());
+        if (role == null) return NotFound();
+        if (role.Name!.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Error"] = "Il ruolo Admin è protetto e non può essere modificato.";
+            return RedirectToAction(nameof(Roles));
+        }
+        return View(new RoleFormViewModel { Id = role.Id, Name = role.Name! });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditRole(RoleFormViewModel model)
+    {
+        var role = await _roleManager.FindByIdAsync(model.Id.ToString());
+        if (role == null) return NotFound();
+        if (role.Name!.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Error"] = "Il ruolo Admin è protetto e non può essere modificato.";
+            return RedirectToAction(nameof(Roles));
+        }
+        if (!ModelState.IsValid) return View(model);
+
+        model.Name = model.Name.Trim();
+        if (model.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            ModelState.AddModelError("Name", "Non è possibile rinominare un ruolo 'Admin'.");
+            return View(model);
+        }
+        var existing = await _roleManager.FindByNameAsync(model.Name.ToUpperInvariant());
+        if (existing != null && existing.Id != model.Id)
+        {
+            ModelState.AddModelError("Name", $"Esiste già un ruolo con il nome '{model.Name}'.");
+            return View(model);
+        }
+        role.Name = model.Name;
+        role.NormalizedName = model.Name.ToUpperInvariant();
+        await _roleManager.UpdateAsync(role);
+        TempData["Success"] = $"Ruolo aggiornato in '{model.Name}'.";
+        return RedirectToAction(nameof(Roles));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteRole(int id)
+    {
+        var role = await _roleManager.FindByIdAsync(id.ToString());
+        if (role == null) return NotFound();
+        if (role.Name!.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+        {
+            TempData["Error"] = "Il ruolo Admin è protetto e non può essere eliminato.";
+            return RedirectToAction(nameof(Roles));
+        }
+        var userCount = await _users.CountUsersInRoleAsync(role.Id);
+        if (userCount > 0)
+        {
+            TempData["Error"] = $"Impossibile eliminare '{role.Name}': {userCount} utente/i ha questo ruolo. Riassegna prima gli utenti.";
+            return RedirectToAction(nameof(Roles));
+        }
+        await _roleManager.DeleteAsync(role);
+        TempData["Success"] = $"Ruolo '{role.Name}' eliminato.";
+        return RedirectToAction(nameof(Roles));
     }
 
     private async Task EnsureRoleExistsAsync(string roleName)

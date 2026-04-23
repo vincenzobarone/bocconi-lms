@@ -36,8 +36,10 @@
                         else
                         {
                             <select asp-for="Role" class="form-select">
-                                <option value="Student">@T["role.student", "Student"]</option>
-                                <option value="Teacher">@T["role.teacher", "Teacher"]</option>
+                                @foreach (var r in (ViewBag.AvailableRoles as List<string> ?? new List<string>()))
+                                {
+                                    <option value="@r" selected="@(Model.Role == r ? "selected" : null)">@r</option>
+                                }
                             </select>
                             <span asp-validation-for="Role" class="text-danger small"></span>
                         }

@@ -195,3 +195,21 @@ public class TeacherDashboard
     public List<Enrollment> RecentEnrollments { get; set; } = new();
     public int TotalStudents { get; set; }
 }
+
+public class RoleViewModel
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public int UserCount { get; set; }
+    public bool IsAdmin => Name.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+}
+
+public class RoleFormViewModel
+{
+    public int Id { get; set; }
+
+    [Required(ErrorMessage = "Nome ruolo obbligatorio")]
+    [MaxLength(50, ErrorMessage = "Massimo 50 caratteri")]
+    [RegularExpression(@"^[a-zA-Z0-9_\s]+$", ErrorMessage = "Solo lettere, numeri, underscore e spazi")]
+    public string Name { get; set; } = string.Empty;
+}

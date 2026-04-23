@@ -42,8 +42,10 @@
                     <div class="mb-4">
                         <label asp-for="Role" class="form-label fw-semibold">@T["common.role", "Role"] *</label>
                         <select asp-for="Role" class="form-select">
-                            <option value="Student">@T["role.student", "Student"]</option>
-                            <option value="Teacher">@T["role.teacher", "Teacher"]</option>
+                            @foreach (var r in (ViewBag.AvailableRoles as List<string> ?? new List<string>()))
+                            {
+                                <option value="@r">@r</option>
+                            }
                         </select>
                     </div>
                     <div class="d-flex gap-2">

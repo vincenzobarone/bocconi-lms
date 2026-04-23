@@ -159,6 +159,51 @@ public class UserRepository
         };
     }
 
+    public async Task<List<RoleViewModel>> GetAllRolesWithCountAsync()
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            SELECT r.id, r.name, COUNT(ur.user_id) AS user_count
+            FROM roles r
+            LEFT JOIN user_roles ur ON ur.role_id = r.id
+            GROUP BY r.id, r.name
+            ORDER BY FIELD(r.name, 'Admin', 'Teacher', 'Student'), r.name", conn);
+        var list = new List<RoleViewModel>();
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+            list.Add(new RoleViewModel
+            {
+                Id = reader.GetInt32("id"),
+                Name = reader.GetString("name"),
+                UserCount = reader.GetInt32("user_count")
+            });
+        return list;
+    }
+
+    public async Task<int> CountUsersInRoleAsync(int roleId)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM user_roles WHERE role_id = @id", conn);
+        cmd.Parameters.AddWithValue("@id", roleId);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
+    public async Task<List<string>> GetNonAdminRoleNamesAsync()
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT name FROM roles WHERE normalized_name != 'ADMIN' ORDER BY name", conn);
+        var list = new List<string>();
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+            list.Add(reader.GetString("name"));
+        return list;
+    }
+
     private static User MapUser(MySqlDataReader r) => new()
     {
         Id = r.GetInt32("id"),
