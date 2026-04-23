@@ -70,43 +70,40 @@
                                     </button>
                                 }
 
-                                @if (u.Id != currentUserId)
-                                {
-                                    <button type="button"
-                                            class="btn btn-sm @(u.IsActive ? "btn-outline-warning" : "btn-outline-success")"
-                                            data-bs-toggle="modal" data-bs-target="#toggleModal"
-                                            data-user-id="@u.Id"
-                                            data-user-name="@u.FullName"
-                                            data-confirm-msg="@(u.IsActive ? T["users.confirm_deactivate", "Deactivate"] : T["users.confirm_activate", "Activate"]) &quot;@u.FullName&quot;?"
-                                            title="@(u.IsActive ? T["users.confirm_deactivate","Deactivate"] : T["users.confirm_activate","Activate"])">
-                                        <i class="bi @(u.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
-                                    </button>
+                                <button type="button"
+                                        class="btn btn-sm @(u.IsActive ? "btn-outline-warning" : "btn-outline-success")"
+                                        data-bs-toggle="modal" data-bs-target="#toggleModal"
+                                        data-user-id="@u.Id"
+                                        data-user-name="@u.FullName"
+                                        data-confirm-msg="@(u.IsActive ? T["users.confirm_deactivate","Deactivate"] : T["users.confirm_activate","Activate"]) &quot;@u.FullName&quot;?"
+                                        title="@(u.IsActive ? T["users.confirm_deactivate","Deactivate"] : T["users.confirm_activate","Activate"])">
+                                    <i class="bi @(u.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
+                                </button>
 
-                                    @if (u.Role != "Admin")
+                                @if (u.Id != currentUserId && u.Role != "Admin")
+                                {
+                                    @if (u.Role == "Teacher" && u.CourseCount > 0)
                                     {
-                                        @if (u.Role == "Teacher" && u.CourseCount > 0)
-                                        {
-                                            <button type="button"
-                                                    class="btn btn-sm btn-outline-danger"
-                                                    data-bs-toggle="modal" data-bs-target="#deleteBlockedModal"
-                                                    data-user-name="@u.FullName"
-                                                    data-course-count="@u.CourseCount"
-                                                    title="@T["users.delete","Delete"]">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <button type="button"
-                                                    class="btn btn-sm btn-outline-danger"
-                                                    data-bs-toggle="modal" data-bs-target="#deleteModal"
-                                                    data-user-id="@u.Id"
-                                                    data-user-name="@u.FullName"
-                                                    data-user-role="@u.Role"
-                                                    title="@T["users.delete","Delete"]">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        }
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                data-bs-toggle="modal" data-bs-target="#deleteBlockedModal"
+                                                data-user-name="@u.FullName"
+                                                data-course-count="@u.CourseCount"
+                                                title="@T["users.delete","Delete"]">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
+                                                data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                                data-user-id="@u.Id"
+                                                data-user-name="@u.FullName"
+                                                data-user-role="@u.Role"
+                                                title="@T["users.delete","Delete"]">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     }
                                 }
                             </div>

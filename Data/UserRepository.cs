@@ -79,6 +79,15 @@ public class UserRepository
         await cmd.ExecuteNonQueryAsync();
     }
 
+    public async Task<int> CountActiveAdminsAsync()
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM users WHERE role='Admin' AND is_active=1", conn);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
     public async Task<int> GetActiveCourseCountAsync(int userId)
     {
         using var conn = _db.GetConnection();

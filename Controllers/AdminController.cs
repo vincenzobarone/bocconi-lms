@@ -150,6 +150,17 @@ public class AdminController : Controller
             user.Role = resolvedRole;
         }
 
+        // Block deactivating the last active admin via edit form
+        if (user.Role == "Admin" && !model.IsActive)
+        {
+            var activeAdmins = await _users.CountActiveAdminsAsync();
+            if (activeAdmins <= 1)
+            {
+                TempData["Error"] = "Impossibile disattivare l'unico amministratore attivo.";
+                return RedirectToAction("Users");
+            }
+        }
+
         user.IsActive = model.IsActive;
         await _users.UpdateAsync(user);
 
@@ -205,6 +216,18 @@ public class AdminController : Controller
     {
         var user = await _users.GetByIdAsync(id);
         if (user == null) return NotFound();
+
+        // Block deactivating the last active admin
+        if (user.Role == "Admin" && user.IsActive)
+        {
+            var activeAdmins = await _users.CountActiveAdminsAsync();
+            if (activeAdmins <= 1)
+            {
+                TempData["Error"] = "Impossibile disattivare l'unico amministratore attivo.";
+                return RedirectToAction("Users");
+            }
+        }
+
         user.IsActive = !user.IsActive;
         await _users.UpdateAsync(user);
         TempData["Success"] = user.IsActive ? "Utente attivato." : "Utente disattivato.";
