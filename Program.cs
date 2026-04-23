@@ -63,6 +63,32 @@ builder.Services.AddSession(options =>
 
 var app = builder.Build();
 
+// Ensure password_reset_tokens table exists (applied automatically alongside schema.sql)
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var cmd = new MySqlConnector.MySqlCommand(@"
+        CREATE TABLE IF NOT EXISTS password_reset_tokens (
+            id          INT AUTO_INCREMENT PRIMARY KEY,
+            user_id     INT NOT NULL,
+            token       VARCHAR(64) NOT NULL,
+            expires_at  DATETIME NOT NULL,
+            used        TINYINT(1) NOT NULL DEFAULT 0,
+            created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uk_token (token),
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            INDEX idx_token (token),
+            INDEX idx_user  (user_id)
+        ) ENGINE=InnoDB;", conn);
+    await cmd.ExecuteNonQueryAsync();
+}
+catch
+{
+    // Database may not be configured yet; skip silently
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

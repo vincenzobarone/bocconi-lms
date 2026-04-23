@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using MySqlConnector;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
+using BocconiLMS.Services;
 
 namespace BocconiLMS.Controllers;
 
@@ -10,13 +12,22 @@ public class AccountController : Controller
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly DbHelper _db;
+    private readonly EmailService _emailService;
+    private readonly ILogger<AccountController> _logger;
 
     public AccountController(
         UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager)
+        SignInManager<ApplicationUser> signInManager,
+        DbHelper db,
+        EmailService emailService,
+        ILogger<AccountController> logger)
     {
         _userManager = userManager;
         _signInManager = signInManager;
+        _db = db;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     [HttpGet]
@@ -97,5 +108,152 @@ public class AccountController : Controller
         return RedirectToAction("Dashboard", "Home");
     }
 
+    [HttpGet]
+    public IActionResult ForgotPassword() => View();
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+    {
+        if (!ModelState.IsValid) return View(model);
+
+        var user = await _userManager.FindByEmailAsync(model.Email);
+
+        if (user != null && user.IsActive)
+        {
+            var token = Guid.NewGuid().ToString("N");
+            var expiresAt = DateTime.UtcNow.AddHours(1);
+
+            using var conn = _db.GetConnection();
+            await conn.OpenAsync();
+            using var cmd = new MySqlCommand(@"
+                DELETE FROM password_reset_tokens WHERE user_id = @uid;
+                INSERT INTO password_reset_tokens (user_id, token, expires_at)
+                VALUES (@uid, @token, @exp);", conn);
+            cmd.Parameters.AddWithValue("@uid", user.Id);
+            cmd.Parameters.AddWithValue("@token", token);
+            cmd.Parameters.AddWithValue("@exp", expiresAt);
+            await cmd.ExecuteNonQueryAsync();
+
+            var resetLink = Url.Action(
+                "ResetPassword", "Account",
+                new { token },
+                Request.Scheme)!;
+
+            try
+            {
+                await _emailService.SendPasswordResetEmailAsync(
+                    user.Email ?? model.Email,
+                    $"{user.FirstName} {user.LastName}",
+                    resetLink);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send password reset email to {Email}", model.Email);
+            }
+        }
+
+        TempData["ForgotPasswordSent"] = true;
+        return RedirectToAction("ForgotPasswordConfirmation");
+    }
+
+    [HttpGet]
+    public IActionResult ForgotPasswordConfirmation() => View();
+
+    [HttpGet]
+    public async Task<IActionResult> ResetPassword(string? token)
+    {
+        if (string.IsNullOrEmpty(token))
+            return RedirectToAction("Login");
+
+        var valid = await IsTokenValidAsync(token);
+        if (!valid)
+        {
+            ViewBag.InvalidToken = true;
+            return View(new ResetPasswordViewModel());
+        }
+
+        return View(new ResetPasswordViewModel { Token = token });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+    {
+        if (!ModelState.IsValid)
+            return View(model);
+
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var tx = await conn.BeginTransactionAsync();
+
+        try
+        {
+            using var selectCmd = new MySqlCommand(@"
+                SELECT user_id FROM password_reset_tokens
+                WHERE token = @token AND used = 0 AND expires_at > UTC_TIMESTAMP()
+                LIMIT 1 FOR UPDATE", conn, tx);
+            selectCmd.Parameters.AddWithValue("@token", model.Token);
+            var userId = await selectCmd.ExecuteScalarAsync();
+
+            if (userId == null)
+            {
+                await tx.RollbackAsync();
+                ViewBag.InvalidToken = true;
+                return View(model);
+            }
+
+            var user = await _userManager.FindByIdAsync(userId.ToString()!);
+            if (user == null)
+            {
+                await tx.RollbackAsync();
+                ViewBag.InvalidToken = true;
+                return View(model);
+            }
+
+            using var markCmd = new MySqlCommand(@"
+                UPDATE password_reset_tokens SET used = 1
+                WHERE token = @token AND used = 0", conn, tx);
+            markCmd.Parameters.AddWithValue("@token", model.Token);
+            var rowsAffected = await markCmd.ExecuteNonQueryAsync();
+
+            if (rowsAffected == 0)
+            {
+                await tx.RollbackAsync();
+                ViewBag.InvalidToken = true;
+                return View(model);
+            }
+
+            await tx.CommitAsync();
+
+            var newHash = _userManager.PasswordHasher.HashPassword(user, model.NewPassword);
+            user.PasswordHash = newHash;
+            await _userManager.UpdateAsync(user);
+        }
+        catch
+        {
+            await tx.RollbackAsync();
+            throw;
+        }
+
+        TempData["ResetSuccess"] = true;
+        return RedirectToAction("ResetPasswordConfirmation");
+    }
+
+    [HttpGet]
+    public IActionResult ResetPasswordConfirmation() => View();
+
     public IActionResult AccessDenied() => View();
+
+    private async Task<bool> IsTokenValidAsync(string token)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            SELECT COUNT(*) FROM password_reset_tokens
+            WHERE token = @token AND used = 0 AND expires_at > UTC_TIMESTAMP()", conn);
+        cmd.Parameters.AddWithValue("@token", token);
+        var count = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        return count > 0;
+    }
 }

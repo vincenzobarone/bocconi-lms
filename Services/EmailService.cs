@@ -150,6 +150,27 @@ public class EmailService
         await SendAsync(toEmail, toName, subject, body);
     }
 
+    public async Task SendPasswordResetEmailAsync(string toEmail, string toName, string resetLink)
+    {
+        var subject = "Bocconi LMS – Reimposta la tua password";
+        var body = $@"
+<html><body style='font-family: Arial, sans-serif; color: #333;'>
+<div style='max-width:600px; margin:0 auto; padding:24px;'>
+  <h2 style='color:#003366;'>Reimposta la tua password</h2>
+  <p>Ciao <strong>{HtmlEncode(toName)}</strong>,</p>
+  <p>Abbiamo ricevuto una richiesta di reimpostazione della password per il tuo account.</p>
+  <p>Clicca sul pulsante qui sotto per scegliere una nuova password. Il link è valido per <strong>1 ora</strong>.</p>
+  <div style='margin:24px 0;text-align:center;'>
+    <a href='{resetLink}' style='background:#003366;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:bold;display:inline-block;'>Reimposta password</a>
+  </div>
+  <p style='color:#666;font-size:13px;'>Se non hai richiesto il reset della password, ignora questa email. Il link scadrà automaticamente.</p>
+  <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
+  <p style='color:#888;font-size:12px;'>Bocconi LMS – notifica automatica</p>
+</div>
+</body></html>";
+        await SendAsync(toEmail, toName, subject, body);
+    }
+
     public async Task SendTestEmailAsync(string toEmail, SmtpSettings? overrideSettings = null)
     {
         var settings = overrideSettings ?? await GetEffectiveSettingsAsync();
