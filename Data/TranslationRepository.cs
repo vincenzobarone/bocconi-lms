@@ -27,18 +27,31 @@ public class TranslationRepository
         var dict = new Dictionary<string, TranslationRow>(StringComparer.OrdinalIgnoreCase);
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
-        using var cmd = new MySqlCommand(
-            "SELECT language_code, label_key, label_value FROM translations ORDER BY label_key, language_code", conn);
+        using var cmd = new MySqlCommand(@"
+            SELECT t.language_code, t.label_key, t.label_value,
+                   k.key_created_at
+            FROM translations t
+            JOIN (
+                SELECT label_key, MIN(created_at) AS key_created_at
+                FROM translations
+                GROUP BY label_key
+            ) k ON k.label_key = t.label_key
+            ORDER BY t.label_key, t.language_code", conn);
         using var r = await cmd.ExecuteReaderAsync();
         while (r.Read())
         {
-            var lang = r.GetString("language_code");
-            var key = r.GetString("label_key");
-            var val = r.GetString("label_value");
+            var lang      = r.GetString("language_code");
+            var key       = r.GetString("label_key");
+            var val       = r.GetString("label_value");
+            var createdAt = r.GetDateTime("key_created_at");
             if (!dict.TryGetValue(key, out var row))
             {
-                row = new TranslationRow { Key = key };
+                row = new TranslationRow { Key = key, CreatedAt = createdAt };
                 dict[key] = row;
+            }
+            else if (createdAt < row.CreatedAt)
+            {
+                row.CreatedAt = createdAt;
             }
             switch (lang)
             {
@@ -78,8 +91,8 @@ public class TranslationRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            INSERT INTO translations (language_code, label_key, label_value)
-            VALUES (@lang, @key, @val)
+            INSERT INTO translations (language_code, label_key, label_value, created_at)
+            VALUES (@lang, @key, @val, NOW())
             ON DUPLICATE KEY UPDATE label_value=@val, updated_at=NOW()", conn);
         cmd.Parameters.AddWithValue("@lang", languageCode);
         cmd.Parameters.AddWithValue("@key", key);
@@ -173,4 +186,5 @@ public class TranslationRow
     public string It { get; set; } = "";
     public string Es { get; set; } = "";
     public string De { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

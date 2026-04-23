@@ -73,6 +73,27 @@ builder.Services.AddSession(options =>
 
 var app = builder.Build();
 
+// Apply incremental schema migrations
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+
+    // Add created_at to translations if missing
+    using var mig1 = new MySqlConnector.MySqlCommand(@"
+        ALTER TABLE translations
+        ADD COLUMN IF NOT EXISTS created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;", conn);
+    await mig1.ExecuteNonQueryAsync();
+
+    // Back-fill existing rows that got DEFAULT (epoch) or are null
+    using var mig2 = new MySqlConnector.MySqlCommand(@"
+        UPDATE translations SET created_at = NOW()
+        WHERE created_at IS NULL OR created_at = '0001-01-01 00:00:00' OR created_at < '2020-01-01';", conn);
+    await mig2.ExecuteNonQueryAsync();
+}
+catch { }
+
 // Ensure password_reset_tokens table exists (applied automatically alongside schema.sql)
 try
 {
