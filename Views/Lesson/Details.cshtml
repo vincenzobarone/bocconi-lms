@@ -4,6 +4,9 @@
     var documents = ViewBag.Documents as List<Document> ?? new();
     var quizzes = ViewBag.Quizzes as List<Quiz> ?? new();
     var isOwner = (bool)(ViewBag.IsOwner ?? false);
+
+    var fileDocs  = documents.Where(d => !(d.ActiveVersion?.IsVideo ?? false)).ToList();
+    var videoDocs = documents.Where(d => d.ActiveVersion?.IsVideo ?? false).ToList();
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -45,119 +48,159 @@
             </div>
         }
 
-        @if (documents.Any() || isOwner)
+        @* ── FILE DOCUMENTS ─────────────────────────────────────────── *@
+        @if (fileDocs.Any() || isOwner)
         {
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="fw-semibold mb-0"><i class="bi bi-file-earmark me-2"></i>@T["lesson.documents","Documents"]</h4>
+                <h4 class="fw-semibold mb-0">
+                    <i class="bi bi-file-earmark-text me-2"></i>@T["lesson.documents","Documents"]
+                </h4>
                 @if (isOwner)
                 {
                     <a asp-controller="Document" asp-action="Upload" asp-route-lessonId="@Model.Id"
-                       class="btn btn-sm btn-bocconi"><i class="bi bi-upload me-1"></i>@T["lesson.upload_document","Upload document"]</a>
+                       class="btn btn-sm btn-bocconi">
+                        <i class="bi bi-upload me-1"></i>@T["lesson.upload_document","Upload"]
+                    </a>
                 }
             </div>
-            @if (documents.Any())
+
+            @if (fileDocs.Any())
             {
                 <div class="list-group mb-4">
-                    @foreach (var d in documents)
+                    @foreach (var d in fileDocs)
                     {
-                        var isVideo = d.ActiveVersion?.IsVideo ?? false;
-                        <div class="list-group-item @(isVideo ? "p-3" : "")">
-                            @if (isVideo && d.ActiveVersion != null)
-                            {
-                                <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center gap-2">
+                                    <i class="bi bi-file-earmark-text text-bocconi fs-5"></i>
                                     <div>
-                                        <i class="bi bi-play-circle-fill me-2 text-bocconi"></i>
                                         <strong>@d.Title</strong>
                                         @if (d.CurrentVersion > 0)
                                         {
-                                            <span class="version-badge ms-2">v@d.CurrentVersion</span>
+                                            <span class="version-badge ms-2">v@(d.CurrentVersion)</span>
                                         }
-                                        <span class="badge bg-secondary ms-1">@d.ActiveVersion.FileType.ToUpper()</span>
-                                    </div>
-                                    <div class="d-flex gap-2">
-                                        <a asp-controller="Document" asp-action="Details" asp-route-id="@d.Id"
-                                           class="btn btn-sm btn-outline-secondary">
-                                            <i class="bi bi-clock-history me-1"></i>@T["document.versions","Versions"]
-                                        </a>
-                                        @if (isOwner)
-                                        {
-                                            <a asp-controller="Document" asp-action="Upload"
-                                               asp-route-lessonId="@Model.Id" asp-route-documentId="@d.Id"
-                                               class="btn btn-sm btn-outline-warning" title="@T["document.new_version","New version"]">
-                                                <i class="bi bi-arrow-up-circle"></i>
-                                            </a>
-                                            <form asp-controller="Document" asp-action="DeleteDocument"
-                                                  asp-route-id="@d.Id" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        data-confirm="@T["document.confirm_delete","Delete this document and all its versions?"]"
-                                                        title="@T["common.delete","Delete"]">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        }
-                                    </div>
-                                </div>
-                                <video controls class="w-100 rounded" style="max-height:360px; background:#000;">
-                                    <source src="@d.ActiveVersion.FilePath" type="@d.ActiveVersion.VideoMimeType" />
-                                    @T["document.video_not_supported","Your browser does not support video playback."]
-                                </video>
-                            }
-                            else
-                            {
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <i class="bi bi-file-earmark-text me-2 text-bocconi"></i>
-                                        <strong>@d.Title</strong>
-                                        @if (d.CurrentVersion > 0)
-                                        {
-                                            <span class="version-badge ms-2">v@d.CurrentVersion</span>
-                                        }
-                                    </div>
-                                    <div class="d-flex gap-2">
-                                        <a asp-controller="Document" asp-action="Details" asp-route-id="@d.Id"
-                                           class="btn btn-sm btn-outline-secondary">
-                                            <i class="bi bi-clock-history me-1"></i>@T["document.versions","Versions"]
-                                        </a>
                                         @if (d.ActiveVersion != null)
                                         {
-                                            <a asp-controller="Document" asp-action="Download" asp-route-versionId="@d.ActiveVersion.Id"
-                                               class="btn btn-sm btn-bocconi"><i class="bi bi-download"></i></a>
-                                        }
-                                        @if (isOwner)
-                                        {
-                                            <a asp-controller="Document" asp-action="Upload"
-                                               asp-route-lessonId="@Model.Id" asp-route-documentId="@d.Id"
-                                               class="btn btn-sm btn-outline-warning" title="@T["document.new_version","New version"]">
-                                                <i class="bi bi-arrow-up-circle"></i>
-                                            </a>
-                                            <form asp-controller="Document" asp-action="DeleteDocument"
-                                                  asp-route-id="@d.Id" method="post" class="d-inline">
-                                                @Html.AntiForgeryToken()
-                                                <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        data-confirm="@T["document.confirm_delete","Delete this document and all its versions?"]"
-                                                        title="@T["common.delete","Delete"]">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
+                                            <span class="badge bg-secondary ms-1" style="font-size:.7rem;">@d.ActiveVersion.FileType.ToUpper()</span>
                                         }
                                     </div>
                                 </div>
+                                <div class="d-flex gap-2">
+                                    <a asp-controller="Document" asp-action="Details" asp-route-id="@d.Id"
+                                       class="btn btn-sm btn-outline-secondary">
+                                        <i class="bi bi-clock-history me-1"></i>@T["document.versions","Versions"]
+                                    </a>
+                                    @if (d.ActiveVersion != null)
+                                    {
+                                        <a asp-controller="Document" asp-action="Download" asp-route-versionId="@d.ActiveVersion.Id"
+                                           class="btn btn-sm btn-bocconi"><i class="bi bi-download"></i></a>
+                                    }
+                                    @if (isOwner)
+                                    {
+                                        <a asp-controller="Document" asp-action="Upload"
+                                           asp-route-lessonId="@Model.Id" asp-route-documentId="@d.Id"
+                                           class="btn btn-sm btn-outline-warning" title="@T["document.new_version","New version"]">
+                                            <i class="bi bi-arrow-up-circle"></i>
+                                        </a>
+                                        <form asp-controller="Document" asp-action="DeleteDocument"
+                                              asp-route-id="@d.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                    data-confirm="@T["document.confirm_delete","Delete this document and all its versions?"]"
+                                                    title="@T["common.delete","Delete"]">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (!isOwner)
+            {
+                <p class="text-muted small mb-4">@T["lesson.no_documents","No documents available."]</p>
+            }
+        }
+
+        @* ── VIDEO SECTION ──────────────────────────────────────────── *@
+        @if (videoDocs.Any() || isOwner)
+        {
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="fw-semibold mb-0">
+                    <i class="bi bi-play-circle me-2"></i>@T["lesson.videos","Videos"]
+                </h4>
+                @if (isOwner && !fileDocs.Any())
+                {
+                    @* Upload button already shown above if file docs section is visible *@
+                }
+            </div>
+
+            @foreach (var d in videoDocs)
+            {
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center py-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-play-circle-fill text-bocconi"></i>
+                            <strong>@d.Title</strong>
+                            @if (d.CurrentVersion > 0)
+                            {
+                                <span class="version-badge">v@(d.CurrentVersion)</span>
                             }
+                            @if (d.ActiveVersion != null)
+                            {
+                                <span class="badge bg-secondary" style="font-size:.7rem;">@d.ActiveVersion.FileType.ToUpper()</span>
+                            }
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a asp-controller="Document" asp-action="Details" asp-route-id="@d.Id"
+                               class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-clock-history me-1"></i>@T["document.versions","Versions"]
+                            </a>
+                            @if (isOwner)
+                            {
+                                <a asp-controller="Document" asp-action="Upload"
+                                   asp-route-lessonId="@Model.Id" asp-route-documentId="@d.Id"
+                                   class="btn btn-sm btn-outline-warning" title="@T["document.new_version","New version"]">
+                                    <i class="bi bi-arrow-up-circle"></i>
+                                </a>
+                                <form asp-controller="Document" asp-action="DeleteDocument"
+                                      asp-route-id="@d.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            data-confirm="@T["document.confirm_delete","Delete this document and all its versions?"]"
+                                            title="@T["common.delete","Delete"]">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                    @if (d.ActiveVersion != null)
+                    {
+                        <div class="card-body p-0">
+                            <video controls class="w-100 rounded-bottom" style="max-height:400px; background:#000; display:block;">
+                                <source src="@d.ActiveVersion.FilePath" type="@d.ActiveVersion.VideoMimeType" />
+                                @T["document.video_not_supported","Your browser does not support video playback."]
+                            </video>
                         </div>
                     }
                 </div>
             }
         }
 
+        @* ── QUIZ SECTION ───────────────────────────────────────────── *@
         @if (quizzes.Any() || isOwner)
         {
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex justify-content-between align-items-center mb-3 mt-2">
                 <h4 class="fw-semibold mb-0"><i class="bi bi-clipboard2-check me-2"></i>Quiz</h4>
                 @if (isOwner)
                 {
                     <a asp-controller="Quiz" asp-action="Create" asp-route-lessonId="@Model.Id"
-                       class="btn btn-sm btn-bocconi"><i class="bi bi-plus-lg me-1"></i>@T["quiz.create","Create quiz"]</a>
+                       class="btn btn-sm btn-bocconi">
+                        <i class="bi bi-plus-lg me-1"></i>@T["quiz.create","Create quiz"]
+                    </a>
                 }
             </div>
             @foreach (var q in quizzes)
@@ -173,7 +216,9 @@
                         </div>
                         <div class="d-flex gap-2">
                             <a asp-controller="Quiz" asp-action="Take" asp-route-id="@q.Id"
-                               class="btn btn-sm btn-bocconi"><i class="bi bi-play-circle me-1"></i>@T["quiz.take","Take"]</a>
+                               class="btn btn-sm btn-bocconi">
+                                <i class="bi bi-play-circle me-1"></i>@T["quiz.take","Take"]
+                            </a>
                             <a asp-controller="Quiz" asp-action="History" asp-route-quizId="@q.Id"
                                class="btn btn-sm btn-outline-secondary">@T["quiz.history","History"]</a>
                             @if (isOwner)
@@ -211,7 +256,9 @@
                 </div>
                 <hr />
                 <a asp-controller="Course" asp-action="Details" asp-route-id="@Model.CourseId"
-                   class="btn btn-outline-secondary w-100"><i class="bi bi-arrow-left me-2"></i>@T["common.back_to_course","Back to course"]</a>
+                   class="btn btn-outline-secondary w-100">
+                    <i class="bi bi-arrow-left me-2"></i>@T["common.back_to_course","Back to course"]
+                </a>
             </div>
         </div>
     </div>
