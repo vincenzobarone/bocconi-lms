@@ -77,8 +77,17 @@
                         </div>
                     </div>
                     <div class="card-footer bg-transparent">
-                        <a asp-controller="Course" asp-action="Details" asp-route-id="@c.Id"
-                           class="btn btn-sm btn-bocconi w-100">@T.T("course.discover", "Scopri il corso")</a>
+                        @if (User.Identity!.IsAuthenticated)
+                        {
+                            <a asp-controller="Course" asp-action="Details" asp-route-id="@c.Id"
+                               class="btn btn-sm btn-bocconi w-100">@T.T("course.discover", "Scopri il corso")</a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login"
+                               asp-route-returnUrl="@Url.Action("Details","Course",new{id=c.Id})"
+                               class="btn btn-sm btn-bocconi w-100">@T.T("course.discover", "Scopri il corso")</a>
+                        }
                     </div>
                 </div>
             </div>
