@@ -12,6 +12,7 @@ public class AdminController : Controller
 {
     private readonly UserRepository _users;
     private readonly CourseRepository _courses;
+    private readonly EnrollmentRepository _enrollments;
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly SettingsRepository _settings;
@@ -22,6 +23,7 @@ public class AdminController : Controller
     public AdminController(
         UserRepository users,
         CourseRepository courses,
+        EnrollmentRepository enrollments,
         UserManager<ApplicationUser> userManager,
         RoleManager<ApplicationRole> roleManager,
         SettingsRepository settings,
@@ -31,6 +33,7 @@ public class AdminController : Controller
     {
         _users = users;
         _courses = courses;
+        _enrollments = enrollments;
         _userManager = userManager;
         _roleManager = roleManager;
         _settings = settings;
@@ -170,6 +173,39 @@ public class AdminController : Controller
         await _users.UpdateAsync(user);
         TempData["Success"] = user.IsActive ? "Utente attivato." : "Utente disattivato.";
         return RedirectToAction("Users");
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> UserCourses(int id)
+    {
+        var user = await _users.GetByIdAsync(id);
+        if (user == null) return NotFound();
+
+        object courses;
+        if (user.Role == "Teacher")
+        {
+            var list = await _courses.GetByTeacherAsync(id);
+            courses = list.Select(c => new { c.Id, c.Title, c.IsPublished, Type = "taught" });
+        }
+        else if (user.Role == "Student")
+        {
+            var list = await _enrollments.GetByUserAsync(id);
+            courses = list.Select(e => new
+            {
+                Id    = e.CourseId,
+                Title = e.CourseTitle,
+                IsPublished = true,
+                Type  = "enrolled",
+                e.TotalLessons,
+                e.CompletedLessons
+            });
+        }
+        else
+        {
+            courses = Array.Empty<object>();
+        }
+
+        return Json(new { user.FullName, user.Role, courses });
     }
 
     [HttpGet]

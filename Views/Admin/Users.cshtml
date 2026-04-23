@@ -57,6 +57,19 @@
                                    class="btn btn-sm btn-outline-secondary" title="@T["common.edit","Edit"]">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+
+                                @if (u.Role != "Admin")
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-info btn-view-courses"
+                                            data-user-id="@u.Id"
+                                            data-user-name="@u.FullName"
+                                            data-user-role="@u.Role"
+                                            title="@T["users.view_courses","View courses"]">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                }
+
                                 @if (u.Id != currentUserId)
                                 {
                                     <button type="button"
@@ -105,6 +118,29 @@
     </div>
 </div>
 
+@* ── View Courses Modal ──────────────────────────────────── *@
+<div class="modal fade" id="coursesModal" tabindex="-1" aria-labelledby="coursesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="coursesModalLabel">
+                    <i class="bi bi-mortarboard me-2"></i><span id="coursesModalUserName"></span>
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="coursesModalBody">
+                <div class="text-center py-3">
+                    <div class="spinner-border text-bocconi" role="status"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.close","Close"]</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Toggle Modal ────────────────────────────────────────── *@
 <div class="modal fade" id="toggleModal" tabindex="-1" aria-labelledby="toggleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -124,6 +160,7 @@
     </div>
 </div>
 
+@* ── Delete Modal ────────────────────────────────────────── *@
 <div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-danger">
@@ -148,6 +185,7 @@
     </div>
 </div>
 
+@* ── Delete Blocked Modal ────────────────────────────────── *@
 <div class="modal fade" id="deleteBlockedModal" tabindex="-1" aria-labelledby="deleteBlockedLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -171,12 +209,67 @@
         $(document).ready(function () {
             $('#usersTable').DataTable({ language: window.dtLang() });
 
+            // ── View courses (eye button) ──────────────────────────
+            $(document).on('click', '.btn-view-courses', function () {
+                var userId   = $(this).data('user-id');
+                var userName = $(this).data('user-name');
+                var userRole = $(this).data('user-role');
+
+                $('#coursesModalUserName').text(userName);
+                $('#coursesModalBody').html('<div class="text-center py-3"><div class="spinner-border text-bocconi" role="status"></div></div>');
+                var modal = new bootstrap.Modal(document.getElementById('coursesModal'));
+                modal.show();
+
+                $.getJSON('/Admin/UserCourses/' + userId, function (data) {
+                    var html = '';
+                    var courses = data.courses;
+
+                    if (!courses || courses.length === 0) {
+                        var emptyMsg = userRole === 'Teacher'
+                            ? '@T["users.no_courses_taught","This teacher has no courses."]'
+                            : '@T["users.no_courses_enrolled","This student is not enrolled in any course."]';
+                        html = '<p class="text-muted text-center py-3"><i class="bi bi-inbox me-2"></i>' + emptyMsg + '</p>';
+                    } else {
+                        var heading = userRole === 'Teacher'
+                            ? '@T["users.courses_taught","Courses taught"]'
+                            : '@T["users.courses_enrolled","Enrolled courses"]';
+                        html += '<p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>' + heading + '</p>';
+                        html += '<div class="list-group">';
+                        courses.forEach(function (c) {
+                            var statusBadge = c.isPublished
+                                ? '<span class="badge bg-success ms-2">@T["common.published","Published"]</span>'
+                                : '<span class="badge bg-secondary ms-2">@T["common.draft","Draft"]</span>';
+
+                            var progressHtml = '';
+                            if (userRole === 'Student' && c.totalLessons > 0) {
+                                var pct = Math.round(c.completedLessons / c.totalLessons * 100);
+                                progressHtml = '<div class="mt-1"><div class="progress" style="height:5px;">' +
+                                    '<div class="progress-bar bg-bocconi" style="width:' + pct + '%"></div>' +
+                                    '</div><div class="text-muted" style="font-size:.75rem;">' + c.completedLessons + '/' + c.totalLessons + ' lessons &mdash; ' + pct + '%</div></div>';
+                            }
+
+                            html += '<a href="/Course/Details/' + c.id + '" class="list-group-item list-group-item-action" target="_blank">' +
+                                '<div class="d-flex justify-content-between align-items-center">' +
+                                '<span><i class="bi bi-book me-2 text-bocconi"></i><strong>' + c.title + '</strong>' + statusBadge + '</span>' +
+                                '<i class="bi bi-box-arrow-up-right text-muted small"></i>' +
+                                '</div>' + progressHtml + '</a>';
+                        });
+                        html += '</div>';
+                    }
+                    $('#coursesModalBody').html(html);
+                }).fail(function () {
+                    $('#coursesModalBody').html('<div class="alert alert-danger">@T["common.error","An error occurred."]</div>');
+                });
+            });
+
+            // ── Toggle modal ───────────────────────────────────────
             $('#toggleModal').on('show.bs.modal', function (e) {
                 var btn = $(e.relatedTarget);
                 $('#toggleModalBody').text(btn.data('confirm-msg'));
                 $('#toggleForm').attr('action', '/Admin/ToggleUser/' + btn.data('user-id'));
             });
 
+            // ── Delete modal ───────────────────────────────────────
             $('#deleteModal').on('show.bs.modal', function (e) {
                 var btn = $(e.relatedTarget);
                 var name = btn.data('user-name');
@@ -190,6 +283,7 @@
                 $('#deleteForm').attr('action', '/Admin/DeleteUser/' + btn.data('user-id'));
             });
 
+            // ── Delete blocked modal ───────────────────────────────
             $('#deleteBlockedModal').on('show.bs.modal', function (e) {
                 var btn = $(e.relatedTarget);
                 var name = btn.data('user-name');
