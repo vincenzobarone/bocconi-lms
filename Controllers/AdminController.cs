@@ -20,6 +20,7 @@ public class AdminController : Controller
     private readonly TranslationRepository _translations;
     private readonly TranslationService _translationService;
     private readonly DocumentTypeRepository _docTypes;
+    private readonly FeatureFlagService _features;
 
     public AdminController(
         UserRepository users,
@@ -31,7 +32,8 @@ public class AdminController : Controller
         EmailService emailService,
         TranslationRepository translations,
         TranslationService translationService,
-        DocumentTypeRepository docTypes)
+        DocumentTypeRepository docTypes,
+        FeatureFlagService features)
     {
         _users = users;
         _courses = courses;
@@ -43,6 +45,7 @@ public class AdminController : Controller
         _translations = translations;
         _translationService = translationService;
         _docTypes = docTypes;
+        _features = features;
     }
 
     public async Task<IActionResult> Index()
@@ -578,6 +581,25 @@ public class AdminController : Controller
         await _docTypes.DeleteAsync(id);
         TempData["Success"] = "Tipo documento eliminato.";
         return RedirectToAction(nameof(DocumentTypes));
+    }
+
+    // ── Platform Features ─────────────────────────────────────────────────
+
+    public async Task<IActionResult> PlatformFeatures()
+    {
+        ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> PlatformFeatures(bool coursesEnabled)
+    {
+        await _features.SetCoursesEnabledAsync(coursesEnabled);
+        TempData["Success"] = coursesEnabled
+            ? "Modulo Corsi abilitato."
+            : "Modulo Corsi disabilitato. Gli studenti e i docenti accederanno direttamente alla libreria Materiali.";
+        return RedirectToAction(nameof(PlatformFeatures));
     }
 
     private async Task EnsureRoleExistsAsync(string roleName)

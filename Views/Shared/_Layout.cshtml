@@ -1,4 +1,8 @@
 @inject BocconiLMS.Services.AppVersionService _ver
+@inject BocconiLMS.Services.FeatureFlagService _features
+@{
+    var coursesEnabled = await _features.IsCoursesEnabledAsync();
+}
 <!DOCTYPE html>
 <html lang="@T.CurrentLanguage">
 <head>
@@ -21,11 +25,18 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarMain">
             <ul class="navbar-nav me-auto">
-                <li class="nav-item">
-                    <a class="nav-link" asp-controller="Course" asp-action="Index">
-                        <i class="bi bi-book me-1"></i>@T["nav.courses"]
-                    </a>
-                </li>
+                @if (coursesEnabled || User.IsInRole("Admin"))
+                {
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Course" asp-action="Index">
+                            <i class="bi bi-book me-1"></i>@T["nav.courses"]
+                            @if (!coursesEnabled && User.IsInRole("Admin"))
+                            {
+                                <span class="badge bg-warning text-dark ms-1" style="font-size:.6rem;" title="Modulo disabilitato">off</span>
+                            }
+                        </a>
+                    </li>
+                }
                 @if (User.Identity?.IsAuthenticated == true)
                 {
                     <li class="nav-item">
@@ -33,14 +44,11 @@
                             <i class="bi bi-speedometer2 me-1"></i>@T["nav.dashboard"]
                         </a>
                     </li>
-                    @if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
-                    {
-                        <li class="nav-item">
-                            <a class="nav-link" asp-controller="Materials" asp-action="Index">
-                                <i class="bi bi-collection me-1"></i>Materiali
-                            </a>
-                        </li>
-                    }
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Materials" asp-action="Index">
+                            <i class="bi bi-collection me-1"></i>Materiali
+                        </a>
+                    </li>
                     @if (User.IsInRole("Admin"))
                     {
                         <li class="nav-item">

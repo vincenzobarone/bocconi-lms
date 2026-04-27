@@ -29,6 +29,7 @@ builder.Services.AddScoped<SettingsRepository>();
 builder.Services.AddScoped<TranslationRepository>();
 builder.Services.AddScoped<MaterialRepository>();
 builder.Services.AddScoped<DocumentTypeRepository>();
+builder.Services.AddScoped<FeatureFlagService>();
 
 builder.Services.AddScoped<IUserStore<ApplicationUser>, CustomUserStore>();
 builder.Services.AddScoped<IRoleStore<ApplicationRole>, CustomRoleStore>();

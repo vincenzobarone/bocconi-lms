@@ -1,0 +1,102 @@
+@{
+    ViewData["Title"] = "Funzionalità Piattaforma";
+    bool coursesEnabled = ViewBag.CoursesEnabled == true;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-toggles me-2"></i>Funzionalità Piattaforma</h2>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Torna al pannello
+    </a>
+</div>
+
+@if (TempData["Success"] is string ok)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@ok
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="row g-4">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-bocconi-light fw-semibold">
+                <i class="bi bi-book me-2"></i>Modulo Corsi e Iscrizioni
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-start gap-3 mb-4">
+                    <div class="flex-shrink-0 pt-1">
+                        @if (coursesEnabled)
+                        {
+                            <span class="badge bg-success fs-6 px-3 py-2"><i class="bi bi-check-lg me-1"></i>Attivo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary fs-6 px-3 py-2"><i class="bi bi-x-lg me-1"></i>Disabilitato</span>
+                        }
+                    </div>
+                    <div>
+                        <p class="mb-1">Quando il modulo corsi è <strong>attivo</strong>:</p>
+                        <ul class="mb-2 small">
+                            <li>Il link "Corsi" appare nella barra di navigazione per tutti</li>
+                            <li>Studenti e docenti vedono il catalogo corsi, le iscrizioni e la dashboard corsi</li>
+                            <li>I docenti accedono alla gestione delle lezioni e degli studenti per corso</li>
+                        </ul>
+                        <p class="mb-1">Quando il modulo è <strong>disabilitato</strong>:</p>
+                        <ul class="mb-2 small">
+                            <li>Il link "Corsi" è nascosto (rimane visibile solo a te come Admin, con badge "off")</li>
+                            <li>Studenti e docenti vengono indirizzati direttamente alla libreria <strong>Materiali</strong></li>
+                            <li>Il modulo materiali rimane sempre accessibile a tutti</li>
+                        </ul>
+                        <div class="alert alert-info small py-2 mb-0">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Le modifiche hanno effetto immediato. I dati dei corsi esistenti non vengono eliminati.
+                        </div>
+                    </div>
+                </div>
+                <form method="post" asp-action="PlatformFeatures">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="coursesEnabled" value="@(!coursesEnabled ? "true" : "false")" />
+                    @if (coursesEnabled)
+                    {
+                        <button type="submit" class="btn btn-warning"
+                                data-confirm="Disabilitare il modulo Corsi? Studenti e docenti accederanno direttamente alla libreria Materiali.">
+                            <i class="bi bi-toggle-off me-2"></i>Disabilita modulo Corsi
+                        </button>
+                    }
+                    else
+                    {
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-toggle-on me-2"></i>Abilita modulo Corsi
+                        </button>
+                    }
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0 bg-light">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap me-2 text-bocconi"></i>Riepilogo Moduli</h6>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span><i class="bi bi-collection me-2 text-bocconi"></i>Libreria Materiali</span>
+                        <span class="badge bg-success">Sempre attivo</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span><i class="bi bi-book me-2 text-bocconi"></i>Corsi e Iscrizioni</span>
+                        @if (coursesEnabled)
+                        {
+                            <span class="badge bg-success">Attivo</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Disabilitato</span>
+                        }
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

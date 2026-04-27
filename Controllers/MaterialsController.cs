@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace BocconiLMS.Controllers;
 
-[Authorize(Roles = "Teacher,Admin")]
+[Authorize]
 public class MaterialsController : Controller
 {
     private readonly MaterialRepository _materials;
@@ -70,6 +70,7 @@ public class MaterialsController : Controller
 
     // ── Create ────────────────────────────────────────────────────────────
 
+    [Authorize(Roles = "Teacher,Admin")]
     [HttpGet]
     public async Task<IActionResult> Create()
     {
@@ -78,6 +79,7 @@ public class MaterialsController : Controller
         return View(vm);
     }
 
+    [Authorize(Roles = "Teacher,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(MaterialFormViewModel vm)
@@ -106,6 +108,7 @@ public class MaterialsController : Controller
 
     // ── Edit ──────────────────────────────────────────────────────────────
 
+    [Authorize(Roles = "Teacher,Admin")]
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
@@ -124,6 +127,7 @@ public class MaterialsController : Controller
         return View(vm);
     }
 
+    [Authorize(Roles = "Teacher,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, MaterialFormViewModel vm)
@@ -156,6 +160,7 @@ public class MaterialsController : Controller
 
     // ── Upload new version (from Details page) ────────────────────────────
 
+    [Authorize(Roles = "Teacher,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UploadVersion(int id, IFormFile file, string? notes)
@@ -174,6 +179,7 @@ public class MaterialsController : Controller
 
     // ── Restore version ───────────────────────────────────────────────────
 
+    [Authorize(Roles = "Teacher,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Restore(int materialId, int versionId)
@@ -200,6 +206,7 @@ public class MaterialsController : Controller
 
     // ── Delete ────────────────────────────────────────────────────────────
 
+    [Authorize(Roles = "Teacher,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
@@ -225,6 +232,7 @@ public class MaterialsController : Controller
 
     // ── Lesson integration ────────────────────────────────────────────────
 
+    [Authorize(Roles = "Teacher,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> LinkToLesson(int lessonId, int materialId)
@@ -234,6 +242,7 @@ public class MaterialsController : Controller
         return RedirectToAction("Details", "Lesson", new { id = lessonId });
     }
 
+    [Authorize(Roles = "Teacher,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UnlinkFromLesson(int lessonId, int materialId)
