@@ -411,6 +411,49 @@ try
 }
 catch { }
 
+// ── Seed PlatformFeatures translation keys ────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','common.back_to_panel','Back to panel'),
+        ('en','admin.courses_module','Courses & Enrolments Module'),
+        ('en','admin.module_active','Active'),
+        ('en','admin.module_disabled','Disabled'),
+        ('en','admin.modules_summary','Module summary'),
+        ('en','admin.always_active','Always active'),
+        ('en','admin.enable_courses','Enable Courses module'),
+        ('en','admin.disable_courses','Disable Courses module'),
+        ('en','admin.disable_courses_confirm','Disable the Courses module? Students and teachers will access the Materials library directly.'),
+        ('it','common.back_to_panel','Torna al pannello'),
+        ('it','admin.courses_module','Modulo Corsi e Iscrizioni'),
+        ('it','admin.module_active','Attivo'),
+        ('it','admin.module_disabled','Disabilitato'),
+        ('it','admin.modules_summary','Riepilogo Moduli'),
+        ('it','admin.always_active','Sempre attivo'),
+        ('it','admin.enable_courses','Abilita modulo Corsi'),
+        ('it','admin.disable_courses','Disabilita modulo Corsi'),
+        ('it','admin.disable_courses_confirm','Disabilitare il modulo Corsi? Studenti e docenti accederanno direttamente alla libreria Materiali.');", conn);
+    await ins.ExecuteNonQueryAsync();
+    foreach (var lang in new[] { "es", "de" })
+    {
+        using var copy = new MySqlConnector.MySqlCommand(@"
+            INSERT IGNORE INTO translations (language_code, label_key, label_value)
+            SELECT @lang, label_key, label_value FROM translations
+            WHERE language_code = 'en'
+              AND label_key IN (
+                'common.back_to_panel','admin.courses_module','admin.module_active',
+                'admin.module_disabled','admin.modules_summary','admin.always_active',
+                'admin.enable_courses','admin.disable_courses','admin.disable_courses_confirm');", conn);
+        copy.Parameters.AddWithValue("@lang", lang);
+        await copy.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
 // ── Seed Admin Users/Roles translation keys ───────────────────────────────
 try
 {

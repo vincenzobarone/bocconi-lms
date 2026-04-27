@@ -1,12 +1,14 @@
 @{
-    ViewData["Title"] = "Funzionalità Piattaforma";
+    ViewData["Title"] = T["admin.platform_settings","Platform Settings"];
     bool coursesEnabled = ViewBag.CoursesEnabled == true;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-toggles me-2"></i>Funzionalità Piattaforma</h2>
+    <h2 class="fw-bold text-bocconi mb-0">
+        <i class="bi bi-sliders me-2"></i>@T["admin.platform_settings","Platform Settings"]
+    </h2>
     <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>Torna al pannello
+        <i class="bi bi-arrow-left me-1"></i>@T["common.back_to_panel","Back to panel"]
     </a>
 </div>
 
@@ -18,40 +20,45 @@
     </div>
 }
 
-<div class="row g-4">
+@* ─── Modulo Corsi ──────────────────────────────────────────────── *@
+<div class="row g-4 mb-4">
     <div class="col-md-8">
         <div class="card shadow-sm">
             <div class="card-header bg-bocconi-light fw-semibold">
-                <i class="bi bi-book me-2"></i>Modulo Corsi e Iscrizioni
+                <i class="bi bi-book me-2"></i>@T["admin.courses_module","Courses & Enrolments Module"]
             </div>
             <div class="card-body">
                 <div class="d-flex align-items-start gap-3 mb-4">
                     <div class="flex-shrink-0 pt-1">
                         @if (coursesEnabled)
                         {
-                            <span class="badge bg-success fs-6 px-3 py-2"><i class="bi bi-check-lg me-1"></i>Attivo</span>
+                            <span class="badge bg-success fs-6 px-3 py-2">
+                                <i class="bi bi-check-lg me-1"></i>@T["admin.module_active","Active"]
+                            </span>
                         }
                         else
                         {
-                            <span class="badge bg-secondary fs-6 px-3 py-2"><i class="bi bi-x-lg me-1"></i>Disabilitato</span>
+                            <span class="badge bg-secondary fs-6 px-3 py-2">
+                                <i class="bi bi-x-lg me-1"></i>@T["admin.module_disabled","Disabled"]
+                            </span>
                         }
                     </div>
                     <div>
-                        <p class="mb-1">Quando il modulo corsi è <strong>attivo</strong>:</p>
+                        <p class="mb-1">@T["admin.courses_module_on_desc","When the courses module is <strong>active</strong>:"]</p>
                         <ul class="mb-2 small">
-                            <li>Il link "Corsi" appare nella barra di navigazione per tutti</li>
-                            <li>Studenti e docenti vedono il catalogo corsi, le iscrizioni e la dashboard corsi</li>
-                            <li>I docenti accedono alla gestione delle lezioni e degli studenti per corso</li>
+                            <li>@T["admin.courses_feature_nav","The Courses link appears in the navigation bar for everyone"]</li>
+                            <li>@T["admin.courses_feature_catalog","Students and teachers see the course catalogue, enrolments and course dashboard"]</li>
+                            <li>@T["admin.courses_feature_teacher","Teachers can manage lessons and students per course"]</li>
                         </ul>
-                        <p class="mb-1">Quando il modulo è <strong>disabilitato</strong>:</p>
+                        <p class="mb-1">@T["admin.courses_module_off_desc","When the module is <strong>disabled</strong>:"]</p>
                         <ul class="mb-2 small">
-                            <li>Il link "Corsi" è nascosto (rimane visibile solo a te come Admin, con badge "off")</li>
-                            <li>Studenti e docenti vengono indirizzati direttamente alla libreria <strong>Materiali</strong></li>
-                            <li>Il modulo materiali rimane sempre accessibile a tutti</li>
+                            <li>@T["admin.courses_feature_hidden","The Courses link is hidden (visible only to you as Admin, with an «off» badge)"]</li>
+                            <li>@T["admin.courses_feature_redirect","Students and teachers are directed to the Materials library"]</li>
+                            <li>@T["admin.courses_feature_materials","The Materials module is always accessible to all"]</li>
                         </ul>
                         <div class="alert alert-info small py-2 mb-0">
                             <i class="bi bi-info-circle me-1"></i>
-                            Le modifiche hanno effetto immediato. I dati dei corsi esistenti non vengono eliminati.
+                            @T["admin.courses_module_info","Changes take effect immediately. Existing course data is not deleted."]
                         </div>
                     </div>
                 </div>
@@ -61,14 +68,14 @@
                     @if (coursesEnabled)
                     {
                         <button type="submit" class="btn btn-warning"
-                                data-confirm="Disabilitare il modulo Corsi? Studenti e docenti accederanno direttamente alla libreria Materiali.">
-                            <i class="bi bi-toggle-off me-2"></i>Disabilita modulo Corsi
+                                data-confirm="@T["admin.disable_courses_confirm","Disable the Courses module? Students and teachers will access the Materials library directly."]">
+                            <i class="bi bi-toggle-off me-2"></i>@T["admin.disable_courses","Disable Courses module"]
                         </button>
                     }
                     else
                     {
                         <button type="submit" class="btn btn-success">
-                            <i class="bi bi-toggle-on me-2"></i>Abilita modulo Corsi
+                            <i class="bi bi-toggle-on me-2"></i>@T["admin.enable_courses","Enable Courses module"]
                         </button>
                     }
                 </form>
@@ -78,24 +85,54 @@
     <div class="col-md-4">
         <div class="card shadow-sm border-0 bg-light">
             <div class="card-body">
-                <h6 class="fw-bold mb-3"><i class="bi bi-grid-3x3-gap me-2 text-bocconi"></i>Riepilogo Moduli</h6>
+                <h6 class="fw-bold mb-3">
+                    <i class="bi bi-grid-3x3-gap me-2 text-bocconi"></i>@T["admin.modules_summary","Module summary"]
+                </h6>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <span><i class="bi bi-collection me-2 text-bocconi"></i>Libreria Materiali</span>
-                        <span class="badge bg-success">Sempre attivo</span>
+                        <span><i class="bi bi-collection me-2 text-bocconi"></i>@T["nav.materials","Materials"]</span>
+                        <span class="badge bg-success">@T["admin.always_active","Always active"]</span>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <span><i class="bi bi-book me-2 text-bocconi"></i>Corsi e Iscrizioni</span>
+                        <span><i class="bi bi-book me-2 text-bocconi"></i>@T["admin.courses","Courses"]</span>
                         @if (coursesEnabled)
                         {
-                            <span class="badge bg-success">Attivo</span>
+                            <span class="badge bg-success">@T["admin.module_active","Active"]</span>
                         }
                         else
                         {
-                            <span class="badge bg-secondary">Disabilitato</span>
+                            <span class="badge bg-secondary">@T["admin.module_disabled","Disabled"]</span>
                         }
                     </li>
                 </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ─── Email & Translations ──────────────────────────────────────── *@
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-envelope-gear display-4 text-bocconi mb-3 d-block"></i>
+                <h5 class="fw-bold">@T["admin.email_settings","Email Settings"]</h5>
+                <p class="text-muted">@T["admin.email_settings_desc","Configure SMTP server and send test emails"]</p>
+                <a asp-action="EmailSettings" class="btn btn-bocconi">
+                    @T["admin.configure_email","Configure email"]
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body text-center p-4">
+                <i class="bi bi-translate display-4 text-bocconi mb-3 d-block"></i>
+                <h5 class="fw-bold">@T["admin.translations","Translations"]</h5>
+                <p class="text-muted">@T["admin.translations_desc","Manage interface translations for all languages"]</p>
+                <a asp-action="Translations" class="btn btn-bocconi">
+                    @T["admin.manage_translations","Manage translations"]
+                </a>
             </div>
         </div>
     </div>
