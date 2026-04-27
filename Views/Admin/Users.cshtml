@@ -47,6 +47,14 @@
             <span class="badge bg-secondary ms-1">@Model.Roles.Count</span>
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(activeTab == "aree" ? "active" : "")"
+                id="tab-aree" data-bs-toggle="tab" data-bs-target="#pane-aree"
+                type="button" role="tab">
+            <i class="bi bi-diagram-3 me-1"></i>@T["admin.areas_tab","Areas"]
+            <span class="badge bg-secondary ms-1">@Model.Areas.Count</span>
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content" id="usersRolesTabContent">
@@ -254,6 +262,83 @@
             </div>
         </div>
     </div>
+
+    @* ─── TAB AREE ───────────────────────────────────────────────────── *@
+    <div class="tab-pane fade @(activeTab == "aree" ? "show active" : "")"
+         id="pane-aree" role="tabpanel">
+
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-white fw-semibold py-3">
+                <i class="bi bi-plus-circle me-2 text-bocconi"></i>@T["admin.add_area","Add new area"]
+            </div>
+            <div class="card-body">
+                <form asp-action="CreateArea" method="post" class="d-flex gap-2 align-items-start">
+                    @Html.AntiForgeryToken()
+                    <div class="flex-grow-1">
+                        <input type="text" name="name" class="form-control"
+                               placeholder="@T["admin.area_name_placeholder","Area name…"]"
+                               maxlength="255" autocomplete="off" />
+                    </div>
+                    <button type="submit" class="btn btn-bocconi">
+                        <i class="bi bi-plus me-1"></i>@T["admin.create_area","Create area"]
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                @if (!Model.Areas.Any())
+                {
+                    <p class="text-muted p-4">@T["admin.no_areas","No areas defined yet."]</p>
+                }
+                else
+                {
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">@T["common.name","Name"]</th>
+                                <th class="text-center" style="width:130px">@T["admin.users_tab","Users"]</th>
+                                <th style="width:80px"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in Model.Areas)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-semibold">@a.Name</td>
+                                    <td class="text-center">
+                                        @if (a.UserCount > 0)
+                                        {
+                                            <span class="badge bg-bocconi">@a.UserCount</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">0</span>
+                                        }
+                                    </td>
+                                    <td class="pe-3 text-end">
+                                        <form asp-action="DeleteArea" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@a.Id" />
+                                            <button type="submit"
+                                                    class="btn btn-sm @(a.UserCount > 0 ? "btn-outline-secondary" : "btn-outline-danger")"
+                                                    title="@T["admin.delete_area","Delete area"]"
+                                                    @(a.UserCount > 0 ? "disabled" : "")
+                                                    @(a.UserCount == 0 ? $"data-confirm=\"{T["admin.delete_area_confirm","Delete area"]} '{a.Name}'?\"" : "")>
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+
 </div>
 
 @* ── Modali (solo tab Utenti) ──────────────────────────────────────── *@

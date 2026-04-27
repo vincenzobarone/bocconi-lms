@@ -29,6 +29,7 @@ builder.Services.AddScoped<SettingsRepository>();
 builder.Services.AddScoped<TranslationRepository>();
 builder.Services.AddScoped<MaterialRepository>();
 builder.Services.AddScoped<DocumentTypeRepository>();
+builder.Services.AddScoped<AreaRepository>();
 builder.Services.AddScoped<FeatureFlagService>();
 
 builder.Services.AddScoped<IUserStore<ApplicationUser>, CustomUserStore>();
@@ -411,6 +412,96 @@ try
             copy.Parameters.AddWithValue("@lang", lang);
             await copy.ExecuteNonQueryAsync();
         }
+    }
+}
+catch { }
+
+// ── Migrate: create areas + user_areas tables, seed default areas ─────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+
+    using var ddl = new MySqlConnector.MySqlCommand(@"
+        CREATE TABLE IF NOT EXISTS areas (
+            id         INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            name       VARCHAR(255) NOT NULL,
+            sort_order INT NOT NULL DEFAULT 0
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+        CREATE TABLE IF NOT EXISTS user_areas (
+            user_id INT NOT NULL,
+            area_id INT NOT NULL,
+            PRIMARY KEY (user_id, area_id),
+            CONSTRAINT fk_ua_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+            CONSTRAINT fk_ua_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;", conn);
+    await ddl.ExecuteNonQueryAsync();
+
+    // Seed default areas (only if table is empty)
+    using var countCmd = new MySqlConnector.MySqlCommand("SELECT COUNT(*) FROM areas", conn);
+    var areaCount = Convert.ToInt32(await countCmd.ExecuteScalarAsync());
+    if (areaCount == 0)
+    {
+        var defaultAreas = new[]
+        {
+            "Leadership, Human Resources and Digital Technologies",
+            "Strategy and Operations",
+            "Finance",
+            "Accounting",
+            "Government, Health and not for profit",
+            "Economics, Politics and Decision Sciences",
+            "Law",
+            "Marketing"
+        };
+        int sortOrder = 1;
+        foreach (var areaName in defaultAreas)
+        {
+            using var ins = new MySqlConnector.MySqlCommand(
+                "INSERT IGNORE INTO areas (name, sort_order) VALUES (@n, @s)", conn);
+            ins.Parameters.AddWithValue("@n", areaName);
+            ins.Parameters.AddWithValue("@s", sortOrder++);
+            await ins.ExecuteNonQueryAsync();
+        }
+    }
+}
+catch { }
+
+// ── Seed Areas translation keys ────────────────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','admin.areas_tab','Areas'),
+        ('en','admin.add_area','Add new area'),
+        ('en','admin.area_name_placeholder','Area name…'),
+        ('en','admin.create_area','Create area'),
+        ('en','admin.no_areas','No areas defined yet.'),
+        ('en','admin.delete_area','Delete area'),
+        ('en','admin.delete_area_confirm','Delete area'),
+        ('it','admin.areas_tab','Aree'),
+        ('it','admin.add_area','Aggiungi nuova area'),
+        ('it','admin.area_name_placeholder','Nome area…'),
+        ('it','admin.create_area','Crea area'),
+        ('it','admin.no_areas','Nessuna area definita.'),
+        ('it','admin.delete_area','Elimina area'),
+        ('it','admin.delete_area_confirm','Eliminare l\'area');", conn);
+    await ins.ExecuteNonQueryAsync();
+    foreach (var lang in new[] { "es", "de" })
+    {
+        using var copy = new MySqlConnector.MySqlCommand(@"
+            INSERT IGNORE INTO translations (language_code, label_key, label_value)
+            SELECT @lang, label_key, label_value FROM translations
+            WHERE language_code = 'en'
+              AND label_key IN (
+                'admin.areas_tab','admin.add_area','admin.area_name_placeholder',
+                'admin.create_area','admin.no_areas','admin.delete_area','admin.delete_area_confirm');", conn);
+        copy.Parameters.AddWithValue("@lang", lang);
+        await copy.ExecuteNonQueryAsync();
     }
 }
 catch { }

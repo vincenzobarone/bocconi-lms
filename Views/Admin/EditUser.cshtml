@@ -44,10 +44,34 @@
                             <span asp-validation-for="Role" class="text-danger small"></span>
                         }
                     </div>
-                    <div class="form-check mb-4">
+                    <div class="form-check mb-3">
                         <input asp-for="IsActive" class="form-check-input" type="checkbox" />
                         <label asp-for="IsActive" class="form-check-label">@T["admin.users.active_account", "Active Account"]</label>
                     </div>
+
+                    @{
+                        var allAreas   = ViewBag.AllAreas   as List<BocconiLMS.Models.Area> ?? new();
+                        var userAreaIds = ViewBag.UserAreaIds as List<int> ?? new();
+                    }
+                    @if (allAreas.Any())
+                    {
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">@T["admin.areas_tab","Areas"]</label>
+                            <div class="border rounded p-3" style="max-height:220px;overflow-y:auto;">
+                                @foreach (var area in allAreas)
+                                {
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox"
+                                               name="areaIds" value="@area.Id"
+                                               id="area_@area.Id"
+                                               @(userAreaIds.Contains(area.Id) ? "checked" : "") />
+                                        <label class="form-check-label" for="area_@area.Id">@area.Name</label>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-bocconi px-4">@T["common.save", "Save"]</button>
                         <a asp-action="Users" class="btn btn-outline-secondary">@T["common.cancel", "Cancel"]</a>

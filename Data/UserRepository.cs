@@ -109,6 +109,7 @@ public class UserRepository
                 "DELETE FROM quiz_attempts WHERE user_id=@uid",
                 "DELETE FROM lesson_progress WHERE user_id=@uid",
                 "DELETE FROM enrollments WHERE user_id=@uid",
+                "DELETE FROM user_areas WHERE user_id=@uid",
                 "DELETE FROM users WHERE id=@uid"
             })
             {

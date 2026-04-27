@@ -21,6 +21,7 @@ public class AdminController : Controller
     private readonly TranslationService _translationService;
     private readonly DocumentTypeRepository _docTypes;
     private readonly FeatureFlagService _features;
+    private readonly AreaRepository _areas;
 
     public AdminController(
         UserRepository users,
@@ -33,7 +34,8 @@ public class AdminController : Controller
         TranslationRepository translations,
         TranslationService translationService,
         DocumentTypeRepository docTypes,
-        FeatureFlagService features)
+        FeatureFlagService features,
+        AreaRepository areas)
     {
         _users = users;
         _courses = courses;
@@ -46,6 +48,7 @@ public class AdminController : Controller
         _translationService = translationService;
         _docTypes = docTypes;
         _features = features;
+        _areas = areas;
     }
 
     public async Task<IActionResult> Index()
@@ -56,11 +59,13 @@ public class AdminController : Controller
 
     public async Task<IActionResult> Users(string? tab)
     {
+        var activeTab = tab is "ruoli" or "aree" ? tab : "utenti";
         var vm = new UsersAndRolesViewModel
         {
             Users    = await _users.GetAllAsync(),
             Roles    = await _users.GetAllRolesWithCountAsync(),
-            ActiveTab = tab == "ruoli" ? "ruoli" : "utenti"
+            Areas    = await _areas.GetAllAsync(),
+            ActiveTab = activeTab
         };
         return View(vm);
     }
@@ -122,13 +127,15 @@ public class AdminController : Controller
     {
         var user = await _users.GetByIdAsync(id);
         if (user == null) return NotFound();
-        ViewBag.AvailableRoles = await _users.GetNonAdminRoleNamesAsync();
+        ViewBag.AvailableRoles  = await _users.GetNonAdminRoleNamesAsync();
+        ViewBag.AllAreas        = await _areas.GetAllAsync();
+        ViewBag.UserAreaIds     = await _areas.GetUserAreaIdsAsync(id);
         return View(user);
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditUser(User model)
+    public async Task<IActionResult> EditUser(User model, List<int>? areaIds)
     {
         var user = await _users.GetByIdAsync(model.Id);
         if (user == null) return NotFound();
@@ -196,8 +203,46 @@ public class AdminController : Controller
             await _userManager.AddToRoleAsync(appUser, resolvedRole);
         }
 
+        await _areas.SetUserAreasAsync(model.Id, areaIds ?? new List<int>());
+
         TempData["Success"] = "Utente aggiornato.";
         return RedirectToAction("Users");
+    }
+
+    // ── Area management ───────────────────────────────────────────────────
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateArea(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
+        {
+            TempData["Error"] = "Nome area non valido.";
+            return RedirectToAction("Users", new { tab = "aree" });
+        }
+        if (await _areas.NameExistsAsync(name))
+        {
+            TempData["Error"] = $"Un'area con il nome «{name}» esiste già.";
+            return RedirectToAction("Users", new { tab = "aree" });
+        }
+        await _areas.CreateAsync(name);
+        TempData["Success"] = $"Area «{name.Trim()}» creata.";
+        return RedirectToAction("Users", new { tab = "aree" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteArea(int id)
+    {
+        var count = await _areas.CountUsersAsync(id);
+        if (count > 0)
+        {
+            TempData["Error"] = $"Impossibile eliminare: {count} utente/i ha questa area.";
+            return RedirectToAction("Users", new { tab = "aree" });
+        }
+        await _areas.DeleteAsync(id);
+        TempData["Success"] = "Area eliminata.";
+        return RedirectToAction("Users", new { tab = "aree" });
     }
 
     [HttpPost]
