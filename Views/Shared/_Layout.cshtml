@@ -35,11 +35,14 @@
                 }
                 @if (User.Identity?.IsAuthenticated == true)
                 {
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="Home" asp-action="Dashboard">
-                            <i class="bi bi-speedometer2 me-1"></i>@T["nav.dashboard"]
-                        </a>
-                    </li>
+                    @if (!User.IsInRole("Admin"))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Home" asp-action="Dashboard">
+                                <i class="bi bi-speedometer2 me-1"></i>@T["nav.dashboard"]
+                            </a>
+                        </li>
+                    }
                     <li class="nav-item">
                         <a class="nav-link" asp-controller="Materials" asp-action="Index">
                             <i class="bi bi-collection me-1"></i>@T["mat.nav","Materials"]
