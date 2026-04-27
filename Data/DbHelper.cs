@@ -16,9 +16,10 @@ public class DbHelper
         return new MySqlConnection(_connectionString);
     }
 
-    public static async Task<int> GetLastInsertIdAsync(MySqlConnection conn)
+    public static async Task<int> GetLastInsertIdAsync(MySqlConnection conn, MySqlTransaction? tx = null)
     {
         using var cmd = new MySqlCommand("SELECT LAST_INSERT_ID();", conn);
+        if (tx != null) cmd.Transaction = tx;
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
 }

@@ -79,7 +79,7 @@ public class DocumentRepository
         insert.Parameters.AddWithValue("@ub", version.UploadedBy);
         insert.Parameters.AddWithValue("@notes", (object?)version.Notes ?? DBNull.Value);
         await insert.ExecuteNonQueryAsync();
-        var newId = await DbHelper.GetLastInsertIdAsync(conn);
+        var newId = await DbHelper.GetLastInsertIdAsync(conn, tx);
         await tx.CommitAsync();
         return newId;
     }
