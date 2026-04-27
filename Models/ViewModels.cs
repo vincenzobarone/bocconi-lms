@@ -204,6 +204,13 @@ public class RoleViewModel
     public bool IsAdmin => Name.Equals("Admin", StringComparison.OrdinalIgnoreCase);
 }
 
+public class UsersAndRolesViewModel
+{
+    public List<User> Users { get; set; } = new();
+    public List<RoleViewModel> Roles { get; set; } = new();
+    public string ActiveTab { get; set; } = "utenti";
+}
+
 public class RoleFormViewModel
 {
     public int Id { get; set; }

@@ -1,134 +1,272 @@
-@model List<User>
+@model UsersAndRolesViewModel
 @{
-    ViewData["Title"] = T["admin.users.page_title", "User Management"];
+    ViewData["Title"] = "Utenti e Ruoli";
     var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+    var activeTab = Model.ActiveTab;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-people me-2"></i>@T["admin.users.page_title", "User Management"]</h2>
-    <a asp-action="CreateUser" class="btn btn-bocconi">
-        <i class="bi bi-person-plus me-1"></i>@T["admin.users.new_btn", "New User"]
-    </a>
+    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-people me-2"></i>Utenti e Ruoli</h2>
+    @if (activeTab == "utenti")
+    {
+        <a asp-action="CreateUser" class="btn btn-bocconi">
+            <i class="bi bi-person-plus me-1"></i>@T["admin.users.new_btn", "New User"]
+        </a>
+    }
 </div>
 
-<div class="card">
-    <div class="card-body">
-        <table id="usersTable" class="table table-hover align-middle">
-            <thead class="table-light">
-                <tr>
-                    <th>@T["common.name", "Name"]</th>
-                    <th>Email</th>
-                    <th>@T["common.role", "Role"]</th>
-                    <th>@T["common.status", "Status"]</th>
-                    <th>@T["common.registered", "Registered"]</th>
-                    <th>@T["common.actions", "Actions"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var u in Model)
-                {
-                    <tr>
-                        <td><strong>@u.FullName</strong></td>
-                        <td>@u.Email</td>
-                        <td>
-                            @{
-                                var roleClass = u.Role switch {
-                                    "Admin" => "bg-danger",
-                                    "Teacher" => "bg-primary",
-                                    _ => "bg-secondary"
-                                };
-                            }
-                            <span class="badge @roleClass">@u.Role</span>
-                        </td>
-                        <td>
-                            @if (u.IsActive)
-                            {
-                                <span class="badge bg-success">@T["common.active", "Active"]</span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-warning text-dark">@T["common.inactive", "Inactive"]</span>
-                            }
-                        </td>
-                        <td class="text-muted small">@u.CreatedAt.ToString("dd/MM/yyyy")</td>
-                        <td>
-                            <div class="d-flex gap-1">
-                                <a asp-action="EditUser" asp-route-id="@u.Id"
-                                   class="btn btn-sm btn-outline-secondary" title="@T["common.edit","Edit"]">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
+@if (TempData["Success"] is string ok)
+{
+    <div class="alert alert-success alert-dismissible fade show py-2" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@ok
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+@if (TempData["Error"] is string err)
+{
+    <div class="alert alert-danger alert-dismissible fade show py-2" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@err
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
 
-                                @if (u.Role != "Admin")
-                                {
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-info btn-view-courses"
-                                            data-user-id="@u.Id"
-                                            data-user-name="@u.FullName"
-                                            data-user-role="@u.Role"
-                                            title="@T["users.view_courses","View courses"]">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                }
+<ul class="nav nav-tabs mb-4" id="usersRolesTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(activeTab == "utenti" ? "active" : "")"
+                id="tab-utenti" data-bs-toggle="tab" data-bs-target="#pane-utenti"
+                type="button" role="tab">
+            <i class="bi bi-people me-1"></i>Utenti
+            <span class="badge bg-secondary ms-1">@Model.Users.Count</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(activeTab == "ruoli" ? "active" : "")"
+                id="tab-ruoli" data-bs-toggle="tab" data-bs-target="#pane-ruoli"
+                type="button" role="tab">
+            <i class="bi bi-shield-lock me-1"></i>Ruoli
+            <span class="badge bg-secondary ms-1">@Model.Roles.Count</span>
+        </button>
+    </li>
+</ul>
 
-                                <button type="button"
-                                        class="btn btn-sm @(u.IsActive ? "btn-outline-warning" : "btn-outline-success")"
-                                        data-bs-toggle="modal" data-bs-target="#toggleModal"
-                                        data-user-id="@u.Id"
-                                        data-user-name="@u.FullName"
-                                        data-confirm-msg="@(u.IsActive ? T["users.confirm_deactivate","Deactivate"] : T["users.confirm_activate","Activate"]) &quot;@u.FullName&quot;?"
-                                        title="@(u.IsActive ? T["users.confirm_deactivate","Deactivate"] : T["users.confirm_activate","Activate"])">
-                                    <i class="bi @(u.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
-                                </button>
+<div class="tab-content" id="usersRolesTabContent">
 
-                                @if (u.Id != currentUserId && u.Role != "Admin")
-                                {
-                                    @if (u.Role == "Teacher" && u.CourseCount > 0)
+    @* ─── TAB UTENTI ─────────────────────────────────────────────────── *@
+    <div class="tab-pane fade @(activeTab == "utenti" ? "show active" : "")"
+         id="pane-utenti" role="tabpanel">
+        <div class="card">
+            <div class="card-body">
+                <table id="usersTable" class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>@T["common.name", "Name"]</th>
+                            <th>Email</th>
+                            <th>@T["common.role", "Role"]</th>
+                            <th>@T["common.status", "Status"]</th>
+                            <th>@T["common.registered", "Registered"]</th>
+                            <th>@T["common.actions", "Actions"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in Model.Users)
+                        {
+                            <tr>
+                                <td><strong>@u.FullName</strong></td>
+                                <td>@u.Email</td>
+                                <td>
+                                    @{
+                                        var roleClass = u.Role switch {
+                                            "Admin"   => "bg-danger",
+                                            "Teacher" => "bg-primary",
+                                            _         => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @roleClass">@u.Role</span>
+                                </td>
+                                <td>
+                                    @if (u.IsActive)
                                     {
-                                        <button type="button"
-                                                class="btn btn-sm btn-outline-danger"
-                                                data-bs-toggle="modal" data-bs-target="#deleteBlockedModal"
-                                                data-user-name="@u.FullName"
-                                                data-course-count="@u.CourseCount"
-                                                title="@T["users.delete","Delete"]">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        <span class="badge bg-success">@T["common.active", "Active"]</span>
                                     }
                                     else
                                     {
+                                        <span class="badge bg-warning text-dark">@T["common.inactive", "Inactive"]</span>
+                                    }
+                                </td>
+                                <td class="text-muted small">@u.CreatedAt.ToString("dd/MM/yyyy")</td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a asp-action="EditUser" asp-route-id="@u.Id"
+                                           class="btn btn-sm btn-outline-secondary" title="@T["common.edit","Edit"]">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+
+                                        @if (u.Role != "Admin")
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-info btn-view-courses"
+                                                    data-user-id="@u.Id"
+                                                    data-user-name="@u.FullName"
+                                                    data-user-role="@u.Role"
+                                                    title="@T["users.view_courses","View courses"]">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        }
+
                                         <button type="button"
-                                                class="btn btn-sm btn-outline-danger"
-                                                data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                                class="btn btn-sm @(u.IsActive ? "btn-outline-warning" : "btn-outline-success")"
+                                                data-bs-toggle="modal" data-bs-target="#toggleModal"
                                                 data-user-id="@u.Id"
                                                 data-user-name="@u.FullName"
-                                                data-user-role="@u.Role"
-                                                title="@T["users.delete","Delete"]">
-                                            <i class="bi bi-trash"></i>
+                                                data-confirm-msg="@(u.IsActive ? T["users.confirm_deactivate","Deactivate"] : T["users.confirm_activate","Activate"]) &quot;@u.FullName&quot;?"
+                                                title="@(u.IsActive ? T["users.confirm_deactivate","Deactivate"] : T["users.confirm_activate","Activate"])">
+                                            <i class="bi @(u.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
                                         </button>
+
+                                        @if (u.Id != currentUserId && u.Role != "Admin")
+                                        {
+                                            @if (u.Role == "Teacher" && u.CourseCount > 0)
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        data-bs-toggle="modal" data-bs-target="#deleteBlockedModal"
+                                                        data-user-name="@u.FullName"
+                                                        data-course-count="@u.CourseCount"
+                                                        title="@T["users.delete","Delete"]">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <button type="button"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                                        data-user-id="@u.Id"
+                                                        data-user-name="@u.FullName"
+                                                        data-user-role="@u.Role"
+                                                        title="@T["users.delete","Delete"]">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            }
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @* ─── TAB RUOLI ──────────────────────────────────────────────────── *@
+    <div class="tab-pane fade @(activeTab == "ruoli" ? "show active" : "")"
+         id="pane-ruoli" role="tabpanel">
+
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-white fw-semibold py-3">
+                <i class="bi bi-plus-circle me-2 text-bocconi"></i>Aggiungi nuovo ruolo
+            </div>
+            <div class="card-body">
+                <form asp-action="CreateRole" method="post" class="d-flex gap-2 align-items-start">
+                    @Html.AntiForgeryToken()
+                    <div class="flex-grow-1">
+                        <input type="text" name="name" class="form-control"
+                               placeholder="Nome ruolo (es. Tutor, Supervisore…)"
+                               maxlength="50" autocomplete="off" />
+                    </div>
+                    <button type="submit" class="btn btn-bocconi">
+                        <i class="bi bi-plus me-1"></i>Crea ruolo
+                    </button>
+                </form>
+                <div class="form-text mt-1">Solo lettere, numeri, underscore e spazi. Il ruolo Admin è riservato.</div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-3">Nome</th>
+                            <th class="text-center" style="width:130px">Utenti</th>
+                            <th style="width:110px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Roles)
+                        {
+                            <tr>
+                                <td class="ps-3 fw-semibold">
+                                    @r.Name
+                                    @if (r.IsAdmin)
+                                    {
+                                        <span class="badge bg-secondary ms-2 fw-normal">protetto</span>
                                     }
-                                }
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                                </td>
+                                <td class="text-center">
+                                    @if (r.UserCount > 0)
+                                    {
+                                        <a asp-action="Users" class="badge bg-bocconi text-decoration-none">@r.UserCount</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">0</span>
+                                    }
+                                </td>
+                                <td class="pe-3">
+                                    @if (!r.IsAdmin)
+                                    {
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            <a asp-action="EditRole" asp-route-id="@r.Id"
+                                               class="btn btn-sm btn-outline-secondary"
+                                               title="Modifica nome ruolo">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            @if (r.UserCount > 0)
+                                            {
+                                                <button type="button" disabled
+                                                        class="btn btn-sm btn-outline-secondary"
+                                                        title="Impossibile eliminare: @r.UserCount utente/i ha questo ruolo">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            }
+                                            else
+                                            {
+                                                <form asp-action="DeleteRole" method="post" class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@r.Id" />
+                                                    <button type="submit"
+                                                            class="btn btn-sm btn-outline-danger"
+                                                            title="Elimina ruolo"
+                                                            onclick="return confirm('Eliminare il ruolo \'@r.Name\'?')">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 
-@* ── View Courses Modal ──────────────────────────────────── *@
-<div class="modal fade" id="coursesModal" tabindex="-1" aria-labelledby="coursesModalLabel" aria-hidden="true">
+@* ── Modali (solo tab Utenti) ──────────────────────────────────────── *@
+
+<div class="modal fade" id="coursesModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="coursesModalLabel">
-                    <i class="bi bi-mortarboard me-2"></i><span id="coursesModalUserName"></span>
-                </h5>
+                <h5 class="modal-title"><i class="bi bi-mortarboard me-2"></i><span id="coursesModalUserName"></span></h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="coursesModalBody">
-                <div class="text-center py-3">
-                    <div class="spinner-border text-bocconi" role="status"></div>
-                </div>
+                <div class="text-center py-3"><div class="spinner-border text-bocconi" role="status"></div></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.close","Close"]</button>
@@ -137,12 +275,11 @@
     </div>
 </div>
 
-@* ── Toggle Modal ────────────────────────────────────────── *@
-<div class="modal fade" id="toggleModal" tabindex="-1" aria-labelledby="toggleModalLabel" aria-hidden="true">
+<div class="modal fade" id="toggleModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="toggleModalLabel">@T["common.confirm_action", "Confirm Action"]</h5>
+                <h5 class="modal-title">@T["common.confirm_action", "Confirm Action"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="toggleModalBody"></div>
@@ -157,12 +294,11 @@
     </div>
 </div>
 
-@* ── Delete Modal ────────────────────────────────────────── *@
-<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-danger">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="deleteModalLabel"><i class="bi bi-exclamation-triangle me-2"></i>@T["users.delete_title","Delete user"]</h5>
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>@T["users.delete_title","Delete user"]</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -182,12 +318,11 @@
     </div>
 </div>
 
-@* ── Delete Blocked Modal ────────────────────────────────── *@
-<div class="modal fade" id="deleteBlockedModal" tabindex="-1" aria-labelledby="deleteBlockedLabel" aria-hidden="true">
+<div class="modal fade" id="deleteBlockedModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteBlockedLabel"><i class="bi bi-lock me-2"></i>@T["users.delete_blocked_title","Cannot delete teacher"]</h5>
+                <h5 class="modal-title"><i class="bi bi-lock me-2"></i>@T["users.delete_blocked_title","Cannot delete teacher"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
@@ -204,61 +339,48 @@
 @section Scripts {
     <script>
         var _lbl = {
-            noCourseTaught:    @Json.Serialize(T["users.no_courses_taught","This teacher has no courses."]),
-            noCourseEnrolled:  @Json.Serialize(T["users.no_courses_enrolled","This student is not enrolled in any course."]),
-            coursesTaught:     @Json.Serialize(T["users.courses_taught","Courses taught"]),
-            coursesEnrolled:   @Json.Serialize(T["users.courses_enrolled","Enrolled courses"]),
-            published:         @Json.Serialize(T["common.published","Published"]),
-            draft:             @Json.Serialize(T["common.draft","Draft"]),
-            error:             @Json.Serialize(T["common.error","An error occurred."]),
-            deleteConfirmMsg:  @Json.Serialize(T["users.delete_confirm_msg","Are you sure you want to delete"]),
-            deleteBlockedMsg:  @Json.Serialize(T["users.delete_blocked_msg","has"]),
+            noCourseTaught:       @Json.Serialize(T["users.no_courses_taught","This teacher has no courses."]),
+            noCourseEnrolled:     @Json.Serialize(T["users.no_courses_enrolled","This student is not enrolled in any course."]),
+            coursesTaught:        @Json.Serialize(T["users.courses_taught","Courses taught"]),
+            coursesEnrolled:      @Json.Serialize(T["users.courses_enrolled","Enrolled courses"]),
+            published:            @Json.Serialize(T["common.published","Published"]),
+            draft:                @Json.Serialize(T["common.draft","Draft"]),
+            error:                @Json.Serialize(T["common.error","An error occurred."]),
+            deleteConfirmMsg:     @Json.Serialize(T["users.delete_confirm_msg","Are you sure you want to delete"]),
+            deleteBlockedMsg:     @Json.Serialize(T["users.delete_blocked_msg","has"]),
             deleteBlockedCourses: @Json.Serialize(T["users.delete_blocked_courses","active course(s) and cannot be deleted."])
         };
 
         $(document).ready(function () {
             $('#usersTable').DataTable({ language: window.dtLang() });
 
-            // ── View courses (eye button) ──────────────────────────
+            // ── View courses ──────────────────────────────────────
             $(document).on('click', '.btn-view-courses', function () {
                 var userId   = $(this).data('user-id');
                 var userName = $(this).data('user-name');
                 var userRole = $(this).data('user-role');
-
                 $('#coursesModalUserName').text(userName);
                 $('#coursesModalBody').html('<div class="text-center py-3"><div class="spinner-border text-bocconi" role="status"></div></div>');
-                var modal = new bootstrap.Modal(document.getElementById('coursesModal'));
-                modal.show();
-
+                new bootstrap.Modal(document.getElementById('coursesModal')).show();
                 $.getJSON('/Admin/UserCourses/' + userId, function (data) {
                     var html = '';
                     var courses = data.courses;
-
                     if (!courses || courses.length === 0) {
                         var emptyMsg = userRole === 'Teacher' ? _lbl.noCourseTaught : _lbl.noCourseEnrolled;
                         html = '<p class="text-muted text-center py-3"><i class="bi bi-inbox me-2"></i>' + emptyMsg + '</p>';
                     } else {
                         var heading = userRole === 'Teacher' ? _lbl.coursesTaught : _lbl.coursesEnrolled;
-                        html += '<p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>' + heading + '</p>';
-                        html += '<div class="list-group">';
+                        html += '<p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>' + heading + '</p><div class="list-group">';
                         courses.forEach(function (c) {
                             var statusBadge = c.isPublished
                                 ? '<span class="badge bg-success ms-2">' + _lbl.published + '</span>'
                                 : '<span class="badge bg-secondary ms-2">' + _lbl.draft + '</span>';
-
                             var progressHtml = '';
                             if (userRole === 'Student' && c.totalLessons > 0) {
                                 var pct = Math.round(c.completedLessons / c.totalLessons * 100);
-                                progressHtml = '<div class="mt-1"><div class="progress" style="height:5px;">' +
-                                    '<div class="progress-bar bg-bocconi" style="width:' + pct + '%"></div>' +
-                                    '</div><div class="text-muted" style="font-size:.75rem;">' + c.completedLessons + '/' + c.totalLessons + ' lessons &mdash; ' + pct + '%</div></div>';
+                                progressHtml = '<div class="mt-1"><div class="progress" style="height:5px;"><div class="progress-bar bg-bocconi" style="width:' + pct + '%"></div></div><div class="text-muted" style="font-size:.75rem;">' + c.completedLessons + '/' + c.totalLessons + ' &mdash; ' + pct + '%</div></div>';
                             }
-
-                            html += '<a href="/Course/Details/' + c.id + '" class="list-group-item list-group-item-action" target="_blank">' +
-                                '<div class="d-flex justify-content-between align-items-center">' +
-                                '<span><i class="bi bi-book me-2 text-bocconi"></i><strong>' + c.title + '</strong>' + statusBadge + '</span>' +
-                                '<i class="bi bi-box-arrow-up-right text-muted small"></i>' +
-                                '</div>' + progressHtml + '</a>';
+                            html += '<a href="/Course/Details/' + c.id + '" class="list-group-item list-group-item-action" target="_blank"><div class="d-flex justify-content-between align-items-center"><span><i class="bi bi-book me-2 text-bocconi"></i><strong>' + c.title + '</strong>' + statusBadge + '</span><i class="bi bi-box-arrow-up-right text-muted small"></i></div>' + progressHtml + '</a>';
                         });
                         html += '</div>';
                     }
@@ -268,14 +390,14 @@
                 });
             });
 
-            // ── Toggle modal ───────────────────────────────────────
+            // ── Toggle modal ──────────────────────────────────────
             $('#toggleModal').on('show.bs.modal', function (e) {
                 var btn = $(e.relatedTarget);
                 $('#toggleModalBody').text(btn.data('confirm-msg'));
                 $('#toggleForm').attr('action', '/Admin/ToggleUser/' + btn.data('user-id'));
             });
 
-            // ── Delete modal ───────────────────────────────────────
+            // ── Delete modal ──────────────────────────────────────
             $('#deleteModal').on('show.bs.modal', function (e) {
                 var btn = $(e.relatedTarget);
                 var name = btn.data('user-name');
@@ -289,12 +411,10 @@
                 $('#deleteForm').attr('action', '/Admin/DeleteUser/' + btn.data('user-id'));
             });
 
-            // ── Delete blocked modal ───────────────────────────────
+            // ── Delete blocked ────────────────────────────────────
             $('#deleteBlockedModal').on('show.bs.modal', function (e) {
                 var btn = $(e.relatedTarget);
-                var name = btn.data('user-name');
-                var count = btn.data('course-count');
-                $('#deleteBlockedBody').text('"' + name + '" ' + _lbl.deleteBlockedMsg + ' ' + count + ' ' + _lbl.deleteBlockedCourses);
+                $('#deleteBlockedBody').text('"' + btn.data('user-name') + '" ' + _lbl.deleteBlockedMsg + ' ' + btn.data('course-count') + ' ' + _lbl.deleteBlockedCourses);
             });
         });
     </script>

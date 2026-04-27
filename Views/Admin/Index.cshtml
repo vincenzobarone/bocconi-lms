@@ -1,6 +1,8 @@
 @model DashboardStats
+@inject BocconiLMS.Services.FeatureFlagService _adminFeat
 @{
     ViewData["Title"] = T["admin.dashboard"];
+    var coursesEnabled = await _adminFeat.IsCoursesEnabledAsync();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -39,38 +41,34 @@
 
 <div class="row g-3">
     <div class="col-md-6">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-body text-center p-4">
                 <i class="bi bi-people-fill display-4 text-bocconi mb-3 d-block"></i>
-                <h5 class="fw-bold">@T["admin.users"]</h5>
-                <p class="text-muted">@T["admin.users_desc"]</p>
-                <a asp-action="Users" class="btn btn-bocconi">@T["admin.manage_users"]</a>
+                <h5 class="fw-bold">Utenti e Ruoli</h5>
+                <p class="text-muted">Gestisci account, permessi e ruoli degli utenti della piattaforma.</p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <a asp-action="Users" class="btn btn-bocconi">Gestisci utenti</a>
+                    <a asp-action="Users" asp-route-tab="ruoli" class="btn btn-outline-secondary">Gestisci ruoli</a>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body text-center p-4">
-                <i class="bi bi-book-fill display-4 text-bocconi mb-3 d-block"></i>
-                <h5 class="fw-bold">@T["admin.courses"]</h5>
-                <p class="text-muted">@T["admin.courses_desc"]</p>
-                <a asp-controller="Course" asp-action="Index" class="btn btn-bocconi">@T["admin.view_courses"]</a>
+    @if (coursesEnabled)
+    {
+        <div class="col-md-6">
+            <div class="card h-100">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-book-fill display-4 text-bocconi mb-3 d-block"></i>
+                    <h5 class="fw-bold">@T["admin.courses"]</h5>
+                    <p class="text-muted">@T["admin.courses_desc"]</p>
+                    <a asp-controller="Course" asp-action="Index" class="btn btn-bocconi">@T["admin.view_courses"]</a>
+                </div>
             </div>
         </div>
-    </div>
+    }
 </div>
 
 <div class="row g-3 mt-1">
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-body text-center p-4">
-                <i class="bi bi-shield-lock display-4 text-bocconi mb-3 d-block"></i>
-                <h5 class="fw-bold">Ruoli</h5>
-                <p class="text-muted">Crea, modifica ed elimina i ruoli del sistema.</p>
-                <a asp-action="Roles" class="btn btn-bocconi">Gestisci ruoli</a>
-            </div>
-        </div>
-    </div>
     <div class="col-md-6">
         <div class="card">
             <div class="card-body text-center p-4">

@@ -54,10 +54,15 @@ public class AdminController : Controller
         return View(stats);
     }
 
-    public async Task<IActionResult> Users()
+    public async Task<IActionResult> Users(string? tab)
     {
-        var users = await _users.GetAllAsync();
-        return View(users);
+        var vm = new UsersAndRolesViewModel
+        {
+            Users    = await _users.GetAllAsync(),
+            Roles    = await _users.GetAllRolesWithCountAsync(),
+            ActiveTab = tab == "ruoli" ? "ruoli" : "utenti"
+        };
+        return View(vm);
     }
 
     [HttpGet]
@@ -433,21 +438,21 @@ public class AdminController : Controller
         if (string.IsNullOrEmpty(name))
         {
             TempData["Error"] = "Il nome del ruolo è obbligatorio.";
-            return RedirectToAction(nameof(Roles));
+            return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
         if (name.Equals("Admin", StringComparison.OrdinalIgnoreCase))
         {
             TempData["Error"] = "Il ruolo Admin è protetto e non può essere creato manualmente.";
-            return RedirectToAction(nameof(Roles));
+            return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
         if (await _roleManager.RoleExistsAsync(name))
         {
             TempData["Error"] = $"Esiste già un ruolo con il nome '{name}'.";
-            return RedirectToAction(nameof(Roles));
+            return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
         await _roleManager.CreateAsync(new ApplicationRole { Name = name, NormalizedName = name.ToUpperInvariant() });
         TempData["Success"] = $"Ruolo '{name}' creato con successo.";
-        return RedirectToAction(nameof(Roles));
+        return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }
 
     [HttpGet]
@@ -458,7 +463,7 @@ public class AdminController : Controller
         if (role.Name!.Equals("Admin", StringComparison.OrdinalIgnoreCase))
         {
             TempData["Error"] = "Il ruolo Admin è protetto e non può essere modificato.";
-            return RedirectToAction(nameof(Roles));
+            return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
         return View(new RoleFormViewModel { Id = role.Id, Name = role.Name! });
     }
@@ -472,7 +477,7 @@ public class AdminController : Controller
         if (role.Name!.Equals("Admin", StringComparison.OrdinalIgnoreCase))
         {
             TempData["Error"] = "Il ruolo Admin è protetto e non può essere modificato.";
-            return RedirectToAction(nameof(Roles));
+            return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
         if (!ModelState.IsValid) return View(model);
 
@@ -492,7 +497,7 @@ public class AdminController : Controller
         role.NormalizedName = model.Name.ToUpperInvariant();
         await _roleManager.UpdateAsync(role);
         TempData["Success"] = $"Ruolo aggiornato in '{model.Name}'.";
-        return RedirectToAction(nameof(Roles));
+        return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }
 
     [HttpPost]
@@ -504,17 +509,17 @@ public class AdminController : Controller
         if (role.Name!.Equals("Admin", StringComparison.OrdinalIgnoreCase))
         {
             TempData["Error"] = "Il ruolo Admin è protetto e non può essere eliminato.";
-            return RedirectToAction(nameof(Roles));
+            return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
         var userCount = await _users.CountUsersInRoleAsync(role.Id);
         if (userCount > 0)
         {
             TempData["Error"] = $"Impossibile eliminare '{role.Name}': {userCount} utente/i ha questo ruolo. Riassegna prima gli utenti.";
-            return RedirectToAction(nameof(Roles));
+            return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
         await _roleManager.DeleteAsync(role);
         TempData["Success"] = $"Ruolo '{role.Name}' eliminato.";
-        return RedirectToAction(nameof(Roles));
+        return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }
 
     // ── Document Types ────────────────────────────────────────────────────
