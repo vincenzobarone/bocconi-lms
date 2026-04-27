@@ -85,6 +85,7 @@ else
                     <th>@T["mat.col_type","Type"]</th>
                     <th>@T["mat.filter_lang","Language"]</th>
                     <th>@T["mat.col_author","Author"]</th>
+                    <th class="text-center">@T["mat.col_status","Status"]</th>
                     <th class="text-center">@T["mat.col_version","Ver."]</th>
                     <th class="text-end">@T["common.actions","Actions"]</th>
                 </tr>
@@ -103,6 +104,16 @@ else
                         <td><span class="badge bg-light text-dark border">@(string.IsNullOrEmpty(m.DocumentTypeName) ? "—" : m.DocumentTypeName)</span></td>
                         <td>@m.Language</td>
                         <td class="text-muted small">@(string.IsNullOrEmpty(m.OwnerName) ? "—" : m.OwnerName)</td>
+                        <td class="text-center">
+                            @{
+                                var (statusCss, statusLabel) = m.Status switch {
+                                    "verificato"   => ("success",   T["mat.status_verificato","Verified"]),
+                                    "in_revisione" => ("warning",   T["mat.status_in_revisione","In review"]),
+                                    _              => ("secondary", T["mat.status_bozza","Draft"])
+                                };
+                            }
+                            <span class="badge bg-@statusCss" style="font-size:.7rem;">@statusLabel</span>
+                        </td>
                         <td class="text-center">
                             @if (m.CurrentVersion > 0)
                             {

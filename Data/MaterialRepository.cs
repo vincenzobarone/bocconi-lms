@@ -29,6 +29,7 @@ public class MaterialRepository
 
         var sql = $@"
             SELECT m.id, m.title, m.owner_id, m.language, m.document_type_id, m.created_at,
+                   m.status, m.protocol_number,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    COALESCE(mv.version_number,0) AS current_version,
@@ -61,6 +62,7 @@ public class MaterialRepository
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             SELECT m.id, m.title, m.owner_id, m.language, m.document_type_id, m.created_at,
+                   m.status, m.protocol_number,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    COALESCE(mv.version_number,0) AS current_version,
@@ -87,33 +89,61 @@ public class MaterialRepository
         return Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
     }
 
-    public async Task<int> CreateAsync(string title, int? ownerId, string language, int? documentTypeId)
+    public async Task<int> CreateAsync(string title, int? ownerId, string language, int? documentTypeId, string status = "bozza")
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            INSERT INTO materials (title, owner_id, language, document_type_id)
-            VALUES (@title, @ownerId, @lang, @typeId)", conn);
+            INSERT INTO materials (title, owner_id, language, document_type_id, status)
+            VALUES (@title, @ownerId, @lang, @typeId, @status)", conn);
         cmd.Parameters.AddWithValue("@title", title.Trim());
         cmd.Parameters.AddWithValue("@ownerId", (object?)ownerId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@lang", language);
         cmd.Parameters.AddWithValue("@typeId", (object?)documentTypeId ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@status", status);
         await cmd.ExecuteNonQueryAsync();
         return await DbHelper.GetLastInsertIdAsync(conn);
     }
 
-    public async Task UpdateAsync(int id, string title, int? ownerId, string language, int? documentTypeId)
+    public async Task UpdateAsync(int id, string title, int? ownerId, string language, int? documentTypeId, string status)
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
+
+        string? newProtocolNumber = null;
+        if (status == "verificato")
+        {
+            using var checkCmd = new MySqlCommand(
+                "SELECT protocol_number FROM materials WHERE id = @id", conn);
+            checkCmd.Parameters.AddWithValue("@id", id);
+            var existing = await checkCmd.ExecuteScalarAsync();
+            if (existing == DBNull.Value || existing == null)
+            {
+                var year = DateTime.Now.Year;
+                using var seqCmd = new MySqlCommand(
+                    "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(protocol_number,'-',-1) AS UNSIGNED)),0)+1 " +
+                    "FROM materials WHERE protocol_number LIKE @pattern", conn);
+                seqCmd.Parameters.AddWithValue("@pattern", $"PROT-{year}-%");
+                var seq = Convert.ToInt32(await seqCmd.ExecuteScalarAsync());
+                newProtocolNumber = $"PROT-{year}-{seq:D4}";
+            }
+        }
+
         using var cmd = new MySqlCommand(@"
             UPDATE materials SET title = @title, owner_id = @ownerId,
-                language = @lang, document_type_id = @typeId
+                language = @lang, document_type_id = @typeId,
+                status = @status,
+                protocol_number = CASE
+                    WHEN @proto IS NOT NULL THEN @proto
+                    ELSE protocol_number
+                END
             WHERE id = @id", conn);
         cmd.Parameters.AddWithValue("@title", title.Trim());
         cmd.Parameters.AddWithValue("@ownerId", (object?)ownerId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@lang", language);
         cmd.Parameters.AddWithValue("@typeId", (object?)documentTypeId ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@status", status);
+        cmd.Parameters.AddWithValue("@proto", (object?)newProtocolNumber ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@id", id);
         await cmd.ExecuteNonQueryAsync();
     }
@@ -221,6 +251,7 @@ public class MaterialRepository
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             SELECT m.id, m.title, m.owner_id, m.language, m.document_type_id, m.created_at,
+                   m.status, m.protocol_number,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    COALESCE(mv.version_number,0) AS current_version,
@@ -271,6 +302,7 @@ public class MaterialRepository
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             SELECT m.id, m.title, m.owner_id, m.language, m.document_type_id, m.created_at,
+                   m.status, m.protocol_number,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    COALESCE(mv.version_number,0) AS current_version,
@@ -305,6 +337,8 @@ public class MaterialRepository
             DocumentTypeId = r.IsDBNull(r.GetOrdinal("document_type_id")) ? null : r.GetInt32("document_type_id"),
             DocumentTypeName = r.IsDBNull(r.GetOrdinal("type_name")) ? "" : r.GetString("type_name"),
             CreatedAt = r.GetDateTime("created_at"),
+            Status = r.IsDBNull(r.GetOrdinal("status")) ? "bozza" : r.GetString("status"),
+            ProtocolNumber = r.IsDBNull(r.GetOrdinal("protocol_number")) ? null : r.GetString("protocol_number"),
             CurrentVersion = r.GetInt32("current_version")
         };
         if (!r.IsDBNull(r.GetOrdinal("ver_id")))

@@ -73,6 +73,15 @@
                         <div class="form-text">@T["mat.owner_hint","Who is responsible for the material."]</div>
                     </div>
 
+                    <div class="mb-3">
+                        <label asp-for="Status" class="form-label fw-semibold">@T["mat.label_status","Status"]</label>
+                        <select asp-for="Status" class="form-select">
+                            <option value="bozza"         selected="@(Model.Status=="bozza"?"selected":null)">@T["mat.status_bozza","Draft"]</option>
+                            <option value="in_revisione"  selected="@(Model.Status=="in_revisione"?"selected":null)">@T["mat.status_in_revisione","In review"]</option>
+                            <option value="verificato"    selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato","Verified"]</option>
+                        </select>
+                    </div>
+
                     <hr />
                     <h6 class="text-muted mb-3">
                         <i class="bi bi-upload me-1"></i>@T["mat.file_optional","File (optional — can be uploaded later)"]

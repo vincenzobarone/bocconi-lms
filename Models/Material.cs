@@ -18,6 +18,8 @@ public class Material
     public int? DocumentTypeId { get; set; }
     public string DocumentTypeName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public string Status { get; set; } = "bozza";
+    public string? ProtocolNumber { get; set; }
 
     public int CurrentVersion { get; set; }
     public MaterialVersion? ActiveVersion { get; set; }
@@ -27,6 +29,8 @@ public class Material
         "Italiano", "Inglese", "Francese", "Tedesco", "Spagnolo",
         "Russo", "Cinese", "Arabo", "Portoghese", "Altro"
     ];
+
+    public static readonly string[] Statuses = ["bozza", "in_revisione", "verificato"];
 }
 
 public class MaterialVersion

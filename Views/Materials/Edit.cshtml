@@ -76,6 +76,26 @@
                         </select>
                     </div>
 
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Status" class="form-label fw-semibold">@T["mat.label_status","Status"]</label>
+                            <select asp-for="Status" class="form-select">
+                                <option value="bozza"        selected="@(Model.Status=="bozza"?"selected":null)">@T["mat.status_bozza","Draft"]</option>
+                                <option value="in_revisione" selected="@(Model.Status=="in_revisione"?"selected":null)">@T["mat.status_in_revisione","In review"]</option>
+                                <option value="verificato"   selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato","Verified"]</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">@T["mat.protocol_number","Protocol number"]</label>
+                            <input type="text" class="form-control" readonly
+                                   value="@(material?.ProtocolNumber ?? "")"
+                                   placeholder="@T["mat.protocol_auto","Assigned automatically on verification"]" />
+                            <div class="form-text">
+                                <i class="bi bi-shield-check me-1"></i>@T["mat.protocol_auto","Assigned automatically on verification"]
+                            </div>
+                        </div>
+                    </div>
+
                     <hr />
                     <h6 class="text-muted mb-3">
                         <i class="bi bi-upload me-1"></i>@T["mat.upload_new_section","Upload new version file (optional)"]

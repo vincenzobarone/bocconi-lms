@@ -411,6 +411,69 @@ try
 }
 catch { }
 
+// ── Migrate materials table: add status + protocol_number columns ─────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var colCheck = new MySqlConnector.MySqlCommand(
+        "SELECT COUNT(*) FROM information_schema.columns " +
+        "WHERE table_schema=DATABASE() AND table_name='materials' AND column_name='status';", conn);
+    var colExists = Convert.ToInt32(await colCheck.ExecuteScalarAsync()) > 0;
+    if (!colExists)
+    {
+        using var alter = new MySqlConnector.MySqlCommand(@"
+            ALTER TABLE materials
+                ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'bozza',
+                ADD COLUMN protocol_number VARCHAR(50) NULL;", conn);
+        await alter.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
+// ── Seed mat.status_* + mat.protocol_number translation keys ─────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','mat.label_status','Status'),
+        ('en','mat.col_status','Status'),
+        ('en','mat.status_bozza','Draft'),
+        ('en','mat.status_in_revisione','In review'),
+        ('en','mat.status_verificato','Verified'),
+        ('en','mat.select_status','— Select status —'),
+        ('en','mat.protocol_number','Protocol number'),
+        ('en','mat.protocol_auto','Assigned automatically on verification'),
+        ('en','mat.col_protocol','Protocol'),
+        ('it','mat.label_status','Stato'),
+        ('it','mat.col_status','Stato'),
+        ('it','mat.status_bozza','Bozza'),
+        ('it','mat.status_in_revisione','In revisione'),
+        ('it','mat.status_verificato','Verificato'),
+        ('it','mat.select_status','— Seleziona stato —'),
+        ('it','mat.protocol_number','Numero di protocollo'),
+        ('it','mat.protocol_auto','Assegnato automaticamente alla verifica'),
+        ('it','mat.col_protocol','Protocollo');", conn);
+    await ins.ExecuteNonQueryAsync();
+    foreach (var lang in new[] { "es", "de" })
+    {
+        using var copy = new MySqlConnector.MySqlCommand(@"
+            INSERT IGNORE INTO translations (language_code, label_key, label_value)
+            SELECT @lang, label_key, label_value FROM translations
+            WHERE language_code='en' AND label_key IN (
+                'mat.label_status','mat.col_status','mat.status_bozza',
+                'mat.status_in_revisione','mat.status_verificato','mat.select_status',
+                'mat.protocol_number','mat.protocol_auto','mat.col_protocol');", conn);
+        copy.Parameters.AddWithValue("@lang", lang);
+        await copy.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

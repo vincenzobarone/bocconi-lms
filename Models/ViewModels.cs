@@ -237,6 +237,8 @@ public class MaterialFormViewModel
     [Required(ErrorMessage = "Il tipo documento è obbligatorio")]
     public int? DocumentTypeId { get; set; }
 
+    public string Status { get; set; } = "bozza";
+
     public string? Notes { get; set; }
 
     public IFormFile? File { get; set; }
