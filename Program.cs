@@ -411,6 +411,54 @@ try
 }
 catch { }
 
+// ── Seed Admin Users/Roles translation keys ───────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','admin.users_tab','Users'),
+        ('en','admin.roles_tab','Roles'),
+        ('en','admin.add_role','Add new role'),
+        ('en','admin.role_name_placeholder','Role name (e.g. Tutor, Supervisor…)'),
+        ('en','admin.create_role','Create role'),
+        ('en','admin.role_hint','Only letters, numbers, underscores and spaces. The Admin role is reserved.'),
+        ('en','admin.role_protected','protected'),
+        ('en','admin.edit_role','Edit role name'),
+        ('en','admin.delete_role_blocked','Cannot delete: users have this role'),
+        ('en','admin.delete_role','Delete role'),
+        ('en','admin.delete_role_confirm','Delete role'),
+        ('it','admin.users_tab','Utenti'),
+        ('it','admin.roles_tab','Ruoli'),
+        ('it','admin.add_role','Aggiungi nuovo ruolo'),
+        ('it','admin.role_name_placeholder','Nome ruolo (es. Tutor, Supervisore…)'),
+        ('it','admin.create_role','Crea ruolo'),
+        ('it','admin.role_hint','Solo lettere, numeri, underscore e spazi. Il ruolo Admin è riservato.'),
+        ('it','admin.role_protected','protetto'),
+        ('it','admin.edit_role','Modifica nome ruolo'),
+        ('it','admin.delete_role_blocked','Impossibile eliminare: utenti hanno questo ruolo'),
+        ('it','admin.delete_role','Elimina ruolo'),
+        ('it','admin.delete_role_confirm','Eliminare il ruolo');", conn);
+    await ins.ExecuteNonQueryAsync();
+    foreach (var lang in new[] { "es", "de" })
+    {
+        using var copy = new MySqlConnector.MySqlCommand(@"
+            INSERT IGNORE INTO translations (language_code, label_key, label_value)
+            SELECT @lang, label_key, label_value FROM translations
+            WHERE language_code = 'en'
+              AND label_key IN (
+                'admin.users_tab','admin.roles_tab','admin.add_role',
+                'admin.role_name_placeholder','admin.create_role','admin.role_hint',
+                'admin.role_protected','admin.edit_role','admin.delete_role_blocked',
+                'admin.delete_role','admin.delete_role_confirm');", conn);
+        copy.Parameters.AddWithValue("@lang", lang);
+        await copy.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
 // ── Migrate materials table: add status + protocol_number columns ─────────
 try
 {

@@ -164,10 +164,9 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT r.id, r.name, COUNT(ur.user_id) AS user_count
+            SELECT r.id, r.name,
+                   (SELECT COUNT(*) FROM users u WHERE u.role = r.name) AS user_count
             FROM roles r
-            LEFT JOIN user_roles ur ON ur.role_id = r.id
-            GROUP BY r.id, r.name
             ORDER BY FIELD(r.name, 'Admin', 'Teacher', 'Student'), r.name", conn);
         var list = new List<RoleViewModel>();
         using var reader = await cmd.ExecuteReaderAsync();

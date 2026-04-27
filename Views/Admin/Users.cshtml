@@ -1,12 +1,12 @@
 @model UsersAndRolesViewModel
 @{
-    ViewData["Title"] = "Utenti e Ruoli";
+    ViewData["Title"] = T["admin.users_roles","Users & Roles"];
     var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
     var activeTab = Model.ActiveTab;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-people me-2"></i>Utenti e Ruoli</h2>
+    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-people me-2"></i>@T["admin.users_roles","Users & Roles"]</h2>
     @if (activeTab == "utenti")
     {
         <a asp-action="CreateUser" class="btn btn-bocconi">
@@ -35,7 +35,7 @@
         <button class="nav-link @(activeTab == "utenti" ? "active" : "")"
                 id="tab-utenti" data-bs-toggle="tab" data-bs-target="#pane-utenti"
                 type="button" role="tab">
-            <i class="bi bi-people me-1"></i>Utenti
+            <i class="bi bi-people me-1"></i>@T["admin.users_tab","Users"]
             <span class="badge bg-secondary ms-1">@Model.Users.Count</span>
         </button>
     </li>
@@ -43,7 +43,7 @@
         <button class="nav-link @(activeTab == "ruoli" ? "active" : "")"
                 id="tab-ruoli" data-bs-toggle="tab" data-bs-target="#pane-ruoli"
                 type="button" role="tab">
-            <i class="bi bi-shield-lock me-1"></i>Ruoli
+            <i class="bi bi-shield-lock me-1"></i>@T["admin.roles_tab","Roles"]
             <span class="badge bg-secondary ms-1">@Model.Roles.Count</span>
         </button>
     </li>
@@ -165,21 +165,21 @@
 
         <div class="card mb-4 border-0 shadow-sm">
             <div class="card-header bg-white fw-semibold py-3">
-                <i class="bi bi-plus-circle me-2 text-bocconi"></i>Aggiungi nuovo ruolo
+                <i class="bi bi-plus-circle me-2 text-bocconi"></i>@T["admin.add_role","Add new role"]
             </div>
             <div class="card-body">
                 <form asp-action="CreateRole" method="post" class="d-flex gap-2 align-items-start">
                     @Html.AntiForgeryToken()
                     <div class="flex-grow-1">
                         <input type="text" name="name" class="form-control"
-                               placeholder="Nome ruolo (es. Tutor, Supervisore…)"
+                               placeholder="@T["admin.role_name_placeholder","Role name (e.g. Tutor, Supervisor…)"]"
                                maxlength="50" autocomplete="off" />
                     </div>
                     <button type="submit" class="btn btn-bocconi">
-                        <i class="bi bi-plus me-1"></i>Crea ruolo
+                        <i class="bi bi-plus me-1"></i>@T["admin.create_role","Create role"]
                     </button>
                 </form>
-                <div class="form-text mt-1">Solo lettere, numeri, underscore e spazi. Il ruolo Admin è riservato.</div>
+                <div class="form-text mt-1">@T["admin.role_hint","Only letters, numbers, underscores and spaces. The Admin role is reserved."]</div>
             </div>
         </div>
 
@@ -188,8 +188,8 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th class="ps-3">Nome</th>
-                            <th class="text-center" style="width:130px">Utenti</th>
+                            <th class="ps-3">@T["common.name","Name"]</th>
+                            <th class="text-center" style="width:130px">@T["admin.users_tab","Users"]</th>
                             <th style="width:110px"></th>
                         </tr>
                     </thead>
@@ -201,7 +201,7 @@
                                     @r.Name
                                     @if (r.IsAdmin)
                                     {
-                                        <span class="badge bg-secondary ms-2 fw-normal">protetto</span>
+                                        <span class="badge bg-secondary ms-2 fw-normal">@T["admin.role_protected","protected"]</span>
                                     }
                                 </td>
                                 <td class="text-center">
@@ -220,14 +220,14 @@
                                         <div class="d-flex gap-1 justify-content-end">
                                             <a asp-action="EditRole" asp-route-id="@r.Id"
                                                class="btn btn-sm btn-outline-secondary"
-                                               title="Modifica nome ruolo">
+                                               title="@T["admin.edit_role","Edit role name"]">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             @if (r.UserCount > 0)
                                             {
                                                 <button type="button" disabled
                                                         class="btn btn-sm btn-outline-secondary"
-                                                        title="Impossibile eliminare: @r.UserCount utente/i ha questo ruolo">
+                                                        title="@T["admin.delete_role_blocked","Cannot delete: users have this role"]">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             }
@@ -238,8 +238,8 @@
                                                     <input type="hidden" name="id" value="@r.Id" />
                                                     <button type="submit"
                                                             class="btn btn-sm btn-outline-danger"
-                                                            title="Elimina ruolo"
-                                                            onclick="return confirm('Eliminare il ruolo \'@r.Name\'?')">
+                                                            title="@T["admin.delete_role","Delete role"]"
+                                                            data-confirm="@T["admin.delete_role_confirm","Delete role"] '@r.Name'?">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </form>
