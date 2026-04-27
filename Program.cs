@@ -506,6 +506,42 @@ try
 }
 catch { }
 
+// ── Seed DocumentTypes translation keys ───────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','doctype.none','No types defined.'),
+        ('en','doctype.add','Add type'),
+        ('en','doctype.name_placeholder','Document type name…'),
+        ('en','doctype.create','Create type'),
+        ('en','doctype.delete_confirm','Delete type'),
+        ('en','common.actions','Actions'),
+        ('it','doctype.none','Nessun tipo presente.'),
+        ('it','doctype.add','Aggiungi tipo'),
+        ('it','doctype.name_placeholder','Nome tipo documento…'),
+        ('it','doctype.create','Crea tipo'),
+        ('it','doctype.delete_confirm','Eliminare il tipo'),
+        ('it','common.actions','Azioni');", conn);
+    await ins.ExecuteNonQueryAsync();
+    foreach (var lang in new[] { "es", "de" })
+    {
+        using var copy = new MySqlConnector.MySqlCommand(@"
+            INSERT IGNORE INTO translations (language_code, label_key, label_value)
+            SELECT @lang, label_key, label_value FROM translations
+            WHERE language_code = 'en'
+              AND label_key IN (
+                'doctype.none','doctype.add','doctype.name_placeholder',
+                'doctype.create','doctype.delete_confirm','common.actions');", conn);
+        copy.Parameters.AddWithValue("@lang", lang);
+        await copy.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
 // ── Seed PlatformFeatures translation keys ────────────────────────────────
 try
 {
