@@ -419,6 +419,7 @@ try
     await conn.OpenAsync();
     using var ins = new MySqlConnector.MySqlCommand(@"
         INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','common.manage','Manage'),
         ('en','common.back_to_panel','Back to panel'),
         ('en','admin.courses_module','Courses & Enrolments Module'),
         ('en','admin.module_active','Active'),
@@ -428,6 +429,7 @@ try
         ('en','admin.enable_courses','Enable Courses module'),
         ('en','admin.disable_courses','Disable Courses module'),
         ('en','admin.disable_courses_confirm','Disable the Courses module? Students and teachers will access the Materials library directly.'),
+        ('it','common.manage','Gestisci'),
         ('it','common.back_to_panel','Torna al pannello'),
         ('it','admin.courses_module','Modulo Corsi e Iscrizioni'),
         ('it','admin.module_active','Attivo'),
@@ -445,7 +447,7 @@ try
             SELECT @lang, label_key, label_value FROM translations
             WHERE language_code = 'en'
               AND label_key IN (
-                'common.back_to_panel','admin.courses_module','admin.module_active',
+                'common.manage','common.back_to_panel','admin.courses_module','admin.module_active',
                 'admin.module_disabled','admin.modules_summary','admin.always_active',
                 'admin.enable_courses','admin.disable_courses','admin.disable_courses_confirm');", conn);
         copy.Parameters.AddWithValue("@lang", lang);

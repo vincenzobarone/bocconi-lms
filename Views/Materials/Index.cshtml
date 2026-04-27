@@ -6,12 +6,20 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold mb-0"><i class="bi bi-collection me-2"></i>@T["mat.page_title","Materials Library"]</h2>
-    @if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
-    {
-        <a asp-action="Create" class="btn btn-bocconi">
-            <i class="bi bi-plus-lg me-1"></i>@T["mat.new_btn","New material"]
-        </a>
-    }
+    <div class="d-flex gap-2">
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-controller="Admin" asp-action="DocumentTypes" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-tags me-1"></i>@T["admin.doc_types","Document Types"]
+            </a>
+        }
+        @if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
+        {
+            <a asp-action="Create" class="btn btn-bocconi">
+                <i class="bi bi-plus-lg me-1"></i>@T["mat.new_btn","New material"]
+            </a>
+        }
+    </div>
 </div>
 @if (User.IsInRole("Student") && !User.IsInRole("Teacher") && !User.IsInRole("Admin"))
 {
