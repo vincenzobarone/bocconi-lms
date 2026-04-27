@@ -108,7 +108,16 @@
                         <div class="row g-2 align-items-end">
                             <div class="col-md-5">
                                 <label class="form-label small fw-semibold">@T["mat.label_file","File"]</label>
-                                <input type="file" name="file" class="form-control form-control-sm" required />
+                                <div class="input-group input-group-sm">
+                                    <label for="fileUploadDetails" class="btn btn-outline-secondary btn-sm mb-0">
+                                        <i class="bi bi-folder2-open me-1"></i>@T["mat.choose_file","Choose file"]
+                                    </label>
+                                    <span class="form-control text-muted text-truncate"
+                                          id="fileNameDetails"
+                                          data-placeholder="@T["mat.no_file_chosen","No file chosen"]">@T["mat.no_file_chosen","No file chosen"]</span>
+                                    <input type="file" name="file" id="fileUploadDetails" class="d-none" required
+                                           onchange="bocconiFileInput(this,'fileNameDetails')" />
+                                </div>
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label small fw-semibold">@T["mat.notes","Notes"]</label>

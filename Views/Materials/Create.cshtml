@@ -88,8 +88,17 @@
                     </h6>
 
                     <div class="mb-3">
-                        <label asp-for="File" class="form-label fw-semibold">@T["mat.label_file","File"]</label>
-                        <input asp-for="File" type="file" class="form-control" />
+                        <label class="form-label fw-semibold">@T["mat.label_file","File"]</label>
+                        <div class="input-group">
+                            <label for="File" class="btn btn-outline-secondary mb-0">
+                                <i class="bi bi-folder2-open me-1"></i>@T["mat.choose_file","Choose file"]
+                            </label>
+                            <span class="form-control text-muted"
+                                  id="fileName_File"
+                                  data-placeholder="@T["mat.no_file_chosen","No file chosen"]">@T["mat.no_file_chosen","No file chosen"]</span>
+                            <input asp-for="File" type="file" class="d-none"
+                                   onchange="bocconiFileInput(this,'fileName_File')" />
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label asp-for="Notes" class="form-label fw-semibold">@T["mat.label_notes","Version notes"]</label>

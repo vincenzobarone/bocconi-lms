@@ -211,6 +211,10 @@ window.dtLang = function() { return window.currentLang === 'it' ? window.dtIT : 
         if (pendingForm) { pendingForm.submit(); pendingForm = null; }
     });
 })();
+function bocconiFileInput(inp, spanId) {
+    var span = document.getElementById(spanId);
+    span.textContent = inp.files.length > 0 ? inp.files[0].name : (span.dataset.placeholder || '');
+}
 </script>
 </body>
 </html>

@@ -111,8 +111,17 @@
                     }
 
                     <div class="mb-3">
-                        <label asp-for="File" class="form-label fw-semibold">@T["mat.new_file","New file"]</label>
-                        <input asp-for="File" type="file" class="form-control" />
+                        <label class="form-label fw-semibold">@T["mat.new_file","New file"]</label>
+                        <div class="input-group">
+                            <label for="File" class="btn btn-outline-secondary mb-0">
+                                <i class="bi bi-folder2-open me-1"></i>@T["mat.choose_file","Choose file"]
+                            </label>
+                            <span class="form-control text-muted"
+                                  id="fileName_File"
+                                  data-placeholder="@T["mat.no_file_chosen","No file chosen"]">@T["mat.no_file_chosen","No file chosen"]</span>
+                            <input asp-for="File" type="file" class="d-none"
+                                   onchange="bocconiFileInput(this,'fileName_File')" />
+                        </div>
                         <div class="form-text">@T["mat.file_hint","Leave empty to not update the file."]</div>
                     </div>
                     <div class="mb-3">
