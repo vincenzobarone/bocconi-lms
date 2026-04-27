@@ -506,6 +506,22 @@ try
 }
 catch { }
 
+// ── Seed role hint simple key ──────────────────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','admin.role_hint_simple','The Admin role is reserved.'),
+        ('it','admin.role_hint_simple','Il ruolo Admin è riservato.'),
+        ('es','admin.role_hint_simple','El rol Admin está reservado.'),
+        ('de','admin.role_hint_simple','Die Admin-Rolle ist reserviert.');", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Seed DocumentTypes translation keys ───────────────────────────────────
 try
 {
