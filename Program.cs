@@ -223,6 +223,148 @@ try
 }
 catch { }
 
+// ── Seed Materials translation keys (EN + IT + copy to ES/DE) ───────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+
+    // Only seed if mat.page_title doesn't exist yet
+    using var check = new MySqlConnector.MySqlCommand(
+        "SELECT COUNT(*) FROM translations WHERE language_code='en' AND label_key='mat.page_title';", conn);
+    var exists = Convert.ToInt32(await check.ExecuteScalarAsync()) > 0;
+
+    if (!exists)
+    {
+        using var ins = new MySqlConnector.MySqlCommand(@"
+            INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+            ('en','mat.nav','Materials'),
+            ('en','mat.page_title','Materials Library'),
+            ('en','mat.new_btn','New material'),
+            ('en','mat.back','Back to Materials'),
+            ('en','mat.filter_title','Title'),
+            ('en','mat.filter_lang','Language'),
+            ('en','mat.filter_type','Document type'),
+            ('en','mat.search_placeholder','Search by title…'),
+            ('en','mat.all_langs','— All —'),
+            ('en','mat.all_types','— All —'),
+            ('en','mat.col_type','Type'),
+            ('en','mat.col_author','Author'),
+            ('en','mat.col_version','Ver.'),
+            ('en','mat.col_lang','Language'),
+            ('en','mat.col_created','Created'),
+            ('en','mat.details_btn','Details'),
+            ('en','mat.download_btn','Download active version'),
+            ('en','mat.no_results','No materials found.'),
+            ('en','mat.create_first','Create the first material'),
+            ('en','mat.no_results_student','No materials available at the moment.'),
+            ('en','mat.student_readonly','You can browse and download materials. For changes or uploads, contact your teacher.'),
+            ('en','mat.versions','Versions'),
+            ('en','mat.no_files','No file uploaded yet.'),
+            ('en','mat.version_active','Active'),
+            ('en','mat.restore_btn','Restore'),
+            ('en','mat.restore_confirm','Restore version'),
+            ('en','mat.upload_version','Upload new version'),
+            ('en','mat.notes','Notes'),
+            ('en','mat.notes_placeholder','What changed?'),
+            ('en','mat.upload_btn','Upload'),
+            ('en','mat.info_panel','Information'),
+            ('en','mat.create_title','New material'),
+            ('en','mat.edit_title','Edit material'),
+            ('en','mat.edit_breadcrumb','Edit'),
+            ('en','mat.label_title','Title'),
+            ('en','mat.title_placeholder','Enter a unique title…'),
+            ('en','mat.label_doctype','Document type'),
+            ('en','mat.select_type','— Select a type —'),
+            ('en','mat.label_language','Language'),
+            ('en','mat.label_owner','Author / Owner'),
+            ('en','mat.no_owner','— None —'),
+            ('en','mat.owner_hint','Who is responsible for the material.'),
+            ('en','mat.file_optional','File (optional — can be uploaded later)'),
+            ('en','mat.label_file','File'),
+            ('en','mat.label_notes','Version notes'),
+            ('en','mat.notes_file_placeholder','File description (optional)'),
+            ('en','mat.cancel','Cancel'),
+            ('en','mat.create_btn','Create material'),
+            ('en','mat.upload_new_section','Upload new version file (optional)'),
+            ('en','mat.active_version_label','Active version:'),
+            ('en','mat.new_file','New file'),
+            ('en','mat.file_hint','Leave empty to not update the file.'),
+            ('en','mat.new_version_notes','New version notes'),
+            ('en','mat.version_notes_placeholder','What changes in this version?'),
+            ('en','mat.save_btn','Save changes'),
+            ('it','mat.nav','Materiali'),
+            ('it','mat.page_title','Libreria Materiali'),
+            ('it','mat.new_btn','Nuovo materiale'),
+            ('it','mat.back','Torna ai Materiali'),
+            ('it','mat.filter_title','Titolo'),
+            ('it','mat.filter_lang','Lingua'),
+            ('it','mat.filter_type','Tipo documento'),
+            ('it','mat.search_placeholder','Cerca per titolo…'),
+            ('it','mat.all_langs','— Tutte —'),
+            ('it','mat.all_types','— Tutti —'),
+            ('it','mat.col_type','Tipo'),
+            ('it','mat.col_author','Autore'),
+            ('it','mat.col_version','Ver.'),
+            ('it','mat.col_lang','Lingua'),
+            ('it','mat.col_created','Creato'),
+            ('it','mat.details_btn','Dettagli'),
+            ('it','mat.download_btn','Scarica versione attiva'),
+            ('it','mat.no_results','Nessun materiale trovato.'),
+            ('it','mat.create_first','Crea il primo materiale'),
+            ('it','mat.no_results_student','Nessun materiale disponibile al momento.'),
+            ('it','mat.student_readonly','Puoi sfogliare e scaricare i materiali. Per modifiche o upload contatta il tuo docente.'),
+            ('it','mat.versions','Versioni'),
+            ('it','mat.no_files','Nessun file caricato ancora.'),
+            ('it','mat.version_active','Attiva'),
+            ('it','mat.restore_btn','Ripristina'),
+            ('it','mat.restore_confirm','Ripristinare la versione'),
+            ('it','mat.upload_version','Carica nuova versione'),
+            ('it','mat.notes','Note'),
+            ('it','mat.notes_placeholder','Cosa cambia?'),
+            ('it','mat.upload_btn','Carica'),
+            ('it','mat.info_panel','Informazioni'),
+            ('it','mat.create_title','Nuovo materiale'),
+            ('it','mat.edit_title','Modifica materiale'),
+            ('it','mat.edit_breadcrumb','Modifica'),
+            ('it','mat.label_title','Titolo'),
+            ('it','mat.title_placeholder','Inserisci un titolo univoco…'),
+            ('it','mat.label_doctype','Tipo documento'),
+            ('it','mat.select_type','— Seleziona un tipo —'),
+            ('it','mat.label_language','Lingua'),
+            ('it','mat.label_owner','Autore / Responsabile'),
+            ('it','mat.no_owner','— Nessuno —'),
+            ('it','mat.owner_hint','Chi è responsabile del materiale.'),
+            ('it','mat.file_optional','File (opzionale — può essere caricato in seguito)'),
+            ('it','mat.label_file','File'),
+            ('it','mat.label_notes','Note versione'),
+            ('it','mat.notes_file_placeholder','Descrizione del file (opzionale)'),
+            ('it','mat.cancel','Annulla'),
+            ('it','mat.create_btn','Crea materiale'),
+            ('it','mat.upload_new_section','Carica nuova versione file (opzionale)'),
+            ('it','mat.active_version_label','Versione attiva:'),
+            ('it','mat.new_file','Nuovo file'),
+            ('it','mat.file_hint','Lascia vuoto per non aggiornare il file.'),
+            ('it','mat.new_version_notes','Note nuova versione'),
+            ('it','mat.version_notes_placeholder','Cosa cambia in questa versione?'),
+            ('it','mat.save_btn','Salva modifiche');", conn);
+        await ins.ExecuteNonQueryAsync();
+
+        // Copy EN → ES and DE for missing keys
+        foreach (var lang in new[] { "es", "de" })
+        {
+            using var copy = new MySqlConnector.MySqlCommand(@"
+                INSERT IGNORE INTO translations (language_code, label_key, label_value)
+                SELECT @lang, label_key, label_value FROM translations
+                WHERE language_code = 'en' AND label_key LIKE 'mat.%';", conn);
+            copy.Parameters.AddWithValue("@lang", lang);
+            await copy.ExecuteNonQueryAsync();
+        }
+    }
+}
+catch { }
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

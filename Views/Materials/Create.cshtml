@@ -1,6 +1,6 @@
 @model MaterialFormViewModel
 @{
-    ViewData["Title"] = "Nuovo materiale";
+    ViewData["Title"] = T["mat.create_title","New material"];
     var docTypes = ViewBag.DocumentTypes as List<BocconiLMS.Models.DocumentType> ?? new();
     var languages = ViewBag.Languages as string[] ?? BocconiLMS.Models.Material.Languages;
     var owners = ViewBag.AvailableOwners as List<BocconiLMS.Models.User> ?? new();
@@ -8,8 +8,8 @@
 
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-action="Index">Materiali</a></li>
-        <li class="breadcrumb-item active">Nuovo materiale</li>
+        <li class="breadcrumb-item"><a asp-action="Index">@T["mat.nav","Materials"]</a></li>
+        <li class="breadcrumb-item active">@T["mat.create_title","New material"]</li>
     </ol>
 </nav>
 
@@ -17,7 +17,7 @@
     <div class="col-lg-8">
         <div class="card shadow-sm">
             <div class="card-header bg-bocconi text-white">
-                <h5 class="mb-0"><i class="bi bi-file-earmark-plus me-2"></i>Nuovo materiale</h5>
+                <h5 class="mb-0"><i class="bi bi-file-earmark-plus me-2"></i>@T["mat.create_title","New material"]</h5>
             </div>
             <div class="card-body">
                 <form asp-action="Create" method="post" enctype="multipart/form-data">
@@ -25,16 +25,21 @@
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" id="valSummary"></div>
 
                     <div class="mb-3">
-                        <label asp-for="Title" class="form-label fw-semibold">Titolo <span class="text-danger">*</span></label>
-                        <input asp-for="Title" class="form-control" placeholder="Inserisci un titolo univoco…" />
+                        <label asp-for="Title" class="form-label fw-semibold">
+                            @T["mat.label_title","Title"] <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="Title" class="form-control"
+                               placeholder="@T["mat.title_placeholder","Enter a unique title…"]" />
                         <span asp-validation-for="Title" class="text-danger small"></span>
                     </div>
 
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label asp-for="DocumentTypeId" class="form-label fw-semibold">Tipo documento <span class="text-danger">*</span></label>
+                            <label asp-for="DocumentTypeId" class="form-label fw-semibold">
+                                @T["mat.label_doctype","Document type"] <span class="text-danger">*</span>
+                            </label>
                             <select asp-for="DocumentTypeId" class="form-select">
-                                <option value="">— Seleziona un tipo —</option>
+                                <option value="">@T["mat.select_type","— Select a type —"]</option>
                                 @foreach (var t in docTypes)
                                 {
                                     <option value="@t.Id">@t.Name</option>
@@ -43,7 +48,9 @@
                             <span asp-validation-for="DocumentTypeId" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="Language" class="form-label fw-semibold">Lingua <span class="text-danger">*</span></label>
+                            <label asp-for="Language" class="form-label fw-semibold">
+                                @T["mat.label_language","Language"] <span class="text-danger">*</span>
+                            </label>
                             <select asp-for="Language" class="form-select">
                                 @foreach (var l in languages)
                                 {
@@ -55,35 +62,38 @@
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="OwnerId" class="form-label fw-semibold">Autore / Responsabile</label>
+                        <label asp-for="OwnerId" class="form-label fw-semibold">@T["mat.label_owner","Author / Owner"]</label>
                         <select asp-for="OwnerId" class="form-select">
-                            <option value="">— Nessuno —</option>
+                            <option value="">@T["mat.no_owner","— None —"]</option>
                             @foreach (var u in owners)
                             {
                                 <option value="@u.Id">@u.LastName @u.FirstName (@u.Role)</option>
                             }
                         </select>
-                        <div class="form-text">Chi è responsabile del materiale.</div>
+                        <div class="form-text">@T["mat.owner_hint","Who is responsible for the material."]</div>
                     </div>
 
                     <hr />
-                    <h6 class="text-muted mb-3"><i class="bi bi-upload me-1"></i>File (opzionale — può essere caricato in seguito)</h6>
+                    <h6 class="text-muted mb-3">
+                        <i class="bi bi-upload me-1"></i>@T["mat.file_optional","File (optional — can be uploaded later)"]
+                    </h6>
 
                     <div class="mb-3">
-                        <label asp-for="File" class="form-label fw-semibold">File</label>
+                        <label asp-for="File" class="form-label fw-semibold">@T["mat.label_file","File"]</label>
                         <input asp-for="File" type="file" class="form-control" />
                     </div>
                     <div class="mb-3">
-                        <label asp-for="Notes" class="form-label fw-semibold">Note versione</label>
-                        <input asp-for="Notes" class="form-control" placeholder="Descrizione del file (opzionale)" />
+                        <label asp-for="Notes" class="form-label fw-semibold">@T["mat.label_notes","Version notes"]</label>
+                        <input asp-for="Notes" class="form-control"
+                               placeholder="@T["mat.notes_file_placeholder","File description (optional)"]" />
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <a asp-action="Index" class="btn btn-outline-secondary">
-                            <i class="bi bi-x me-1"></i>Annulla
+                            <i class="bi bi-x me-1"></i>@T["mat.cancel","Cancel"]
                         </a>
                         <button type="submit" class="btn btn-bocconi">
-                            <i class="bi bi-check-lg me-1"></i>Crea materiale
+                            <i class="bi bi-check-lg me-1"></i>@T["mat.create_btn","Create material"]
                         </button>
                     </div>
                 </form>

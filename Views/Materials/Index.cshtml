@@ -1,15 +1,15 @@
 @model MaterialsIndexViewModel
 @{
-    ViewData["Title"] = "Libreria Materiali";
+    ViewData["Title"] = T["mat.page_title","Materials Library"];
     var docTypes = Model.DocumentTypes;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold mb-0"><i class="bi bi-collection me-2"></i>Libreria Materiali</h2>
+    <h2 class="fw-bold mb-0"><i class="bi bi-collection me-2"></i>@T["mat.page_title","Materials Library"]</h2>
     @if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
     {
         <a asp-action="Create" class="btn btn-bocconi">
-            <i class="bi bi-plus-lg me-1"></i>Nuovo materiale
+            <i class="bi bi-plus-lg me-1"></i>@T["mat.new_btn","New material"]
         </a>
     }
 </div>
@@ -17,7 +17,7 @@
 {
     <div class="alert alert-info d-flex align-items-center gap-2 mb-3 py-2">
         <i class="bi bi-info-circle"></i>
-        <span>Puoi sfogliare e scaricare i materiali. Per modifiche o upload contatta il tuo docente.</span>
+        <span>@T["mat.student_readonly","You can browse and download materials. For changes or uploads, contact your teacher."]</span>
     </div>
 }
 
@@ -25,13 +25,14 @@
     <div class="card-body">
         <form method="get" class="row g-2 align-items-end">
             <div class="col-md-4">
-                <label class="form-label small fw-semibold">Titolo</label>
-                <input type="text" name="q" value="@Model.SearchTitle" class="form-control form-control-sm" placeholder="Cerca per titolo…" />
+                <label class="form-label small fw-semibold">@T["mat.filter_title","Title"]</label>
+                <input type="text" name="q" value="@Model.SearchTitle" class="form-control form-control-sm"
+                       placeholder="@T["mat.search_placeholder","Search by title…"]" />
             </div>
             <div class="col-md-3">
-                <label class="form-label small fw-semibold">Lingua</label>
+                <label class="form-label small fw-semibold">@T["mat.filter_lang","Language"]</label>
                 <select name="lang" class="form-select form-select-sm">
-                    <option value="">— Tutte —</option>
+                    <option value="">@T["mat.all_langs","— All —"]</option>
                     @foreach (var l in BocconiLMS.Models.Material.Languages)
                     {
                         <option value="@l" selected="@(Model.FilterLanguage == l ? "selected" : null)">@l</option>
@@ -39,9 +40,9 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label small fw-semibold">Tipo documento</label>
+                <label class="form-label small fw-semibold">@T["mat.filter_type","Document type"]</label>
                 <select name="typeId" class="form-select form-select-sm">
-                    <option value="">— Tutti —</option>
+                    <option value="">@T["mat.all_types","— All —"]</option>
                     @foreach (var t in docTypes)
                     {
                         <option value="@t.Id" selected="@(Model.FilterTypeId == t.Id ? "selected" : null)">@t.Name</option>
@@ -50,9 +51,9 @@
             </div>
             <div class="col-md-2 d-flex gap-2">
                 <button type="submit" class="btn btn-bocconi btn-sm flex-grow-1">
-                    <i class="bi bi-search me-1"></i>Filtra
+                    <i class="bi bi-search me-1"></i>@T["common.filter","Filter"]
                 </button>
-                <a asp-action="Index" class="btn btn-outline-secondary btn-sm" title="Azzera filtri">
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm" title="@T["common.reset","Reset"]">
                     <i class="bi bi-x-lg"></i>
                 </a>
             </div>
@@ -66,11 +67,11 @@
         <i class="bi bi-collection display-4 d-block mb-3"></i>
         @if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
         {
-            <p>Nessun materiale trovato. <a asp-action="Create">Crea il primo materiale</a>.</p>
+            <p>@T["mat.no_results","No materials found."] <a asp-action="Create">@T["mat.create_first","Create the first material"]</a>.</p>
         }
         else
         {
-            <p>Nessun materiale disponibile al momento.</p>
+            <p>@T["mat.no_results_student","No materials available at the moment."]</p>
         }
     </div>
 }
@@ -80,12 +81,12 @@ else
         <table class="table table-hover align-middle" id="materialsTable">
             <thead class="table-light">
                 <tr>
-                    <th>Titolo</th>
-                    <th>Tipo</th>
-                    <th>Lingua</th>
-                    <th>Autore</th>
-                    <th class="text-center">Ver.</th>
-                    <th class="text-end">Azioni</th>
+                    <th>@T["mat.filter_title","Title"]</th>
+                    <th>@T["mat.col_type","Type"]</th>
+                    <th>@T["mat.filter_lang","Language"]</th>
+                    <th>@T["mat.col_author","Author"]</th>
+                    <th class="text-center">@T["mat.col_version","Ver."]</th>
+                    <th class="text-end">@T["common.actions","Actions"]</th>
                 </tr>
             </thead>
             <tbody>
@@ -114,26 +115,30 @@ else
                         </td>
                         <td class="text-end">
                             <div class="d-flex gap-1 justify-content-end">
-                                <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-sm btn-outline-info" title="Dettagli">
+                                <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-sm btn-outline-info"
+                                   title="@T["mat.details_btn","Details"]">
                                     <i class="bi bi-eye"></i>
                                 </a>
                                 @if (m.ActiveVersion != null)
                                 {
                                     <a asp-action="Download" asp-route-versionId="@m.ActiveVersion.Id"
-                                       class="btn btn-sm btn-outline-primary" title="Scarica versione attiva">
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="@T["mat.download_btn","Download active version"]">
                                         <i class="bi bi-download"></i>
                                     </a>
                                 }
                                 @if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
                                 {
-                                    <a asp-action="Edit" asp-route-id="@m.Id" class="btn btn-sm btn-outline-secondary">
+                                    <a asp-action="Edit" asp-route-id="@m.Id"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="@T["common.edit","Edit"]">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form asp-action="Delete" asp-route-id="@m.Id" method="post" class="d-inline">
                                         @Html.AntiForgeryToken()
                                         <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                data-confirm="Eliminare il materiale «@m.Title» e tutte le sue versioni?"
-                                                title="Elimina">
+                                                data-confirm="@T["common.delete","Delete"] «@m.Title»?"
+                                                title="@T["common.delete","Delete"]">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>
