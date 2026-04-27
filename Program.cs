@@ -223,6 +223,52 @@ try
 }
 catch { }
 
+// ── Seed Admin platform-settings translation keys ───────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','admin.platform_settings','Platform Settings'),
+        ('en','admin.platform_settings_desc','Platform configuration settings'),
+        ('en','admin.configure','Configure'),
+        ('en','admin.doc_types','Document Types'),
+        ('en','admin.doc_types_desc','Manage document types available in the Materials library.'),
+        ('en','admin.manage_types','Manage types'),
+        ('en','admin.users_roles','Users & Roles'),
+        ('en','admin.users_roles_desc','Manage user accounts, permissions and roles.'),
+        ('en','admin.manage_users','Manage users'),
+        ('en','admin.manage_roles','Manage roles'),
+        ('it','admin.platform_settings','Impostazioni Piattaforma'),
+        ('it','admin.platform_settings_desc','Impostazioni di configurazione della piattaforma'),
+        ('it','admin.configure','Configura'),
+        ('it','admin.doc_types','Tipi Documento'),
+        ('it','admin.doc_types_desc','Gestisci l''elenco dei tipi di documento disponibili nella libreria Materiali.'),
+        ('it','admin.manage_types','Gestisci tipi'),
+        ('it','admin.users_roles','Utenti e Ruoli'),
+        ('it','admin.users_roles_desc','Gestisci account, permessi e ruoli degli utenti della piattaforma.'),
+        ('it','admin.manage_users','Gestisci utenti'),
+        ('it','admin.manage_roles','Gestisci ruoli');", conn);
+    await ins.ExecuteNonQueryAsync();
+
+    foreach (var lang in new[] { "es", "de" })
+    {
+        using var copy = new MySqlConnector.MySqlCommand(@"
+            INSERT IGNORE INTO translations (language_code, label_key, label_value)
+            SELECT @lang, label_key, label_value FROM translations
+            WHERE language_code = 'en'
+              AND label_key IN ('admin.platform_settings','admin.platform_settings_desc',
+                                'admin.configure','admin.doc_types','admin.doc_types_desc',
+                                'admin.manage_types','admin.users_roles','admin.users_roles_desc',
+                                'admin.manage_users','admin.manage_roles');", conn);
+        copy.Parameters.AddWithValue("@lang", lang);
+        await copy.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
 // ── Seed Materials translation keys (EN + IT + copy to ES/DE) ───────────
 try
 {

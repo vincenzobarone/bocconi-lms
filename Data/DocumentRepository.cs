@@ -49,12 +49,12 @@ public class DocumentRepository
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
-        using var cmd = new MySqlCommand(@"
-            INSERT INTO documents (lesson_id, title, created_at) VALUES (@lid, @title, NOW());
-            SELECT LAST_INSERT_ID();", conn);
+        using var cmd = new MySqlCommand(
+            "INSERT INTO documents (lesson_id, title, created_at) VALUES (@lid, @title, NOW())", conn);
         cmd.Parameters.AddWithValue("@lid", lessonId);
         cmd.Parameters.AddWithValue("@title", title);
-        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        await cmd.ExecuteNonQueryAsync();
+        return await DbHelper.GetLastInsertIdAsync(conn);
     }
 
     public async Task<int> AddVersionAsync(DocumentVersion version)
@@ -69,8 +69,7 @@ public class DocumentRepository
 
         using var insert = new MySqlCommand(@"
             INSERT INTO document_versions (document_id, version_number, file_name, file_path, file_type, file_size_bytes, uploaded_by, notes, is_active, uploaded_at)
-            VALUES (@did, @vn, @fn, @fp, @ft, @fs, @ub, @notes, 1, NOW());
-            SELECT LAST_INSERT_ID();", conn, tx);
+            VALUES (@did, @vn, @fn, @fp, @ft, @fs, @ub, @notes, 1, NOW())", conn, tx);
         insert.Parameters.AddWithValue("@did", version.DocumentId);
         insert.Parameters.AddWithValue("@vn", version.VersionNumber);
         insert.Parameters.AddWithValue("@fn", version.FileName);
@@ -79,7 +78,8 @@ public class DocumentRepository
         insert.Parameters.AddWithValue("@fs", version.FileSizeBytes);
         insert.Parameters.AddWithValue("@ub", version.UploadedBy);
         insert.Parameters.AddWithValue("@notes", (object?)version.Notes ?? DBNull.Value);
-        var newId = Convert.ToInt32(await insert.ExecuteScalarAsync());
+        await insert.ExecuteNonQueryAsync();
+        var newId = await DbHelper.GetLastInsertIdAsync(conn);
         await tx.CommitAsync();
         return newId;
     }

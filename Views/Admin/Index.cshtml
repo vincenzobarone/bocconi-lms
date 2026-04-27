@@ -44,11 +44,11 @@
         <div class="card h-100">
             <div class="card-body text-center p-4">
                 <i class="bi bi-people-fill display-4 text-bocconi mb-3 d-block"></i>
-                <h5 class="fw-bold">Utenti e Ruoli</h5>
-                <p class="text-muted">Gestisci account, permessi e ruoli degli utenti della piattaforma.</p>
+                <h5 class="fw-bold">@T["admin.users_roles","Users & Roles"]</h5>
+                <p class="text-muted">@T["admin.users_roles_desc","Manage user accounts, permissions and roles."]</p>
                 <div class="d-flex gap-2 justify-content-center">
-                    <a asp-action="Users" class="btn btn-bocconi">Gestisci utenti</a>
-                    <a asp-action="Users" asp-route-tab="ruoli" class="btn btn-outline-secondary">Gestisci ruoli</a>
+                    <a asp-action="Users" class="btn btn-bocconi">@T["admin.manage_users","Manage users"]</a>
+                    <a asp-action="Users" asp-route-tab="ruoli" class="btn btn-outline-secondary">@T["admin.manage_roles","Manage roles"]</a>
                 </div>
             </div>
         </div>
@@ -68,44 +68,51 @@
     }
 </div>
 
-<div class="row g-3 mt-1">
+<div class="row g-3 mt-3">
     <div class="col-md-6">
-        <div class="card">
+        <div class="card h-100">
             <div class="card-body text-center p-4">
                 <i class="bi bi-tags display-4 text-bocconi mb-3 d-block"></i>
-                <h5 class="fw-bold">Tipi Documento</h5>
-                <p class="text-muted">Gestisci l'elenco dei tipi di documento disponibili nella libreria Materiali.</p>
-                <a asp-action="DocumentTypes" class="btn btn-bocconi">Gestisci tipi</a>
+                <h5 class="fw-bold">@T["admin.doc_types","Document Types"]</h5>
+                <p class="text-muted">@T["admin.doc_types_desc","Manage document types available in the Materials library."]</p>
+                <a asp-action="DocumentTypes" class="btn btn-bocconi">@T["admin.manage_types","Manage types"]</a>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
+</div>
+
+<hr class="my-4" />
+<h5 class="fw-semibold text-bocconi mb-3">
+    <i class="bi bi-sliders me-2"></i>@T["admin.platform_settings","Platform Settings"]
+</h5>
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card h-100">
             <div class="card-body text-center p-4">
                 <i class="bi bi-toggles display-4 text-bocconi mb-3 d-block"></i>
-                <h5 class="fw-bold">Funzionalità Piattaforma</h5>
-                <p class="text-muted">Abilita o disabilita il modulo Corsi e Iscrizioni. La libreria Materiali è sempre disponibile.</p>
-                <a asp-action="PlatformFeatures" class="btn btn-bocconi">Configura moduli</a>
+                <h5 class="fw-bold">@T["admin.platform_settings","Platform Settings"]</h5>
+                <p class="text-muted">@T["admin.platform_settings_desc","Platform configuration settings"]</p>
+                <a asp-action="PlatformFeatures" class="btn btn-bocconi">@T["admin.configure","Configure"]</a>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
+    <div class="col-md-4">
+        <div class="card h-100">
             <div class="card-body text-center p-4">
                 <i class="bi bi-envelope-gear display-4 text-bocconi mb-3 d-block"></i>
-                <h5 class="fw-bold">@T["admin.email_settings"]</h5>
-                <p class="text-muted">@T["admin.email_settings_desc"]</p>
-                <a asp-action="EmailSettings" class="btn btn-bocconi">@T["admin.configure_email"]</a>
+                <h5 class="fw-bold">@T["admin.email_settings","Email Settings"]</h5>
+                <p class="text-muted">@T["admin.email_settings_desc","Configure SMTP server and send test emails"]</p>
+                <a asp-action="EmailSettings" class="btn btn-bocconi">@T["admin.configure_email","Configure email"]</a>
             </div>
         </div>
     </div>
-    <div class="col-md-6">
-        <div class="card">
+    <div class="col-md-4">
+        <div class="card h-100">
             <div class="card-body text-center p-4">
                 <i class="bi bi-translate display-4 text-bocconi mb-3 d-block"></i>
-                <h5 class="fw-bold">@T["admin.translations"]</h5>
-                <p class="text-muted">@T["admin.translations_desc"]</p>
-                <a asp-action="Translations" class="btn btn-bocconi">@T["admin.manage_translations"]</a>
+                <h5 class="fw-bold">@T["admin.translations","Translations"]</h5>
+                <p class="text-muted">@T["admin.translations_desc","Manage interface translations for all languages"]</p>
+                <a asp-action="Translations" class="btn btn-bocconi">@T["admin.manage_translations","Manage translations"]</a>
             </div>
         </div>
     </div>
