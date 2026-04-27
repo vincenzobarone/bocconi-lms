@@ -542,6 +542,32 @@ try
 }
 catch { }
 
+// ── Seed courses module prefix keys (split from old HTML-bearing keys) ────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','admin.courses_module_on_prefix','When the courses module is'),
+        ('en','admin.courses_module_off_prefix','When the module is'),
+        ('it','admin.courses_module_on_prefix','Quando il modulo corsi è'),
+        ('it','admin.courses_module_off_prefix','Quando il modulo è');", conn);
+    await ins.ExecuteNonQueryAsync();
+    foreach (var lang in new[] { "es", "de" })
+    {
+        using var copy = new MySqlConnector.MySqlCommand(@"
+            INSERT IGNORE INTO translations (language_code, label_key, label_value)
+            SELECT @lang, label_key, label_value FROM translations
+            WHERE language_code = 'en'
+              AND label_key IN ('admin.courses_module_on_prefix','admin.courses_module_off_prefix');", conn);
+        copy.Parameters.AddWithValue("@lang", lang);
+        await copy.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
 // ── Seed PlatformFeatures translation keys ────────────────────────────────
 try
 {

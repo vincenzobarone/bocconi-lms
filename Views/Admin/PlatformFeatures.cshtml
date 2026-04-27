@@ -28,56 +28,49 @@
                 <i class="bi bi-book me-2"></i>@T["admin.courses_module","Courses & Enrolments Module"]
             </div>
             <div class="card-body">
-                <div class="d-flex align-items-start gap-3 mb-4">
-                    <div class="flex-shrink-0 pt-1">
-                        @if (coursesEnabled)
-                        {
-                            <span class="badge bg-success fs-6 px-3 py-2">
-                                <i class="bi bi-check-lg me-1"></i>@T["admin.module_active","Active"]
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-secondary fs-6 px-3 py-2">
-                                <i class="bi bi-x-lg me-1"></i>@T["admin.module_disabled","Disabled"]
-                            </span>
-                        }
-                    </div>
-                    <div>
-                        <p class="mb-1">@T["admin.courses_module_on_desc","When the courses module is <strong>active</strong>:"]</p>
-                        <ul class="mb-2 small">
-                            <li>@T["admin.courses_feature_nav","The Courses link appears in the navigation bar for everyone"]</li>
-                            <li>@T["admin.courses_feature_catalog","Students and teachers see the course catalogue, enrolments and course dashboard"]</li>
-                            <li>@T["admin.courses_feature_teacher","Teachers can manage lessons and students per course"]</li>
-                        </ul>
-                        <p class="mb-1">@T["admin.courses_module_off_desc","When the module is <strong>disabled</strong>:"]</p>
-                        <ul class="mb-2 small">
-                            <li>@T["admin.courses_feature_hidden","The Courses link is hidden (visible only to you as Admin, with an «off» badge)"]</li>
-                            <li>@T["admin.courses_feature_redirect","Students and teachers are directed to the Materials library"]</li>
-                            <li>@T["admin.courses_feature_materials","The Materials module is always accessible to all"]</li>
-                        </ul>
-                        <div class="alert alert-info small py-2 mb-0">
-                            <i class="bi bi-info-circle me-1"></i>
-                            @T["admin.courses_module_info","Changes take effect immediately. Existing course data is not deleted."]
-                        </div>
+                <div class="mb-4">
+                    <p class="mb-1">
+                        @T["admin.courses_module_on_prefix","When the courses module is"]
+                        <strong>@T["admin.module_active","active"]</strong>:
+                    </p>
+                    <ul class="mb-3 small">
+                        <li>@T["admin.courses_feature_nav","The Courses link appears in the navigation bar for everyone"]</li>
+                        <li>@T["admin.courses_feature_catalog","Students and teachers see the course catalogue, enrolments and course dashboard"]</li>
+                        <li>@T["admin.courses_feature_teacher","Teachers can manage lessons and students per course"]</li>
+                    </ul>
+                    <p class="mb-1">
+                        @T["admin.courses_module_off_prefix","When the module is"]
+                        <strong>@T["admin.module_disabled","disabled"]</strong>:
+                    </p>
+                    <ul class="mb-3 small">
+                        <li>@T["admin.courses_feature_hidden","The Courses link is hidden (visible only to you as Admin, with an «off» badge)"]</li>
+                        <li>@T["admin.courses_feature_redirect","Students and teachers are directed to the Materials library"]</li>
+                        <li>@T["admin.courses_feature_materials","The Materials module is always accessible to all"]</li>
+                    </ul>
+                    <div class="alert alert-info small py-2 mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        @T["admin.courses_module_info","Changes take effect immediately. Existing course data is not deleted."]
                     </div>
                 </div>
-                <form method="post" asp-action="PlatformFeatures">
+
+                <form id="coursesToggleForm" method="post" asp-action="PlatformFeatures">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" name="coursesEnabled" value="@(!coursesEnabled ? "true" : "false")" />
-                    @if (coursesEnabled)
-                    {
-                        <button type="submit" class="btn btn-warning"
-                                data-confirm="@T["admin.disable_courses_confirm","Disable the Courses module? Students and teachers will access the Materials library directly."]">
-                            <i class="bi bi-toggle-off me-2"></i>@T["admin.disable_courses","Disable Courses module"]
-                        </button>
-                    }
-                    else
-                    {
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-toggle-on me-2"></i>@T["admin.enable_courses","Enable Courses module"]
-                        </button>
-                    }
+                    <input type="hidden" id="coursesEnabledInput" name="coursesEnabled" value="@(coursesEnabled ? "true" : "false")" />
+                    <div class="form-check form-switch fs-5 d-flex align-items-center gap-2">
+                        <input class="form-check-input mt-0" type="checkbox" role="switch"
+                               id="coursesToggle" style="width:3em;height:1.5em;cursor:pointer;"
+                               @(coursesEnabled ? "checked" : "") />
+                        <label class="form-check-label fw-semibold" for="coursesToggle" style="cursor:pointer;">
+                            @if (coursesEnabled)
+                            {
+                                @T["admin.module_active","Active"]
+                            }
+                            else
+                            {
+                                @T["admin.module_disabled","Disabled"]
+                            }
+                        </label>
+                    </div>
                 </form>
             </div>
         </div>
@@ -109,6 +102,15 @@
         </div>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.getElementById('coursesToggle').addEventListener('change', function () {
+            document.getElementById('coursesEnabledInput').value = this.checked ? 'true' : 'false';
+            document.getElementById('coursesToggleForm').submit();
+        });
+    </script>
+}
 
 @* ─── Email & Translations ──────────────────────────────────────── *@
 <div class="row g-4">
