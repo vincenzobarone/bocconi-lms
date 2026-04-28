@@ -1014,6 +1014,34 @@ try
 }
 catch { }
 
+// ── Seed nav.dictionary + common.cancel keys ──────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','nav.dictionary','Dictionary'),
+        ('it','nav.dictionary','Dizionario'),
+        ('es','nav.dictionary','Diccionario'),
+        ('de','nav.dictionary','Wörterbuch'),
+        ('en','nav.materials','Materials'),
+        ('it','nav.materials','Materiali'),
+        ('es','nav.materials','Materiales'),
+        ('de','nav.materials','Materialien'),
+        ('en','nav.users_label','Users'),
+        ('it','nav.users_label','Utenti'),
+        ('es','nav.users_label','Usuarios'),
+        ('de','nav.users_label','Benutzer'),
+        ('en','common.cancel','Cancel'),
+        ('it','common.cancel','Annulla'),
+        ('es','common.cancel','Cancelar'),
+        ('de','common.cancel','Abbrechen');", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Seed bulk-download + delete-version translation keys ─────────────────
 try
 {

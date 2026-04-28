@@ -430,9 +430,18 @@ public class AdminController : Controller
     public async Task<IActionResult> Translations()
     {
         if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
+        return RedirectToAction(nameof(Dictionary));
+    }
+
+    [AllowAnonymous]
+    public async Task<IActionResult> Dictionary(string? tab)
+    {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         var rows = await _translations.GetAllGroupedAsync();
-        ViewBag.EnabledLanguages = await _settings.GetEnabledLanguagesAsync();
-        ViewBag.MissingCounts = await _translations.GetMissingCountsAsync();
+        ViewBag.EnabledLanguages  = await _settings.GetEnabledLanguagesAsync();
+        ViewBag.MissingCounts     = await _translations.GetMissingCountsAsync();
+        ViewBag.DocTypes          = await _docTypes.GetAllAsync();
+        ViewBag.ActiveTab         = tab == "doctypes" ? "doctypes" : "translations";
         return View(rows);
     }
 
@@ -447,7 +456,7 @@ public class AdminController : Controller
         await _settings.SaveEnabledLanguagesAsync(enabledLanguages);
         _translationService.InvalidateCache();
         TempData["Success"] = "Language settings saved.";
-        return RedirectToAction("Translations");
+        return RedirectToAction(nameof(Dictionary));
     }
 
     [AllowAnonymous]
@@ -460,7 +469,7 @@ public class AdminController : Controller
         var count = await _translations.FillMissingAsync(enabled.Where(l => l != "en"));
         _translationService.InvalidateCache();
         TempData["Success"] = $"Filled {count} missing translation(s) with English defaults.";
-        return RedirectToAction("Translations");
+        return RedirectToAction(nameof(Dictionary));
     }
 
     [AllowAnonymous]
@@ -483,7 +492,7 @@ public class AdminController : Controller
         await _translations.SaveRowAsync(model);
         _translationService.InvalidateCache();
         TempData["Success"] = $"Traduzioni per '{model.Key}' salvate.";
-        return RedirectToAction("Translations");
+        return RedirectToAction(nameof(Dictionary));
     }
 
     [AllowAnonymous]
@@ -495,7 +504,7 @@ public class AdminController : Controller
         await _translations.DeleteKeyAsync(key);
         _translationService.InvalidateCache();
         TempData["Success"] = $"Chiave '{key}' eliminata.";
-        return RedirectToAction("Translations");
+        return RedirectToAction(nameof(Dictionary));
     }
 
     // ── ROLE MANAGEMENT ─────────────────────────────────────────────────────
@@ -612,11 +621,9 @@ public class AdminController : Controller
 
     // ── Document Types ────────────────────────────────────────────────────
 
-    public async Task<IActionResult> DocumentTypes()
+    public IActionResult DocumentTypes()
     {
-        var types = await _docTypes.GetAllAsync();
-        ViewBag.NewType = new DocumentTypeFormViewModel();
-        return View(types);
+        return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
     }
 
     [HttpPost]
@@ -626,16 +633,16 @@ public class AdminController : Controller
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Nome non valido.";
-            return RedirectToAction(nameof(DocumentTypes));
+            return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
         }
         if (await _docTypes.NameExistsAsync(vm.Name))
         {
             TempData["Error"] = $"Esiste già un tipo chiamato '{vm.Name}'.";
-            return RedirectToAction(nameof(DocumentTypes));
+            return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
         }
         await _docTypes.CreateAsync(vm.Name);
         TempData["Success"] = $"Tipo '{vm.Name}' creato.";
-        return RedirectToAction(nameof(DocumentTypes));
+        return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
     }
 
     [HttpGet]
@@ -658,7 +665,7 @@ public class AdminController : Controller
         }
         await _docTypes.UpdateAsync(id, vm.Name);
         TempData["Success"] = "Tipo documento aggiornato.";
-        return RedirectToAction(nameof(DocumentTypes));
+        return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
     }
 
     [HttpPost]
@@ -669,11 +676,11 @@ public class AdminController : Controller
         if (count > 0)
         {
             TempData["Error"] = $"Impossibile eliminare: {count} materiale/i usa questo tipo.";
-            return RedirectToAction(nameof(DocumentTypes));
+            return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
         }
         await _docTypes.DeleteAsync(id);
         TempData["Success"] = "Tipo documento eliminato.";
-        return RedirectToAction(nameof(DocumentTypes));
+        return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
     }
 
     // ── Platform Features ─────────────────────────────────────────────────

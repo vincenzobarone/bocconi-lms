@@ -1,0 +1,308 @@
+@using BocconiLMS.Data
+@using BocconiLMS.Services
+@model List<TranslationRow>
+@{
+    ViewData["Title"] = T["nav.dictionary","Dictionary"];
+    var enabledLangs    = ViewBag.EnabledLanguages as List<string> ?? new List<string> { "en", "it", "es", "de" };
+    var missing         = ViewBag.MissingCounts as Dictionary<string, int> ?? new();
+    var allOtherLangs   = TranslationService.AllLanguages.Where(l => l.Code != "en").ToList();
+    int totalMissing    = missing.Where(kv => enabledLangs.Contains(kv.Key)).Sum(kv => kv.Value);
+    var docTypes        = ViewBag.DocTypes as List<BocconiLMS.Models.DocumentType> ?? new();
+    var activeTab       = ViewBag.ActiveTab as string ?? "translations";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-bocconi mb-0">
+        <i class="bi bi-journal-bookmark me-2"></i>@T["nav.dictionary","Dictionary"]
+    </h2>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>@T["common.back_to_panel","Back to panel"]
+    </a>
+</div>
+
+@* ── TABS ──────────────────────────────────────────────────── *@
+<ul class="nav nav-tabs mb-4" id="dictTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(activeTab == "translations" ? "active" : "")"
+                id="tab-translations" data-bs-toggle="tab"
+                data-bs-target="#panel-translations" type="button" role="tab">
+            <i class="bi bi-translate me-1"></i>@T["admin.translations.page_title","Translations"]
+            @if (totalMissing > 0)
+            {
+                <span class="badge bg-warning text-dark ms-1">@totalMissing</span>
+            }
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(activeTab == "doctypes" ? "active" : "")"
+                id="tab-doctypes" data-bs-toggle="tab"
+                data-bs-target="#panel-doctypes" type="button" role="tab">
+            <i class="bi bi-tags me-1"></i>@T["admin.doc_types","Document Types"]
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="dictTabContent">
+
+    @* ── TAB 1: TRANSLATIONS ──────────────────────────────────────────── *@
+    <div class="tab-pane fade @(activeTab == "translations" ? "show active" : "")"
+         id="panel-translations" role="tabpanel">
+
+        @* Language settings *@
+        <div class="card mb-3 border-0 shadow-sm">
+            <div class="card-header bg-white fw-semibold">
+                <i class="bi bi-globe me-2 text-bocconi"></i>@T["admin.lang.settings","Active Languages"]
+            </div>
+            <div class="card-body">
+                <form asp-action="SaveLanguageSettings" method="post" class="d-flex align-items-center gap-4 flex-wrap">
+                    @Html.AntiForgeryToken()
+                    <div class="d-flex align-items-center gap-1">
+                        <input class="form-check-input" type="checkbox" checked disabled />
+                        <label class="form-check-label ms-1">🇬🇧 English (EN)</label>
+                        <input type="hidden" name="enabledLanguages" value="en" />
+                        <span class="badge bg-secondary ms-1">@T["admin.lang.required","required"]</span>
+                    </div>
+                    @foreach (var lang in allOtherLangs)
+                    {
+                        var isEnabled = enabledLangs.Contains(lang.Code);
+                        var mis = missing.GetValueOrDefault(lang.Code, 0);
+                        <div class="d-flex align-items-center gap-1">
+                            <input class="form-check-input" type="checkbox"
+                                   name="enabledLanguages" value="@lang.Code"
+                                   id="lang_@lang.Code" @(isEnabled ? "checked" : "") />
+                            <label class="form-check-label ms-1" for="lang_@lang.Code">
+                                @lang.Flag @lang.Name (@lang.Code.ToUpper())
+                            </label>
+                            @if (isEnabled && mis > 0)
+                            {
+                                <span class="badge bg-warning text-dark ms-1" title="Missing translations">@mis missing</span>
+                            }
+                        </div>
+                    }
+                    <button type="submit" class="btn btn-bocconi btn-sm ms-auto">
+                        <i class="bi bi-save me-1"></i>@T["admin.lang.save","Save language settings"]
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        @* Info bar *@
+        <div class="card mb-3 border-0 bg-light">
+            <div class="card-body py-2">
+                <div class="d-flex align-items-center gap-3 flex-wrap justify-content-between">
+                    <div class="d-flex gap-3 flex-wrap text-muted small">
+                        <span><i class="bi bi-info-circle me-1"></i>@T["admin.translations.base_lang","Base"]: <strong>🇬🇧 English</strong></span>
+                        <span>|</span>
+                        <span>@T["admin.translations.total_keys","Total keys"]: <strong>@Model.Count</strong></span>
+                        @if (totalMissing > 0)
+                        {
+                            <span>|</span>
+                            <span class="text-warning fw-semibold">
+                                <i class="bi bi-exclamation-triangle me-1"></i>@totalMissing @T["admin.translations.missing_total","missing entries in active languages"]
+                            </span>
+                        }
+                    </div>
+                    @if (totalMissing > 0)
+                    {
+                        <button id="btnFilterMissing" class="btn btn-sm btn-outline-warning">
+                            <i class="bi bi-funnel me-1"></i>@T["admin.translations.filter_missing","Show only missing"]
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* Translation table *@
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm mb-0" id="translationsTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:20%">@T["admin.translations.col_key","Key"]</th>
+                                <th style="width:20%">🇬🇧 English</th>
+                                @if (enabledLangs.Contains("it")) { <th>🇮🇹 Italiano</th> }
+                                @if (enabledLangs.Contains("es")) { <th>🇪🇸 Español</th> }
+                                @if (enabledLangs.Contains("de")) { <th>🇩🇪 Deutsch</th> }
+                                <th style="width:9%">@T["admin.translations.col_created","Created"]</th>
+                                <th style="width:5%"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model)
+                            {
+                                bool hasMissing = (enabledLangs.Contains("it") && string.IsNullOrEmpty(row.It))
+                                               || (enabledLangs.Contains("es") && string.IsNullOrEmpty(row.Es))
+                                               || (enabledLangs.Contains("de") && string.IsNullOrEmpty(row.De));
+                                <tr data-missing="@(hasMissing ? "true" : "false")">
+                                    <td class="font-monospace small text-muted align-middle">@row.Key</td>
+                                    <td class="align-middle">@row.En</td>
+                                    @if (enabledLangs.Contains("it"))
+                                    {
+                                        <td class="align-middle">
+                                            @if (string.IsNullOrEmpty(row.It))
+                                            { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing","Missing"]</span> }
+                                            else { @row.It }
+                                        </td>
+                                    }
+                                    @if (enabledLangs.Contains("es"))
+                                    {
+                                        <td class="align-middle">
+                                            @if (string.IsNullOrEmpty(row.Es))
+                                            { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing","Missing"]</span> }
+                                            else { @row.Es }
+                                        </td>
+                                    }
+                                    @if (enabledLangs.Contains("de"))
+                                    {
+                                        <td class="align-middle">
+                                            @if (string.IsNullOrEmpty(row.De))
+                                            { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing","Missing"]</span> }
+                                            else { @row.De }
+                                        </td>
+                                    }
+                                    <td class="align-middle text-muted small text-nowrap">
+                                        @row.CreatedAt.ToString("dd/MM/yyyy")
+                                    </td>
+                                    <td class="align-middle text-end">
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            <a asp-action="EditTranslation" asp-route-key="@row.Key"
+                                               class="btn btn-sm btn-outline-secondary" title="@T["common.edit","Edit"]">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form asp-action="DeleteTranslationKey" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="key" value="@row.Key" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        title="@T["common.delete","Delete"]"
+                                                        data-confirm="@T["admin.translations.confirm_delete","Delete this key and all its translations?"]">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* ── TAB 2: DOCUMENT TYPES ───────────────────────────────────────────── *@
+    <div class="tab-pane fade @(activeTab == "doctypes" ? "show active" : "")"
+         id="panel-doctypes" role="tabpanel">
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-body p-0">
+                        @if (!docTypes.Any())
+                        {
+                            <p class="text-muted p-4">@T["doctype.none","No types defined."]</p>
+                        }
+                        else
+                        {
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>@T["common.name","Name"]</th>
+                                        <th class="text-center">@T["mat.page_title","Materials"]</th>
+                                        <th class="text-end">@T["common.actions","Actions"]</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var dt in docTypes)
+                                    {
+                                        <tr>
+                                            <td class="text-muted small">@dt.SortOrder</td>
+                                            <td class="fw-semibold">@dt.Name</td>
+                                            <td class="text-center">
+                                                <span class="badge @(dt.MaterialCount > 0 ? "bg-primary" : "bg-light text-dark border")">
+                                                    @dt.MaterialCount
+                                                </span>
+                                            </td>
+                                            <td class="text-end">
+                                                <div class="d-flex gap-1 justify-content-end">
+                                                    <a asp-action="EditDocumentType" asp-route-id="@dt.Id"
+                                                       class="btn btn-sm btn-outline-secondary"
+                                                       title="@T["common.edit","Edit"]">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </a>
+                                                    <form asp-action="DeleteDocumentType" asp-route-id="@dt.Id" method="post" class="d-inline">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                                data-confirm="@T["doctype.delete_confirm","Delete type"] «@dt.Name»?"
+                                                                title="@T["common.delete","Delete"]"
+                                                                @(dt.MaterialCount > 0 ? "disabled" : "")>
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm">
+                    <div class="card-header fw-semibold">
+                        <i class="bi bi-plus-circle me-1"></i>@T["doctype.add","Add type"]
+                    </div>
+                    <div class="card-body">
+                        <form asp-action="CreateDocumentType" method="post">
+                            @Html.AntiForgeryToken()
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
+                                <input name="Name" class="form-control"
+                                       placeholder="@T["doctype.name_placeholder","Document type name…"]"
+                                       maxlength="255" required />
+                            </div>
+                            <button type="submit" class="btn btn-bocconi w-100">
+                                <i class="bi bi-plus-lg me-1"></i>@T["doctype.create","Create type"]
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            var filterMissingOnly = false;
+
+            $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {
+                if (!filterMissingOnly) return true;
+                var row = settings.aoData[dataIndex].nTr;
+                return $(row).data('missing') === 'true' || $(row).attr('data-missing') === 'true';
+            });
+
+            var dt = $('#translationsTable').DataTable({
+                language: window.dtLang(),
+                pageLength: 25,
+                columnDefs: [{ orderable: false, targets: -1 }],
+                order: [[0, 'asc']]
+            });
+
+            $('#btnFilterMissing').on('click', function () {
+                filterMissingOnly = !filterMissingOnly;
+                if (filterMissingOnly) {
+                    $(this).removeClass('btn-outline-warning').addClass('btn-warning');
+                } else {
+                    $(this).removeClass('btn-warning').addClass('btn-outline-warning');
+                }
+                dt.draw();
+            });
+        });
+    </script>
+}
