@@ -584,10 +584,18 @@ try
     var dbHelper = app.Services.GetRequiredService<DbHelper>();
     using var conn = dbHelper.GetConnection();
     await conn.OpenAsync();
-    using var ddl = new MySqlConnector.MySqlCommand(@"
-        ALTER TABLE materials
-        ADD COLUMN IF NOT EXISTS author_name VARCHAR(255) NULL AFTER title;", conn);
-    await ddl.ExecuteNonQueryAsync();
+    using var chk = new MySqlConnector.MySqlCommand(@"
+        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME   = 'materials'
+          AND COLUMN_NAME  = 'author_name'", conn);
+    var exists = Convert.ToInt32(await chk.ExecuteScalarAsync()) > 0;
+    if (!exists)
+    {
+        using var ddl = new MySqlConnector.MySqlCommand(
+            "ALTER TABLE materials ADD COLUMN author_name VARCHAR(255) NULL AFTER title;", conn);
+        await ddl.ExecuteNonQueryAsync();
+    }
 }
 catch { }
 
