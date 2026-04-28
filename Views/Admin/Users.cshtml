@@ -254,26 +254,14 @@
     <div class="tab-pane fade @(activeTab == "aree" ? "show active" : "")"
          id="pane-aree" role="tabpanel">
 
-        <div class="card mb-4 border-0 shadow-sm">
-            <div class="card-header bg-white fw-semibold py-3">
-                <i class="bi bi-plus-circle me-2 text-bocconi"></i>@T["admin.add_area","Add new area"]
-            </div>
-            <div class="card-body">
-                <form asp-action="CreateArea" method="post" class="d-flex gap-2 align-items-start">
-                    @Html.AntiForgeryToken()
-                    <div class="flex-grow-1">
-                        <input type="text" name="name" class="form-control"
-                               placeholder="@T["admin.area_name_placeholder","Area name…"]"
-                               maxlength="255" autocomplete="off" />
-                    </div>
-                    <button type="submit" class="btn btn-bocconi">
-                        <i class="bi bi-plus me-1"></i>@T["admin.create_area","Create area"]
-                    </button>
-                </form>
-            </div>
-        </div>
-
         <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <span class="fw-semibold"><i class="bi bi-diagram-3 me-2 text-bocconi"></i>@T["admin.areas_tab","Areas"]</span>
+                <button type="button" class="btn btn-sm btn-bocconi"
+                        data-bs-toggle="modal" data-bs-target="#createAreaModal">
+                    <i class="bi bi-plus me-1"></i>@T["admin.create_area","Create area"]
+                </button>
+            </div>
             <div class="card-body p-0">
                 @if (!Model.Areas.Any())
                 {
@@ -355,6 +343,37 @@
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
                     <button type="submit" class="btn btn-bocconi">
                         <i class="bi bi-plus me-1"></i>@T["admin.create_role","Create role"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Modale: Crea nuova area *@
+<div class="modal fade" id="createAreaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-diagram-3 me-2"></i>@T["admin.create_area","Create area"]
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="CreateArea" method="post" id="createAreaForm">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">
+                        @T["common.name","Name"] <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" name="name" id="createAreaName" class="form-control"
+                           placeholder="@T["admin.area_name_placeholder","Area name…"]"
+                           maxlength="255" autocomplete="off" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                    <button type="submit" class="btn btn-bocconi">
+                        <i class="bi bi-plus me-1"></i>@T["admin.create_area","Create area"]
                     </button>
                 </div>
             </form>
@@ -464,6 +483,14 @@
             });
             document.getElementById('createRoleModal').addEventListener('hidden.bs.modal', function () {
                 document.getElementById('createRoleName').value = '';
+            });
+
+            // ── Focus campo nome all'apertura modale crea area ────────
+            document.getElementById('createAreaModal').addEventListener('shown.bs.modal', function () {
+                document.getElementById('createAreaName').focus();
+            });
+            document.getElementById('createAreaModal').addEventListener('hidden.bs.modal', function () {
+                document.getElementById('createAreaName').value = '';
             });
 
             // ── View courses ──────────────────────────────────────
