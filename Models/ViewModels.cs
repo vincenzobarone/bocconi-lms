@@ -176,10 +176,6 @@ public class EmailSettingsViewModel
 
 public class ChangePasswordViewModel
 {
-    [Required(ErrorMessage = "Password attuale obbligatoria")]
-    [DataType(DataType.Password)]
-    public string CurrentPassword { get; set; } = string.Empty;
-
     [Required(ErrorMessage = "Nuova password obbligatoria")]
     [MinLength(8, ErrorMessage = "La nuova password deve contenere almeno 8 caratteri")]
     [DataType(DataType.Password)]

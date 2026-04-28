@@ -98,7 +98,8 @@ public class AccountController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return RedirectToAction("Login");
 
-        var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+        await _userManager.RemovePasswordAsync(user);
+        var result = await _userManager.AddPasswordAsync(user, model.NewPassword);
         if (!result.Succeeded)
         {
             foreach (var error in result.Errors)
