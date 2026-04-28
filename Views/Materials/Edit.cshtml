@@ -5,6 +5,7 @@
     var docTypes = ViewBag.DocumentTypes as List<BocconiLMS.Models.DocumentType> ?? new();
     var languages = ViewBag.Languages as string[] ?? BocconiLMS.Models.Material.Languages;
     var owners = ViewBag.AvailableOwners as List<BocconiLMS.Models.User> ?? new();
+    var existingAuthors = ViewBag.ExistingAuthors as List<string> ?? new();
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -39,10 +40,21 @@
 
                     <div class="mb-3">
                         <label asp-for="AuthorName" class="form-label fw-semibold">
-                            @T["mat.label_author","Author"]
+                            @T["mat.label_author","Autore"] <span class="text-danger">*</span>
                         </label>
                         <input asp-for="AuthorName" class="form-control"
-                               placeholder="@T["mat.author_placeholder","Full name of the content author"]" />
+                               list="authorsList"
+                               placeholder="@T["mat.author_placeholder","Nome completo dell'autore del contenuto"]"
+                               autocomplete="off" />
+                        <datalist id="authorsList">
+                            @foreach (var a in existingAuthors)
+                            {
+                                <option value="@a"></option>
+                            }
+                        </datalist>
+                        <div class="form-text text-muted small">
+                            <i class="bi bi-info-circle me-1"></i>@T["mat.author_hint","Verrà estratto automaticamente dai metadati del documento se lasciato vuoto."]
+                        </div>
                         <span asp-validation-for="AuthorName" class="text-danger small"></span>
                     </div>
 

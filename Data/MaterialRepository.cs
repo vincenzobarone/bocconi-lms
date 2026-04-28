@@ -152,6 +152,21 @@ public class MaterialRepository
         await cmd.ExecuteNonQueryAsync();
     }
 
+    public async Task<List<string>> GetDistinctAuthorsAsync()
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            SELECT DISTINCT author_name FROM materials
+            WHERE author_name IS NOT NULL AND author_name <> ''
+            ORDER BY author_name", conn);
+        var list = new List<string>();
+        using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
+            list.Add(r.GetString(0));
+        return list;
+    }
+
     public async Task DeleteAsync(int id)
     {
         using var conn = _db.GetConnection();

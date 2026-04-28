@@ -36,6 +36,46 @@ public class MaterialsController : Controller
         ViewBag.DocumentTypes   = await _docTypes.GetAllAsync();
         ViewBag.Languages       = Material.Languages;
         ViewBag.AvailableOwners = await _users.GetTeachersAndAdminsAsync();
+        ViewBag.ExistingAuthors = await _materials.GetDistinctAuthorsAsync();
+    }
+
+    private string? CurrentUserFullName() =>
+        User.FindFirstValue("FullName") ?? User.Identity?.Name;
+
+    private static async Task<string?> TryExtractAuthorAsync(IFormFile file)
+    {
+        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
+        try
+        {
+            if (ext is ".docx" or ".pptx" or ".xlsx")
+            {
+                using var ms = new MemoryStream();
+                await file.CopyToAsync(ms);
+                ms.Position = 0;
+                using var zip = new System.IO.Compression.ZipArchive(ms, System.IO.Compression.ZipArchiveMode.Read);
+                var entry = zip.GetEntry("docProps/core.xml");
+                if (entry != null)
+                {
+                    using var sr = new StreamReader(entry.Open());
+                    var xml = await sr.ReadToEndAsync();
+                    var m = System.Text.RegularExpressions.Regex.Match(xml, @"<dc:creator>(.*?)</dc:creator>");
+                    if (m.Success && !string.IsNullOrWhiteSpace(m.Groups[1].Value))
+                        return m.Groups[1].Value.Trim();
+                }
+            }
+            else if (ext == ".pdf")
+            {
+                using var ms = new MemoryStream();
+                await file.CopyToAsync(ms);
+                var bytes = ms.ToArray();
+                var text = System.Text.Encoding.Latin1.GetString(bytes, 0, Math.Min(bytes.Length, 8192));
+                var m = System.Text.RegularExpressions.Regex.Match(text, @"/Author\s*\(([^)]+)\)");
+                if (m.Success && !string.IsNullOrWhiteSpace(m.Groups[1].Value))
+                    return m.Groups[1].Value.Trim();
+            }
+        }
+        catch { }
+        return null;
     }
 
     // ── Index ─────────────────────────────────────────────────────────────
@@ -75,7 +115,8 @@ public class MaterialsController : Controller
     public async Task<IActionResult> Create()
     {
         await PopulateDropdownsAsync();
-        var vm = new MaterialFormViewModel { OwnerId = CurrentUserId() };
+        ViewBag.CurrentUserFullName = CurrentUserFullName();
+        var vm = new MaterialFormViewModel { Language = "Italiano" };
         return View(vm);
     }
 
@@ -84,11 +125,26 @@ public class MaterialsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(MaterialFormViewModel vm)
     {
+        // Owner is always the current logged-in user on create
+        vm.OwnerId = CurrentUserId();
+
+        // Try to extract author from document metadata if field is empty
+        if (string.IsNullOrWhiteSpace(vm.AuthorName) && vm.File != null)
+        {
+            vm.AuthorName = await TryExtractAuthorAsync(vm.File);
+            if (!string.IsNullOrWhiteSpace(vm.AuthorName))
+                ModelState.Remove(nameof(vm.AuthorName));
+        }
+
+        if (string.IsNullOrWhiteSpace(vm.AuthorName))
+            ModelState.AddModelError(nameof(vm.AuthorName), "L'autore è obbligatorio.");
+
         if (vm.File == null || vm.File.Length == 0)
             ModelState.AddModelError(nameof(vm.File), "Il file è obbligatorio.");
 
         if (!ModelState.IsValid)
         {
+            ViewBag.CurrentUserFullName = CurrentUserFullName();
             await PopulateDropdownsAsync();
             return View(vm);
         }
@@ -96,6 +152,7 @@ public class MaterialsController : Controller
         if (await _materials.TitleExistsAsync(vm.Title))
         {
             ModelState.AddModelError(nameof(vm.Title), "Esiste già un materiale con questo titolo.");
+            ViewBag.CurrentUserFullName = CurrentUserFullName();
             await PopulateDropdownsAsync();
             return View(vm);
         }
@@ -138,6 +195,17 @@ public class MaterialsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, MaterialFormViewModel vm)
     {
+        // Try to extract author from document metadata if field is empty
+        if (string.IsNullOrWhiteSpace(vm.AuthorName) && vm.File != null)
+        {
+            vm.AuthorName = await TryExtractAuthorAsync(vm.File);
+            if (!string.IsNullOrWhiteSpace(vm.AuthorName))
+                ModelState.Remove(nameof(vm.AuthorName));
+        }
+
+        if (string.IsNullOrWhiteSpace(vm.AuthorName))
+            ModelState.AddModelError(nameof(vm.AuthorName), "L'autore è obbligatorio.");
+
         if (!ModelState.IsValid)
         {
             var mat = await _materials.GetByIdAsync(id);

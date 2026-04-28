@@ -667,7 +667,11 @@ try
         ('en','mat.owner_search_placeholder','Search owner...'),
         ('it','mat.owner_search_placeholder','Cerca responsabile...'),
         ('es','mat.owner_search_placeholder','Buscar responsable...'),
-        ('de','mat.owner_search_placeholder','Verantwortlichen suchen...');", conn);
+        ('de','mat.owner_search_placeholder','Verantwortlichen suchen...'),
+        ('en','mat.author_hint','Will be extracted automatically from document metadata if left blank.'),
+        ('it','mat.author_hint','Verrà estratto automaticamente dai metadati del documento se lasciato vuoto.'),
+        ('es','mat.author_hint','Se extraerá automáticamente de los metadatos del documento si se deja en blanco.'),
+        ('de','mat.author_hint','Wird automatisch aus den Dokumentmetadaten extrahiert, wenn leer gelassen.');", conn);
     await ins.ExecuteNonQueryAsync();
 }
 catch { }

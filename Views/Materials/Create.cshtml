@@ -4,6 +4,8 @@
     var docTypes = ViewBag.DocumentTypes as List<BocconiLMS.Models.DocumentType> ?? new();
     var languages = ViewBag.Languages as string[] ?? BocconiLMS.Models.Material.Languages;
     var owners = ViewBag.AvailableOwners as List<BocconiLMS.Models.User> ?? new();
+    var existingAuthors = ViewBag.ExistingAuthors as List<string> ?? new();
+    var currentOwnerName = ViewBag.CurrentUserFullName as string ?? "";
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -35,10 +37,21 @@
 
                     <div class="mb-3">
                         <label asp-for="AuthorName" class="form-label fw-semibold">
-                            @T["mat.label_author","Author"]
+                            @T["mat.label_author","Autore"] <span class="text-danger">*</span>
                         </label>
                         <input asp-for="AuthorName" class="form-control"
-                               placeholder="@T["mat.author_placeholder","Full name of the content author"]" />
+                               list="authorsList"
+                               placeholder="@T["mat.author_placeholder","Nome completo dell'autore del contenuto"]"
+                               autocomplete="off" />
+                        <datalist id="authorsList">
+                            @foreach (var a in existingAuthors)
+                            {
+                                <option value="@a"></option>
+                            }
+                        </datalist>
+                        <div class="form-text text-muted small">
+                            <i class="bi bi-info-circle me-1"></i>@T["mat.author_hint","Verrà estratto automaticamente dai metadati del documento se lasciato vuoto."]
+                        </div>
                         <span asp-validation-for="AuthorName" class="text-danger small"></span>
                     </div>
 
@@ -71,18 +84,11 @@
                     </div>
 
                     <div class="mb-3">
-                        <label for="ownerSearch" class="form-label fw-semibold">@T["mat.label_owner","Responsabile (sistema)"]</label>
-                        <input type="text" id="ownerSearch" class="form-control mb-1"
-                               placeholder="@T["mat.owner_search_placeholder","Cerca responsabile..."]"
-                               autocomplete="off" />
-                        <select asp-for="OwnerId" id="OwnerId" class="form-select">
-                            <option value="">@T["mat.no_owner","— Nessuno —"]</option>
-                            @foreach (var u in owners)
-                            {
-                                <option value="@u.Id">@u.LastName @u.FirstName (@u.Role)</option>
-                            }
-                        </select>
-                        <div class="form-text">@T["mat.owner_hint","Persona responsabile della gestione di questo materiale nel sistema."]</div>
+                        <label class="form-label fw-semibold">@T["mat.label_owner","Responsabile (sistema)"]</label>
+                        <div class="form-control bg-light text-muted">
+                            <i class="bi bi-person-circle me-1"></i>@currentOwnerName
+                        </div>
+                        <div class="form-text">@T["mat.owner_hint","Impostato automaticamente sull'utente che crea il materiale."]</div>
                     </div>
 
                     <div class="mb-3">
@@ -168,20 +174,6 @@
             var summary = document.getElementById('valSummary');
             if (summary && summary.querySelectorAll('li').length > 0)
                 summary.classList.remove('d-none');
-        })();
-
-        // ── Owner search ──────────────────────────────────────────────────
-        (function () {
-            var search = document.getElementById('ownerSearch');
-            var sel = document.getElementById('OwnerId');
-            if (!search || !sel) return;
-            search.addEventListener('input', function () {
-                var q = search.value.toLowerCase();
-                Array.from(sel.options).forEach(function (opt) {
-                    if (!opt.value) { opt.style.display = ''; return; }
-                    opt.style.display = opt.text.toLowerCase().includes(q) ? '' : 'none';
-                });
-            });
         })();
 
         // ── Status → verified fields ──────────────────────────────────────
