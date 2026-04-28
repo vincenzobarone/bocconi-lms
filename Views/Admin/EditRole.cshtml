@@ -7,10 +7,19 @@
     var coursePerms = RolePermissionRepository.AllPermissions.Where(p => p.CoursesOnly).ToList();
     var menuPerms   = RolePermissionRepository.AllPermissions.Where(p => p.MenuOnly && p.Key != "menu.materials"
                                                                                      && !p.Key.StartsWith("materials.")).ToList();
-    // Operazioni principali Materials (senza sub-permessi setstatus)
     var matOpPerms  = RolePermissionRepository.AllPermissions
         .Where(p => p.Key.StartsWith("materials.") && !p.Key.EndsWith(".setstatus")).ToList();
-    bool matMenuChecked = Model.Permissions.Contains("menu.materials");
+    bool matMenuChecked  = Model.Permissions.Contains("menu.materials");
+    bool anyOpChecked    = matOpPerms.Any(p => Model.Permissions.Contains(p.Key));
+    bool anySetStatus    = Model.Permissions.Contains("materials.create.setstatus")
+                        || Model.Permissions.Contains("materials.edit.setstatus")
+                        || Model.Permissions.Contains("materials.approve.setstatus");
+
+    string MenuIcon(string key) => key switch {
+        "menu.users"        => "bi-people",
+        "menu.translations" => "bi-book-half",
+        _                   => "bi-grid"
+    };
 }
 
 <div class="row justify-content-center">
@@ -94,48 +103,48 @@
                     <div id="matOpsGroup"
                          class="ps-4 border-start border-2 border-bocconi ms-2 mb-3 @(matMenuChecked ? "" : "d-none")">
                         <div class="form-text mb-2">@T["perm.mat_ops_hint","Operazioni consentite sui materiali:"]</div>
+
                         @foreach (var op in matOpPerms)
                         {
-                            var opChecked   = Model.Permissions.Contains(op.Key);
-                            var ssKey       = op.Key + ".setstatus";
-                            var ssPerm      = RolePermissionRepository.AllPermissions.FirstOrDefault(p => p.Key == ssKey);
-                            var ssChecked   = Model.Permissions.Contains(ssKey);
-                            var opId        = "perm_" + op.Key.Replace('.','_');
-                            var ssId        = "perm_" + ssKey.Replace('.','_');
-                            var ssGroupId   = "ssGroup_" + op.Key.Replace('.','_');
-
-                            <div class="mat-op-block mb-1">
-                                @* Checkbox operazione principale *@
-                                <div class="form-check">
-                                    <input class="form-check-input mat-op-check" type="checkbox"
-                                           name="permissions" value="@op.Key"
-                                           id="@opId"
-                                           @(opChecked ? "checked" : "")
-                                           @(matMenuChecked ? "" : "disabled")
-                                           onchange="toggleSetStatus('@ssGroupId', this.checked, @(matMenuChecked ? "true" : "false"))" />
-                                    <label class="form-check-label" for="@opId">
-                                        @T[op.TranslationKey, op.Key]
-                                    </label>
-                                </div>
-                                @* Sub-checkbox: può cambiare stato *@
-                                @if (ssPerm != default)
-                                {
-                                    <div class="ps-4 border-start border-2 ms-2 mb-2 border-secondary-subtle @(opChecked && matMenuChecked ? "" : "d-none")"
-                                         id="@ssGroupId">
-                                        <div class="form-check mt-1">
-                                            <input class="form-check-input ss-check" type="checkbox"
-                                                   name="permissions" value="@ssKey"
-                                                   id="@ssId"
-                                                   @(ssChecked ? "checked" : "")
-                                                   @(opChecked && matMenuChecked ? "" : "disabled") />
-                                            <label class="form-check-label text-secondary" for="@ssId">
-                                                <i class="bi bi-arrow-left-right me-1"></i>@T[ssPerm.TranslationKey, ssKey]
-                                            </label>
-                                        </div>
-                                    </div>
-                                }
+                            var opChecked = Model.Permissions.Contains(op.Key);
+                            var opId      = "perm_" + op.Key.Replace('.','_');
+                            <div class="form-check mb-1">
+                                <input class="form-check-input mat-op-check" type="checkbox"
+                                       name="permissions" value="@op.Key"
+                                       id="@opId"
+                                       @(opChecked ? "checked" : "")
+                                       @(matMenuChecked ? "" : "disabled")
+                                       onchange="onMatOpChange()" />
+                                <label class="form-check-label" for="@opId">
+                                    @T[op.TranslationKey, op.Key]
+                                </label>
                             </div>
                         }
+
+                        @* ── Unico flag "Consenti modifica stato" ─────────────────────── *@
+                        <div id="matSetStatusGroup"
+                             class="mt-2 pt-2 border-top @(matMenuChecked && anyOpChecked ? "" : "d-none")">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="matSetStatusAll"
+                                       @(anySetStatus ? "checked" : "") />
+                                <label class="form-check-label fw-semibold text-secondary" for="matSetStatusAll">
+                                    <i class="bi bi-arrow-left-right me-1"></i>@T["perm.materials_setstatus_all","Consenti modifica stato"]
+                                </label>
+                                <div class="form-text ms-0" style="margin-top:2px;">
+                                    @T["perm.materials_setstatus_all_hint","Bypassa il blocco automatico (bozza in creazione, in revisione in modifica)"]
+                                </div>
+                            </div>
+                            @* Checkbox nascoste che inviano i valori reali *@
+                            <input type="checkbox" name="permissions" value="materials.create.setstatus"
+                                   id="ss_create" class="d-none"
+                                   @(anySetStatus ? "checked" : "") />
+                            <input type="checkbox" name="permissions" value="materials.edit.setstatus"
+                                   id="ss_edit" class="d-none"
+                                   @(anySetStatus ? "checked" : "") />
+                            <input type="checkbox" name="permissions" value="materials.approve.setstatus"
+                                   id="ss_approve" class="d-none"
+                                   @(anySetStatus ? "checked" : "") />
+                        </div>
                     </div>
 
                     @* Altri permessi menu (Utenti, Dictionary…) *@
@@ -146,8 +155,8 @@
                                    name="permissions" value="@p.Key"
                                    id="perm_@p.Key.Replace('.','_')"
                                    @(Model.Permissions.Contains(p.Key) ? "checked" : "") />
-                            <label class="form-check-label" for="perm_@p.Key.Replace('.','_')">
-                                @T[p.TranslationKey, p.Key]
+                            <label class="form-check-label fw-semibold" for="perm_@p.Key.Replace('.','_')">
+                                <i class="bi @MenuIcon(p.Key) me-1 text-bocconi"></i>@T[p.TranslationKey, p.Key]
                             </label>
                         </div>
                     }
@@ -168,38 +177,49 @@
 
 @section Scripts {
     <script>
-        // Mostra/nasconde il gruppo setstatus sotto un'operazione
-        function toggleSetStatus(ssGroupId, opEnabled, matEnabled) {
-            var grp = document.getElementById(ssGroupId);
-            if (!grp) return;
-            var ssChecks = grp.querySelectorAll('.ss-check');
-            if (opEnabled && matEnabled) {
+        // ── Sincronizza lo stato del flag visibile "Consenti modifica stato"
+        //    con le tre checkbox nascoste che portano i valori reali
+        document.getElementById('matSetStatusAll').addEventListener('change', function () {
+            var state = this.checked;
+            ['ss_create', 'ss_edit', 'ss_approve'].forEach(function (id) {
+                document.getElementById(id).checked = state;
+            });
+        });
+
+        // ── Mostra/nascondi il flag "Consenti modifica stato" in base
+        //    al fatto che almeno una operazione Materials sia spuntata
+        function onMatOpChange() {
+            var anyChecked = Array.from(document.querySelectorAll('.mat-op-check'))
+                                  .some(function (c) { return c.checked; });
+            var grp = document.getElementById('matSetStatusGroup');
+            if (anyChecked) {
                 grp.classList.remove('d-none');
-                ssChecks.forEach(function(c) { c.disabled = false; });
             } else {
                 grp.classList.add('d-none');
-                ssChecks.forEach(function(c) { c.disabled = true; c.checked = false; });
+                // Deseleziona tutto quando non ci sono op attive
+                document.getElementById('matSetStatusAll').checked = false;
+                ['ss_create', 'ss_edit', 'ss_approve'].forEach(function (id) {
+                    document.getElementById(id).checked = false;
+                });
             }
         }
 
+        // ── Abilita/disabilita il gruppo operazioni Materials al toggle del menu
         function toggleMatOps(enabled) {
-            var group = document.getElementById('matOpsGroup');
+            var group  = document.getElementById('matOpsGroup');
             var checks = group.querySelectorAll('.mat-op-check');
             if (enabled) {
                 group.classList.remove('d-none');
-                checks.forEach(function(c) { c.disabled = false; });
-                // Riapplica lo stato dei setstatus in base alle op già spuntate
-                checks.forEach(function(c) {
-                    var ssGroupId = 'ssGroup_' + c.value.replace(/\./g, '_');
-                    toggleSetStatus(ssGroupId, c.checked, true);
-                });
+                checks.forEach(function (c) { c.disabled = false; });
+                onMatOpChange();
             } else {
                 group.classList.add('d-none');
-                checks.forEach(function(c) {
-                    c.disabled = true;
-                    c.checked = false;
-                    var ssGroupId = 'ssGroup_' + c.value.replace(/\./g, '_');
-                    toggleSetStatus(ssGroupId, false, false);
+                checks.forEach(function (c) { c.disabled = true; c.checked = false; });
+                // Nascondi e resetta setstatus
+                document.getElementById('matSetStatusGroup').classList.add('d-none');
+                document.getElementById('matSetStatusAll').checked = false;
+                ['ss_create', 'ss_edit', 'ss_approve'].forEach(function (id) {
+                    document.getElementById(id).checked = false;
                 });
             }
         }

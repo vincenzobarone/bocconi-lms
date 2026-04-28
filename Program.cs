@@ -1123,7 +1123,15 @@ try
         ('en','mat.status_locked_edit','Status cannot be changed with your role.'),
         ('it','mat.status_locked_edit','Lo stato non è modificabile con il tuo ruolo.'),
         ('es','mat.status_locked_edit','No puedes cambiar el estado con tu rol.'),
-        ('de','mat.status_locked_edit','Status kann mit Ihrer Rolle nicht geändert werden.');", conn);
+        ('de','mat.status_locked_edit','Status kann mit Ihrer Rolle nicht geändert werden.'),
+        ('en','perm.materials_setstatus_all','Allow status change'),
+        ('it','perm.materials_setstatus_all','Consenti modifica stato'),
+        ('es','perm.materials_setstatus_all','Permitir cambio de estado'),
+        ('de','perm.materials_setstatus_all','Statusänderung erlauben'),
+        ('en','perm.materials_setstatus_all_hint','Bypasses the automatic lock (draft on create, in-review on edit)'),
+        ('it','perm.materials_setstatus_all_hint','Bypassa il blocco automatico (bozza in creazione, in revisione in modifica)'),
+        ('es','perm.materials_setstatus_all_hint','Evita el bloqueo automático (borrador al crear, en revisión al editar)'),
+        ('de','perm.materials_setstatus_all_hint','Umgeht die automatische Sperre (Entwurf beim Erstellen, In Überprüfung beim Bearbeiten)');", conn);
     await ins.ExecuteNonQueryAsync();
 }
 catch { }
