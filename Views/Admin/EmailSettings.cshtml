@@ -1,6 +1,7 @@
 @model EmailSettingsViewModel
 @{
     ViewData["Title"] = T["admin.email.page_title", "Email Settings"];
+    var smtpConfigured = !string.IsNullOrWhiteSpace(Model.Host);
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,6 +12,7 @@
 </div>
 
 <div class="row g-4">
+    @* ── Colonna sinistra: config SMTP ── *@
     <div class="col-lg-7">
         <div class="card shadow-sm">
             <div class="card-header bg-white fw-semibold">
@@ -20,12 +22,7 @@
                 <form asp-action="EmailSettings" method="post">
                     @Html.AntiForgeryToken()
 
-                    <div class="mb-3 form-check form-switch">
-                        <input asp-for="Enabled" class="form-check-input" type="checkbox" role="switch" id="smtpEnabled" />
-                        <label class="form-check-label fw-semibold" for="smtpEnabled">@T["admin.email.enable", "Enable email sending"]</label>
-                        <div class="form-text">@T["admin.email.enable_desc", "If disabled, emails are logged but not sent."]</div>
-                    </div>
-
+                    @* Campi SMTP *@
                     <div class="row g-3">
                         <div class="col-8">
                             <label asp-for="Host" class="form-label fw-semibold">@T["admin.email.host", "SMTP Host"]</label>
@@ -76,23 +73,80 @@
                         <div class="form-text">@T["admin.email.use_ssl_desc", "Disable to use STARTTLS (port 587)."]</div>
                     </div>
 
+                    @* Notifiche materiali (solo se SMTP configurato) *@
+                    @if (smtpConfigured)
+                    {
+                        <hr class="my-4" />
+                        <div class="mb-2 form-check form-switch">
+                            <input asp-for="NotifyMaterialChanged" class="form-check-input" type="checkbox"
+                                   role="switch" id="notifyMaterial" />
+                            <label class="form-check-label fw-semibold" for="notifyMaterial">
+                                <i class="bi bi-bell me-1 text-bocconi"></i>@T["admin.email.notify_material","Notifica creazione/modifica materiali"]
+                            </label>
+                            <div class="form-text">@T["admin.email.notify_material_desc","Invia un'email ai ruoli selezionati quando un materiale viene creato o modificato."]</div>
+                        </div>
+
+                        <div id="notifyRolesSection" class="@(Model.NotifyMaterialChanged ? "" : "d-none")">
+                            <label class="form-label fw-semibold mt-2">
+                                @T["admin.email.notify_roles","Ruoli da notificare"]
+                                <span class="text-danger">*</span>
+                            </label>
+                            <div class="border rounded p-3 bg-light">
+                                @if (Model.AvailableRoles.Count == 0)
+                                {
+                                    <span class="text-muted small">@T["admin.no_roles","Nessun ruolo disponibile."]</span>
+                                }
+                                else
+                                {
+                                    <div class="row g-2">
+                                        @foreach (var role in Model.AvailableRoles)
+                                        {
+                                            var isChecked = Model.MaterialChangedRoles.Contains(role);
+                                            <div class="col-6 col-md-4">
+                                                <div class="form-check">
+                                                    <input class="form-check-input notify-role-check"
+                                                           type="checkbox"
+                                                           name="MaterialChangedRoles"
+                                                           value="@role"
+                                                           id="role_@role"
+                                                           @(isChecked ? "checked" : "") />
+                                                    <label class="form-check-label" for="role_@role">@role</label>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    @* Pulsante salva *@
                     <div class="d-flex gap-2 mt-4">
                         <button type="submit" class="btn btn-bocconi">
                             <i class="bi bi-save me-1"></i>@T["admin.email.save_btn", "Save Settings"]
                         </button>
+                    </div>
+
+                    @* Toggle abilitazione — in fondo, separato visivamente *@
+                    <hr class="mt-4 mb-3" />
+                    <div class="form-check form-switch">
+                        <input asp-for="Enabled" class="form-check-input" type="checkbox" role="switch" id="smtpEnabled" />
+                        <label class="form-check-label fw-semibold" for="smtpEnabled">@T["admin.email.enable", "Enable email sending"]</label>
+                        <div class="form-text">@T["admin.email.enable_desc", "If disabled, emails are logged but not sent."]</div>
                     </div>
                 </form>
             </div>
         </div>
     </div>
 
+    @* ── Colonna destra: test email + note ── *@
     <div class="col-lg-5">
         <div class="card shadow-sm">
             <div class="card-header bg-white fw-semibold">
                 <i class="bi bi-send-check me-2 text-bocconi"></i>@T["admin.email.test_title", "Send Test Email"]
             </div>
             <div class="card-body">
-                @if (!string.IsNullOrWhiteSpace(Model.Host))
+                @if (smtpConfigured)
                 {
                     <p class="text-muted small mb-3">
                         @T["admin.email.test_desc", "Verify that the SMTP configuration works by sending a test email."]
@@ -143,6 +197,7 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
+        // ── Toggle visibilità password ─────────────────────────────────────
         document.getElementById('toggleSmtpPassword').addEventListener('click', function () {
             var input = document.getElementById('smtpPassword');
             var icon  = document.getElementById('toggleSmtpPasswordIcon');
@@ -154,5 +209,21 @@
                 icon.classList.replace('bi-eye-slash', 'bi-eye');
             }
         });
+
+        // ── Mostra/nasconde selezione ruoli al toggle notifica ────────────
+        var notifyCheck = document.getElementById('notifyMaterial');
+        if (notifyCheck) {
+            notifyCheck.addEventListener('change', function () {
+                var section = document.getElementById('notifyRolesSection');
+                if (this.checked) {
+                    section.classList.remove('d-none');
+                } else {
+                    section.classList.add('d-none');
+                    section.querySelectorAll('.notify-role-check').forEach(function (cb) {
+                        cb.checked = false;
+                    });
+                }
+            });
+        }
     </script>
 }

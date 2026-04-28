@@ -165,6 +165,10 @@ public class EmailSettingsViewModel
     [Display(Name = "Email destinatario test")]
     [EmailAddress(ErrorMessage = "Email non valida")]
     public string? TestEmailRecipient { get; set; }
+
+    public bool NotifyMaterialChanged { get; set; }
+    public List<string> MaterialChangedRoles { get; set; } = new();
+    public List<string> AvailableRoles { get; set; } = new();
 }
 
 

@@ -376,6 +376,7 @@ public class AdminController : Controller
     public async Task<IActionResult> EmailSettings()
     {
         var current = await _emailService.GetEffectiveSettingsAsync();
+        var notifyRaw = await _settings.GetAsync("Notifications:MaterialChangedRoles") ?? "";
         var vm = new EmailSettingsViewModel
         {
             Enabled   = current.Enabled,
@@ -386,6 +387,12 @@ public class AdminController : Controller
             FromEmail = current.FromEmail,
             FromName  = current.FromName,
             UseSsl    = current.UseSsl,
+            NotifyMaterialChanged = (await _settings.GetAsync("Notifications:MaterialChanged")) == "true",
+            MaterialChangedRoles  = notifyRaw.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+            AvailableRoles        = _roleManager.Roles
+                                        .OrderBy(r => r.Name)
+                                        .Select(r => r.Name!)
+                                        .ToList(),
         };
         return View(vm);
     }
@@ -396,7 +403,12 @@ public class AdminController : Controller
     {
         ModelState.Remove("TestEmailRecipient");
         ModelState.Remove("Password");
-        if (!ModelState.IsValid) return View(model);
+        ModelState.Remove("AvailableRoles");
+        if (!ModelState.IsValid)
+        {
+            model.AvailableRoles = _roleManager.Roles.OrderBy(r => r.Name).Select(r => r.Name!).ToList();
+            return View(model);
+        }
 
         try
         {
@@ -410,6 +422,11 @@ public class AdminController : Controller
 
             if (!string.IsNullOrWhiteSpace(model.Password))
                 await _settings.SetAsync("Smtp:Password", model.Password);
+
+            await _settings.SetAsync("Notifications:MaterialChanged",
+                model.NotifyMaterialChanged ? "true" : "false");
+            await _settings.SetAsync("Notifications:MaterialChangedRoles",
+                string.Join(",", model.MaterialChangedRoles ?? new List<string>()));
 
             TempData["Success"] = _translationService.T("admin.email.saved", "Impostazioni email salvate con successo.");
         }

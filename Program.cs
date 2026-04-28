@@ -1294,6 +1294,31 @@ try
 }
 catch { }
 
+// ── Seed: email notification settings keys ───────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var upd = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
+            ('en','admin.email.notify_material','Notify on material create/update'),
+            ('en','admin.email.notify_material_desc','Send an email to selected roles when a material is created or modified.'),
+            ('en','admin.email.notify_roles','Roles to notify'),
+            ('it','admin.email.notify_material','Notifica creazione/modifica materiali'),
+            ('it','admin.email.notify_material_desc','Invia un''email ai ruoli selezionati quando un materiale viene creato o modificato.'),
+            ('it','admin.email.notify_roles','Ruoli da notificare'),
+            ('es','admin.email.notify_material','Notificar creación/modificación de materiales'),
+            ('es','admin.email.notify_material_desc','Envía un correo a los roles seleccionados cuando se crea o modifica un material.'),
+            ('es','admin.email.notify_roles','Roles a notificar'),
+            ('de','admin.email.notify_material','Benachrichtigung bei Materialerstellung/-änderung'),
+            ('de','admin.email.notify_material_desc','Sendet eine E-Mail an die ausgewählten Rollen, wenn ein Material erstellt oder geändert wird.'),
+            ('de','admin.email.notify_roles','Zu benachrichtigende Rollen')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
+    await upd.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Seed: admin email settings messages ──────────────────────────────────
 try
 {
