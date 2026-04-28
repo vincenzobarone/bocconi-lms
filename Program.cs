@@ -556,6 +556,22 @@ try
 }
 catch { }
 
+// ── Seed convert_to_pdf translation key ───────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','mat.convert_to_pdf','Convert to PDF before saving'),
+        ('it','mat.convert_to_pdf','Converti in PDF prima del salvataggio'),
+        ('es','mat.convert_to_pdf','Convertir a PDF antes de guardar'),
+        ('de','mat.convert_to_pdf','Vor dem Speichern in PDF konvertieren');", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Seed role hint simple key ──────────────────────────────────────────────
 try
 {

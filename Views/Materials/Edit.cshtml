@@ -33,12 +33,12 @@
                         <label asp-for="Title" class="form-label fw-semibold">
                             @T["mat.label_title","Title"] <span class="text-danger">*</span>
                         </label>
-                        <input asp-for="Title" class="form-control" />
+                        <input asp-for="Title" id="matTitle" class="form-control" />
                         <span asp-validation-for="Title" class="text-danger small"></span>
                     </div>
 
-                    <div class="row mb-3">
-                        <div class="col-md-6">
+                    <div class="row mb-3 g-2 align-items-start">
+                        <div class="col-md-8">
                             <label asp-for="DocumentTypeId" class="form-label fw-semibold">
                                 @T["mat.label_doctype","Document type"] <span class="text-danger">*</span>
                             </label>
@@ -51,7 +51,7 @@
                             </select>
                             <span asp-validation-for="DocumentTypeId" class="text-danger small"></span>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label asp-for="Language" class="form-label fw-semibold">
                                 @T["mat.label_language","Language"] <span class="text-danger">*</span>
                             </label>
@@ -119,11 +119,21 @@
                             <span class="form-control text-muted"
                                   id="fileName_File"
                                   data-placeholder="@T["mat.no_file_chosen","No file chosen"]">@T["mat.no_file_chosen","No file chosen"]</span>
-                            <input asp-for="File" type="file" class="d-none"
-                                   onchange="bocconiFileInput(this,'fileName_File')" />
+                            <input asp-for="File" type="file" class="d-none" id="File"
+                                   onchange="matFileChanged(this)" />
                         </div>
                         <div class="form-text">@T["mat.file_hint","Leave empty to not update the file."]</div>
                     </div>
+
+                    <div id="convertPdfBox" class="alert alert-warning d-none py-2 mb-3">
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="ConvertToPdf" name="ConvertToPdf" value="true" />
+                            <label class="form-check-label fw-semibold" for="ConvertToPdf">
+                                <i class="bi bi-file-earmark-pdf me-1"></i>@T["mat.convert_to_pdf","Convert to PDF before saving"]
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="mb-3">
                         <label asp-for="Notes" class="form-label fw-semibold">@T["mat.new_version_notes","New version notes"]</label>
                         <input asp-for="Notes" class="form-control"
@@ -152,5 +162,36 @@
             if (summary && summary.querySelectorAll('li').length > 0)
                 summary.classList.remove('d-none');
         })();
+
+        var OFFICE_EXTS = ['doc','docx','ppt','pptx'];
+
+        function matFileChanged(inp) {
+            var span = document.getElementById('fileName_File');
+            var pdfBox = document.getElementById('convertPdfBox');
+            var titleInp = document.getElementById('matTitle');
+
+            if (!inp.files || inp.files.length === 0) {
+                span.textContent = span.dataset.placeholder || '';
+                pdfBox.classList.add('d-none');
+                return;
+            }
+
+            var file = inp.files[0];
+            span.textContent = file.name;
+
+            var ext = file.name.split('.').pop().toLowerCase();
+            var nameNoExt = file.name.replace(/\.[^.]+$/, '');
+
+            if (titleInp && titleInp.value.trim() === '') {
+                titleInp.value = nameNoExt;
+            }
+
+            if (OFFICE_EXTS.indexOf(ext) !== -1) {
+                pdfBox.classList.remove('d-none');
+            } else {
+                pdfBox.classList.add('d-none');
+                document.getElementById('ConvertToPdf').checked = false;
+            }
+        }
     </script>
 }

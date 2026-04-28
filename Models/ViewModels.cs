@@ -245,6 +245,8 @@ public class MaterialFormViewModel
     public string? Notes { get; set; }
 
     public IFormFile? File { get; set; }
+
+    public bool ConvertToPdf { get; set; }
 }
 
 public class DocumentTypeFormViewModel
