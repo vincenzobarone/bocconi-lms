@@ -863,6 +863,27 @@ try
 }
 catch { }
 
+// ── Seed admin.courses_label + fix admin.courses → "Courses" ─────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var cmd = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
+            ('en','admin.courses_label','Courses'),
+            ('it','admin.courses_label','Corsi'),
+            ('es','admin.courses_label','Cursos'),
+            ('de','admin.courses_label','Kurse'),
+            ('en','admin.courses','Courses'),
+            ('it','admin.courses','Corsi'),
+            ('es','admin.courses','Cursos'),
+            ('de','admin.courses','Kurse')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
+    await cmd.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Seed Admin Users/Roles translation keys ───────────────────────────────
 try
 {
