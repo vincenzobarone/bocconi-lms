@@ -88,21 +88,35 @@
                 <i class="bi bi-send-check me-2 text-bocconi"></i>@T["admin.email.test_title", "Send Test Email"]
             </div>
             <div class="card-body">
-                <p class="text-muted small mb-3">
-                    @T["admin.email.test_desc", "Verify that the SMTP configuration works by sending a test email."] 
-                    @T["admin.email.test_desc2", "The currently saved settings are used."]
-                </p>
-                <form asp-action="SendTestEmail" method="post">
-                    @Html.AntiForgeryToken()
-                    <div class="mb-3">
-                        <label asp-for="TestEmailRecipient" class="form-label fw-semibold">@T["admin.email.test_recipient", "Test Recipient Email"]</label>
-                        <input asp-for="TestEmailRecipient" class="form-control" placeholder="admin@example.com" type="email" />
-                        <span asp-validation-for="TestEmailRecipient" class="text-danger small"></span>
+                @if (!string.IsNullOrWhiteSpace(Model.Host))
+                {
+                    <p class="text-muted small mb-3">
+                        @T["admin.email.test_desc", "Verify that the SMTP configuration works by sending a test email."]
+                        @T["admin.email.test_desc2", "The currently saved settings are used."]
+                    </p>
+                    <div class="alert alert-light border small mb-3 py-2">
+                        <i class="bi bi-server me-1 text-bocconi"></i>
+                        <strong>@Model.Host</strong> : @Model.Port &mdash; @Model.FromEmail
                     </div>
-                    <button type="submit" class="btn btn-outline-bocconi w-100">
-                        <i class="bi bi-envelope-arrow-up me-1"></i>@T["admin.email.test_btn", "Send Test Email"]
-                    </button>
-                </form>
+                    <form asp-action="SendTestEmail" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label asp-for="TestEmailRecipient" class="form-label fw-semibold">@T["admin.email.test_recipient", "Test Recipient Email"]</label>
+                            <input asp-for="TestEmailRecipient" class="form-control" placeholder="admin@example.com" type="email" />
+                            <span asp-validation-for="TestEmailRecipient" class="text-danger small"></span>
+                        </div>
+                        <button type="submit" class="btn btn-outline-bocconi w-100">
+                            <i class="bi bi-envelope-arrow-up me-1"></i>@T["admin.email.test_btn", "Send Test Email"]
+                        </button>
+                    </form>
+                }
+                else
+                {
+                    <div class="text-center py-3 text-muted">
+                        <i class="bi bi-envelope-x display-6 d-block mb-2 opacity-50"></i>
+                        <p class="small mb-0">@T["admin.email.test_not_configured", "Save the SMTP configuration first to enable the test."]</p>
+                    </div>
+                }
             </div>
         </div>
 
