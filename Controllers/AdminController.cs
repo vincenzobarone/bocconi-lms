@@ -54,10 +54,9 @@ public class AdminController : Controller
         _rolePerms = rolePerms;
     }
 
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
     {
-        var stats = await _users.GetStatsAsync();
-        return View(stats);
+        return RedirectToAction(nameof(Users));
     }
 
     [AllowAnonymous]
