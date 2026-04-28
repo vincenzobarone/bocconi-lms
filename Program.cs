@@ -1006,11 +1006,29 @@ try
         ('it','perm.menu_users','Utenti — accesso sezione'),
         ('es','perm.menu_users','Usuarios — acceso a sección'),
         ('de','perm.menu_users','Benutzer — Bereichszugang'),
-        ('en','perm.menu_translations','Translations — section access'),
-        ('it','perm.menu_translations','Traduzioni — accesso sezione'),
-        ('es','perm.menu_translations','Traducciones — acceso a sección'),
-        ('de','perm.menu_translations','Übersetzungen — Bereichszugang');", conn);
+        ('en','perm.menu_translations','Dictionary — section access'),
+        ('it','perm.menu_translations','Dictionary — accesso sezione'),
+        ('es','perm.menu_translations','Dictionary — acceso a sección'),
+        ('de','perm.menu_translations','Dictionary — Bereichszugang');", conn);
     await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Update perm.menu_translations label to "Dictionary" ───────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var upd = new MySqlConnector.MySqlCommand(@"
+        UPDATE translations SET label_value = CASE language_code
+            WHEN 'en' THEN 'Dictionary — section access'
+            WHEN 'it' THEN 'Dictionary — accesso sezione'
+            WHEN 'es' THEN 'Dictionary — acceso a sección'
+            WHEN 'de' THEN 'Dictionary — Bereichszugang'
+        END
+        WHERE label_key = 'perm.menu_translations';", conn);
+    await upd.ExecuteNonQueryAsync();
 }
 catch { }
 
