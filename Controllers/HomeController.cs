@@ -47,7 +47,7 @@ public class HomeController : Controller
         var coursesEnabled = await _features.IsCoursesEnabledAsync();
 
         if (User.IsInRole("Admin"))
-            return RedirectToAction("Index", "Admin");
+            return RedirectToAction("PlatformFeatures", "Admin");
 
         if (!coursesEnabled)
             return RedirectToAction("Index", "Materials");
