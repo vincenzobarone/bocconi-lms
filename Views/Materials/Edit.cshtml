@@ -28,34 +28,33 @@
             <div class="card-body">
                 <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
                     @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="OwnerId" />
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" id="valSummary"></div>
 
-                    <div class="mb-3">
-                        <label asp-for="Title" class="form-label fw-semibold">
-                            @T["mat.label_title","Title"] <span class="text-danger">*</span>
-                        </label>
-                        <input asp-for="Title" id="matTitle" class="form-control" />
-                        <span asp-validation-for="Title" class="text-danger small"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="AuthorName" class="form-label fw-semibold">
-                            @T["mat.label_author","Autore"] <span class="text-danger">*</span>
-                        </label>
-                        <input asp-for="AuthorName" class="form-control"
-                               list="authorsList"
-                               placeholder="@T["mat.author_placeholder","Nome completo dell'autore del contenuto"]"
-                               autocomplete="off" />
-                        <datalist id="authorsList">
-                            @foreach (var a in existingAuthors)
-                            {
-                                <option value="@a"></option>
-                            }
-                        </datalist>
-                        <div class="form-text text-muted small">
-                            <i class="bi bi-info-circle me-1"></i>@T["mat.author_hint","Verrà estratto automaticamente dai metadati del documento se lasciato vuoto."]
+                    <div class="row mb-3 g-2 align-items-start">
+                        <div class="col-md-4">
+                            <label asp-for="AuthorName" class="form-label fw-semibold">
+                                @T["mat.label_author","Autore"] <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="AuthorName" class="form-control"
+                                   list="authorsList"
+                                   placeholder="@T["mat.author_placeholder","Nome autore"]"
+                                   autocomplete="off" />
+                            <datalist id="authorsList">
+                                @foreach (var a in existingAuthors)
+                                {
+                                    <option value="@a"></option>
+                                }
+                            </datalist>
+                            <span asp-validation-for="AuthorName" class="text-danger small"></span>
                         </div>
-                        <span asp-validation-for="AuthorName" class="text-danger small"></span>
+                        <div class="col-md-8">
+                            <label asp-for="Title" class="form-label fw-semibold">
+                                @T["mat.label_title","Titolo"] <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Title" id="matTitle" class="form-control" />
+                            <span asp-validation-for="Title" class="text-danger small"></span>
+                        </div>
                     </div>
 
                     <div class="row mb-3 g-2 align-items-start">
@@ -84,21 +83,6 @@
                             </select>
                             <span asp-validation-for="Language" class="text-danger small"></span>
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="ownerSearch" class="form-label fw-semibold">@T["mat.label_owner","Responsabile (sistema)"]</label>
-                        <input type="text" id="ownerSearch" class="form-control mb-1"
-                               placeholder="@T["mat.owner_search_placeholder","Cerca responsabile..."]"
-                               autocomplete="off" />
-                        <select asp-for="OwnerId" id="OwnerId" class="form-select">
-                            <option value="">@T["mat.no_owner","— Nessuno —"]</option>
-                            @foreach (var u in owners)
-                            {
-                                <option value="@u.Id" selected="@(Model.OwnerId == u.Id ? "selected" : null)">@u.LastName @u.FirstName (@u.Role)</option>
-                            }
-                        </select>
-                        <div class="form-text">@T["mat.owner_hint","Persona responsabile della gestione di questo materiale nel sistema."]</div>
                     </div>
 
                     <div class="mb-3">
@@ -202,20 +186,6 @@
             var summary = document.getElementById('valSummary');
             if (summary && summary.querySelectorAll('li').length > 0)
                 summary.classList.remove('d-none');
-        })();
-
-        // ── Owner search ──────────────────────────────────────────────────
-        (function () {
-            var search = document.getElementById('ownerSearch');
-            var sel = document.getElementById('OwnerId');
-            if (!search || !sel) return;
-            search.addEventListener('input', function () {
-                var q = search.value.toLowerCase();
-                Array.from(sel.options).forEach(function (opt) {
-                    if (!opt.value) { opt.style.display = ''; return; }
-                    opt.style.display = opt.text.toLowerCase().includes(q) ? '' : 'none';
-                });
-            });
         })();
 
         // ── Status → verified fields ──────────────────────────────────────

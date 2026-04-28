@@ -26,33 +26,31 @@
                     @Html.AntiForgeryToken()
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" id="valSummary"></div>
 
-                    <div class="mb-3">
-                        <label asp-for="Title" class="form-label fw-semibold">
-                            @T["mat.label_title","Title"] <span class="text-danger">*</span>
-                        </label>
-                        <input asp-for="Title" id="matTitle" class="form-control"
-                               placeholder="@T["mat.title_placeholder","Enter a unique title…"]" />
-                        <span asp-validation-for="Title" class="text-danger small"></span>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="AuthorName" class="form-label fw-semibold">
-                            @T["mat.label_author","Autore"] <span class="text-danger">*</span>
-                        </label>
-                        <input asp-for="AuthorName" class="form-control"
-                               list="authorsList"
-                               placeholder="@T["mat.author_placeholder","Nome completo dell'autore del contenuto"]"
-                               autocomplete="off" />
-                        <datalist id="authorsList">
-                            @foreach (var a in existingAuthors)
-                            {
-                                <option value="@a"></option>
-                            }
-                        </datalist>
-                        <div class="form-text text-muted small">
-                            <i class="bi bi-info-circle me-1"></i>@T["mat.author_hint","Verrà estratto automaticamente dai metadati del documento se lasciato vuoto."]
+                    <div class="row mb-3 g-2 align-items-start">
+                        <div class="col-md-4">
+                            <label asp-for="AuthorName" class="form-label fw-semibold">
+                                @T["mat.label_author","Autore"] <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="AuthorName" class="form-control"
+                                   list="authorsList"
+                                   placeholder="@T["mat.author_placeholder","Nome autore"]"
+                                   autocomplete="off" />
+                            <datalist id="authorsList">
+                                @foreach (var a in existingAuthors)
+                                {
+                                    <option value="@a"></option>
+                                }
+                            </datalist>
+                            <span asp-validation-for="AuthorName" class="text-danger small"></span>
                         </div>
-                        <span asp-validation-for="AuthorName" class="text-danger small"></span>
+                        <div class="col-md-8">
+                            <label asp-for="Title" class="form-label fw-semibold">
+                                @T["mat.label_title","Titolo"] <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Title" id="matTitle" class="form-control"
+                                   placeholder="@T["mat.title_placeholder","Titolo univoco del materiale…"]" />
+                            <span asp-validation-for="Title" class="text-danger small"></span>
+                        </div>
                     </div>
 
                     <div class="row mb-3 g-2 align-items-start">
@@ -81,14 +79,6 @@
                             </select>
                             <span asp-validation-for="Language" class="text-danger small"></span>
                         </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">@T["mat.label_owner","Responsabile (sistema)"]</label>
-                        <div class="form-control bg-light text-muted">
-                            <i class="bi bi-person-circle me-1"></i>@currentOwnerName
-                        </div>
-                        <div class="form-text">@T["mat.owner_hint","Impostato automaticamente sull'utente che crea il materiale."]</div>
                     </div>
 
                     <div class="mb-3">
