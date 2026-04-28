@@ -1244,6 +1244,35 @@ try
 }
 catch { }
 
+// ── Fix mat.label_area / mat.select_area / mat.label_cat_date (force correct values) ──
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var upd = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
+            ('en','mat.label_area','Area'),
+            ('it','mat.label_area','Area'),
+            ('es','mat.label_area','Área'),
+            ('de','mat.label_area','Bereich'),
+            ('en','mat.select_area','— No area —'),
+            ('it','mat.select_area','— Nessuna area —'),
+            ('es','mat.select_area','— Sin área —'),
+            ('de','mat.select_area','— Kein Bereich —'),
+            ('en','mat.label_cat_date','Catalogation date'),
+            ('it','mat.label_cat_date','Data catalogazione'),
+            ('es','mat.label_cat_date','Fecha de catalogación'),
+            ('de','mat.label_cat_date','Katalogisierungsdatum'),
+            ('en','mat.upload_optional','Upload new version file (optional)'),
+            ('it','mat.upload_optional','Carica nuovo file di versione (opzionale)'),
+            ('es','mat.upload_optional','Subir nuevo archivo de versión (opcional)'),
+            ('de','mat.upload_optional','Neue Versionsdatei hochladen (optional)')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
+    await upd.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Ensure nav.users has correct per-language values (fix old Italian fallback) ──
 try
 {
