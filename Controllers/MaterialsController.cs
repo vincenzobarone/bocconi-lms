@@ -100,7 +100,7 @@ public class MaterialsController : Controller
         var matId = await _materials.CreateAsync(vm.Title, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status);
 
         if (vm.File != null && vm.File.Length > 0)
-            await SaveVersionAsync(matId, vm.File, vm.Notes);
+            await SaveVersionAsync(matId, vm.File, vm.Notes, vm.ConvertToPdf);
 
         TempData["Success"] = $"Materiale «{vm.Title}» creato con successo.";
         return RedirectToAction(nameof(Index));
@@ -153,7 +153,7 @@ public class MaterialsController : Controller
         await _materials.UpdateAsync(id, vm.Title, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status);
 
         if (vm.File != null && vm.File.Length > 0)
-            await SaveVersionAsync(id, vm.File, vm.Notes);
+            await SaveVersionAsync(id, vm.File, vm.Notes, vm.ConvertToPdf);
 
         TempData["Success"] = "Materiale aggiornato.";
         return RedirectToAction(nameof(Details), new { id });
@@ -255,28 +255,115 @@ public class MaterialsController : Controller
 
     // ── Private: save file ────────────────────────────────────────────────
 
-    private async Task SaveVersionAsync(int materialId, IFormFile file, string? notes)
+    private async Task SaveVersionAsync(int materialId, IFormFile file, string? notes,
+                                         bool convertToPdf = false)
     {
-        var nextVer = await _materials.GetNextVersionNumberAsync(materialId);
-        var ext     = Path.GetExtension(file.FileName).TrimStart('.').ToUpperInvariant();
-        var safeFile = $"v{nextVer}_{Path.GetFileNameWithoutExtension(file.FileName)}{Path.GetExtension(file.FileName)}";
-        var relDir  = Path.Combine("uploads", $"mat_{materialId}");
-        var absDir  = Path.Combine(_env.WebRootPath, relDir);
+        IFormFile fileToSave = file;
+        if (convertToPdf)
+        {
+            var converted = await TryConvertToPdfAsync(file);
+            if (converted != null) fileToSave = converted;
+        }
+
+        var nextVer  = await _materials.GetNextVersionNumberAsync(materialId);
+        var ext      = Path.GetExtension(fileToSave.FileName).TrimStart('.').ToUpperInvariant();
+        var safeFile = $"v{nextVer}_{Path.GetFileNameWithoutExtension(fileToSave.FileName)}{Path.GetExtension(fileToSave.FileName)}";
+        var relDir   = Path.Combine("uploads", $"mat_{materialId}");
+        var absDir   = Path.Combine(_env.WebRootPath, relDir);
         Directory.CreateDirectory(absDir);
-        var absPath = Path.Combine(absDir, safeFile);
+        var absPath  = Path.Combine(absDir, safeFile);
         using (var fs = new FileStream(absPath, FileMode.Create))
-            await file.CopyToAsync(fs);
+            await fileToSave.CopyToAsync(fs);
 
         await _materials.AddVersionAsync(new MaterialVersion
         {
             MaterialId      = materialId,
             VersionNumber   = nextVer,
-            FileName        = file.FileName,
+            FileName        = fileToSave.FileName,
             FilePath        = "/" + relDir.Replace('\\', '/') + "/" + safeFile,
             FileType        = ext,
-            FileSizeBytes   = file.Length,
+            FileSizeBytes   = fileToSave.Length,
             UploadedBy      = CurrentUserId(),
             Notes           = notes
         });
+    }
+
+    private static readonly HashSet<string> _officeExtensions =
+        new(StringComparer.OrdinalIgnoreCase) { ".doc", ".docx", ".ppt", ".pptx" };
+
+    private async Task<IFormFile?> TryConvertToPdfAsync(IFormFile file)
+    {
+        var ext = Path.GetExtension(file.FileName);
+        if (!_officeExtensions.Contains(ext)) return null;
+
+        var sofficePath = FindSoffice();
+        if (sofficePath == null) return null;
+
+        var tmpDir = Path.Combine(Path.GetTempPath(), $"lms_pdf_{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tmpDir);
+        try
+        {
+            var srcPath = Path.Combine(tmpDir, file.FileName);
+            await using (var fs = System.IO.File.Create(srcPath))
+                await file.CopyToAsync(fs);
+
+            using var proc = new System.Diagnostics.Process();
+            proc.StartInfo = new System.Diagnostics.ProcessStartInfo
+            {
+                FileName               = sofficePath,
+                Arguments              = $"--headless --convert-to pdf --outdir \"{tmpDir}\" \"{srcPath}\"",
+                RedirectStandardOutput = true,
+                RedirectStandardError  = true,
+                UseShellExecute        = false,
+                CreateNoWindow         = true
+            };
+            proc.Start();
+            await proc.WaitForExitAsync();
+
+            if (proc.ExitCode != 0) return null;
+
+            var pdfName = Path.GetFileNameWithoutExtension(file.FileName) + ".pdf";
+            var pdfPath = Path.Combine(tmpDir, pdfName);
+            if (!System.IO.File.Exists(pdfPath)) return null;
+
+            var ms = new MemoryStream(await System.IO.File.ReadAllBytesAsync(pdfPath));
+            return new FormFile(ms, 0, ms.Length, file.Name, pdfName)
+            {
+                Headers     = new HeaderDictionary(),
+                ContentType = "application/pdf"
+            };
+        }
+        catch
+        {
+            return null;
+        }
+        finally
+        {
+            try { Directory.Delete(tmpDir, true); } catch { }
+        }
+    }
+
+    private static string? FindSoffice()
+    {
+        foreach (var fixedPath in new[] { "/usr/bin/soffice", "/usr/local/bin/soffice" })
+            if (System.IO.File.Exists(fixedPath)) return fixedPath;
+
+        try
+        {
+            using var p = System.Diagnostics.Process.Start(
+                new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName               = "which",
+                    Arguments              = "soffice",
+                    RedirectStandardOutput = true,
+                    UseShellExecute        = false
+                });
+            p?.WaitForExit(3000);
+            var path = p?.StandardOutput.ReadToEnd().Trim();
+            if (!string.IsNullOrEmpty(path) && System.IO.File.Exists(path)) return path;
+        }
+        catch { }
+
+        return null;
     }
 }
