@@ -17,6 +17,7 @@ var connectionString = Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRI
     ?? builder.Configuration.GetConnectionString("MySQL")
     ?? "Server=localhost;Port=3306;Database=bocconi_lms;User=root;Password=;";
 
+builder.Services.AddHttpClient();
 builder.Services.AddSingleton<DbHelper>(_ => new DbHelper(connectionString));
 builder.Services.AddScoped<CourseRepository>();
 builder.Services.AddScoped<LessonRepository>();

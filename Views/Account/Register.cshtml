@@ -1,0 +1,91 @@
+@model BocconiLMS.Models.PublicRegisterViewModel
+@{
+    ViewData["Title"] = T["auth.register_title","Create account"];
+    Layout = "_Layout";
+}
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-header bg-bocconi text-white text-center py-4">
+                <i class="bi bi-person-plus-fill display-5 d-block mb-2" style="color:#c8a96e;"></i>
+                <h4 class="mb-0 fw-bold">@T["auth.register_title","Create account"]</h4>
+                <small>@T["auth.register_subtitle","Bocconi Learning Management System"]</small>
+            </div>
+            <div class="card-body p-4">
+                @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+                {
+                    <div class="alert alert-danger small">
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                        {
+                            <div>@error.ErrorMessage</div>
+                        }
+                    </div>
+                }
+
+                <form asp-action="Register" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label asp-for="FirstName" class="form-label fw-semibold">@T["auth.firstname","First name"]</label>
+                            <input asp-for="FirstName" class="form-control" placeholder="Mario" autocomplete="given-name" />
+                            <span asp-validation-for="FirstName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="LastName" class="form-label fw-semibold">@T["auth.lastname","Last name"]</label>
+                            <input asp-for="LastName" class="form-control" placeholder="Rossi" autocomplete="family-name" />
+                            <span asp-validation-for="LastName" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label fw-semibold">@T["auth.email","Email"]</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+                            <input asp-for="Email" class="form-control" placeholder="nome.cognome@studbocconi.it" autocomplete="email" />
+                        </div>
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label fw-semibold">@T["auth.password","Password"]</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                            <input asp-for="Password" class="form-control" placeholder="••••••••" autocomplete="new-password" />
+                        </div>
+                        <div class="form-text">@T["auth.min_8_chars","Minimum 8 characters."]</div>
+                        <span asp-validation-for="Password" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="ConfirmPassword" class="form-label fw-semibold">@T["auth.confirm_password","Confirm password"]</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                            <input asp-for="ConfirmPassword" class="form-control" placeholder="••••••••" autocomplete="new-password" />
+                        </div>
+                        <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4 d-flex justify-content-center">
+                        <div class="g-recaptcha" data-sitekey="@ViewBag.RecaptchaSiteKey"></div>
+                    </div>
+
+                    <button type="submit" class="btn btn-bocconi w-100 py-2 fw-semibold">
+                        <i class="bi bi-person-check me-2"></i>@T["auth.btn_register","Register"]
+                    </button>
+
+                    <div class="text-center mt-3 small text-muted">
+                        @T["auth.already_have_account","Already have an account?"]
+                        <a asp-action="Login" class="fw-semibold">@T["auth.btn_login","Log in"]</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

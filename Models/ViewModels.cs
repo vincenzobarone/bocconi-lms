@@ -13,6 +13,32 @@ public class LoginViewModel
     public string Password { get; set; } = string.Empty;
 }
 
+public class PublicRegisterViewModel
+{
+    [Required(ErrorMessage = "Nome obbligatorio")]
+    [MaxLength(100)]
+    public string FirstName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Cognome obbligatorio")]
+    [MaxLength(100)]
+    public string LastName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Email obbligatoria")]
+    [EmailAddress(ErrorMessage = "Email non valida")]
+    [MaxLength(255)]
+    public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Password obbligatoria")]
+    [MinLength(8, ErrorMessage = "Minimo 8 caratteri")]
+    [DataType(DataType.Password)]
+    public string Password { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "Conferma password obbligatoria")]
+    [DataType(DataType.Password)]
+    [Compare("Password", ErrorMessage = "Le password non coincidono")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+}
+
 public class RegisterViewModel
 {
     [Required(ErrorMessage = "Nome obbligatorio")]

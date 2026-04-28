@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using MySqlConnector;
+using System.Text.Json;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
 using BocconiLMS.Services;
@@ -15,19 +16,25 @@ public class AccountController : Controller
     private readonly DbHelper _db;
     private readonly EmailService _emailService;
     private readonly ILogger<AccountController> _logger;
+    private readonly IConfiguration _config;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     public AccountController(
         UserManager<ApplicationUser> userManager,
         SignInManager<ApplicationUser> signInManager,
         DbHelper db,
         EmailService emailService,
-        ILogger<AccountController> logger)
+        ILogger<AccountController> logger,
+        IConfiguration config,
+        IHttpClientFactory httpClientFactory)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _db = db;
         _emailService = emailService;
         _logger = logger;
+        _config = config;
+        _httpClientFactory = httpClientFactory;
     }
 
     [HttpGet]
@@ -244,6 +251,86 @@ public class AccountController : Controller
     public IActionResult ResetPasswordConfirmation() => View();
 
     public IActionResult AccessDenied() => View();
+
+    [HttpGet]
+    public IActionResult Register()
+    {
+        if (User.Identity?.IsAuthenticated == true)
+            return RedirectToAction("Dashboard", "Home");
+        ViewBag.RecaptchaSiteKey = _config["Recaptcha:SiteKey"];
+        return View(new PublicRegisterViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Register(PublicRegisterViewModel model)
+    {
+        ViewBag.RecaptchaSiteKey = _config["Recaptcha:SiteKey"];
+
+        var captchaResponse = Request.Form["g-recaptcha-response"].FirstOrDefault();
+        if (!await VerifyRecaptchaAsync(captchaResponse))
+        {
+            ModelState.AddModelError("", "Verifica CAPTCHA non superata. Riprova.");
+            return View(model);
+        }
+
+        if (!ModelState.IsValid) return View(model);
+
+        var existing = await _userManager.FindByEmailAsync(model.Email);
+        if (existing != null)
+        {
+            ModelState.AddModelError("Email", "Questa email è già registrata.");
+            return View(model);
+        }
+
+        var user = new ApplicationUser
+        {
+            UserName = model.Email,
+            Email    = model.Email,
+            FirstName = model.FirstName.Trim(),
+            LastName  = model.LastName.Trim(),
+            IsActive  = true,
+        };
+
+        var result = await _userManager.CreateAsync(user, model.Password);
+        if (!result.Succeeded)
+        {
+            foreach (var error in result.Errors)
+                ModelState.AddModelError("", error.Description);
+            return View(model);
+        }
+
+        await _userManager.AddToRoleAsync(user, "Student");
+
+        TempData["RegisterSuccess"] = true;
+        return RedirectToAction("Login");
+    }
+
+    private async Task<bool> VerifyRecaptchaAsync(string? token)
+    {
+        if (string.IsNullOrEmpty(token)) return false;
+
+        var secret = _config["Recaptcha:SecretKey"] ?? "";
+        try
+        {
+            var client = _httpClientFactory.CreateClient();
+            var resp = await client.PostAsync(
+                "https://www.google.com/recaptcha/api/siteverify",
+                new FormUrlEncodedContent(new Dictionary<string, string>
+                {
+                    ["secret"]   = secret,
+                    ["response"] = token
+                }));
+            var json = await resp.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            return doc.RootElement.GetProperty("success").GetBoolean();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "reCAPTCHA verification failed");
+            return false;
+        }
+    }
 
     private async Task<bool> IsTokenValidAsync(string token)
     {
