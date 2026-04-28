@@ -483,13 +483,15 @@ try
         ('en','admin.no_areas','No areas defined yet.'),
         ('en','admin.delete_area','Delete area'),
         ('en','admin.delete_area_confirm','Delete area'),
+        ('en','admin.edit_area','Edit area'),
         ('it','admin.areas_tab','Aree'),
         ('it','admin.add_area','Aggiungi nuova area'),
         ('it','admin.area_name_placeholder','Nome area…'),
         ('it','admin.create_area','Crea area'),
         ('it','admin.no_areas','Nessuna area definita.'),
         ('it','admin.delete_area','Elimina area'),
-        ('it','admin.delete_area_confirm','Eliminare l\'area');", conn);
+        ('it','admin.delete_area_confirm','Eliminare l\'area'),
+        ('it','admin.edit_area','Modifica area');", conn);
     await ins.ExecuteNonQueryAsync();
     foreach (var lang in new[] { "es", "de" })
     {
@@ -499,7 +501,8 @@ try
             WHERE language_code = 'en'
               AND label_key IN (
                 'admin.areas_tab','admin.add_area','admin.area_name_placeholder',
-                'admin.create_area','admin.no_areas','admin.delete_area','admin.delete_area_confirm');", conn);
+                'admin.create_area','admin.no_areas','admin.delete_area','admin.delete_area_confirm',
+                'admin.edit_area');", conn);
         copy.Parameters.AddWithValue("@lang", lang);
         await copy.ExecuteNonQueryAsync();
     }

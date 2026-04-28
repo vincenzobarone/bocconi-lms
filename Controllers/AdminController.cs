@@ -244,6 +244,25 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditArea(int id, string name)
+    {
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
+        {
+            TempData["Error"] = "Nome area non valido.";
+            return RedirectToAction("Users", new { tab = "aree" });
+        }
+        if (await _areas.NameExistsAsync(name, excludeId: id))
+        {
+            TempData["Error"] = $"Un'area con il nome «{name.Trim()}» esiste già.";
+            return RedirectToAction("Users", new { tab = "aree" });
+        }
+        await _areas.RenameAsync(id, name);
+        TempData["Success"] = $"Area rinominata in «{name.Trim()}».";
+        return RedirectToAction("Users", new { tab = "aree" });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteArea(int id)
     {
         var count = await _areas.CountUsersAsync(id);

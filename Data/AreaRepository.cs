@@ -118,6 +118,17 @@ public class AreaRepository
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
 
+    public async Task RenameAsync(int id, string name)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "UPDATE areas SET name = @name WHERE id = @id", conn);
+        cmd.Parameters.AddWithValue("@name", name.Trim());
+        cmd.Parameters.AddWithValue("@id", id);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
     public async Task DeleteAsync(int id)
     {
         using var conn = _db.GetConnection();

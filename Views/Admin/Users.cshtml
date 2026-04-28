@@ -259,7 +259,7 @@
                             <tr>
                                 <th class="ps-3">@T["common.name","Name"]</th>
                                 <th class="text-center" style="width:130px">@T["admin.users_tab","Users"]</th>
-                                <th style="width:80px"></th>
+                                <th style="width:110px"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -278,17 +278,26 @@
                                         }
                                     </td>
                                     <td class="pe-3 text-end">
-                                        <form asp-action="DeleteArea" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@a.Id" />
-                                            <button type="submit"
-                                                    class="btn btn-sm @(a.UserCount > 0 ? "btn-outline-secondary" : "btn-outline-danger")"
-                                                    title="@T["admin.delete_area","Delete area"]"
-                                                    @(a.UserCount > 0 ? "disabled" : "")
-                                                    @(a.UserCount == 0 ? $"data-confirm=\"{T["admin.delete_area_confirm","Delete area"]} '{a.Name}'?\"" : "")>
-                                                <i class="bi bi-trash"></i>
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary btn-edit-area"
+                                                    data-area-id="@a.Id"
+                                                    data-area-name="@a.Name"
+                                                    title="@T["common.edit","Edit"]">
+                                                <i class="bi bi-pencil"></i>
                                             </button>
-                                        </form>
+                                            <form asp-action="DeleteArea" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@a.Id" />
+                                                <button type="submit"
+                                                        class="btn btn-sm @(a.UserCount > 0 ? "btn-outline-secondary" : "btn-outline-danger")"
+                                                        title="@T["admin.delete_area","Delete area"]"
+                                                        @(a.UserCount > 0 ? "disabled" : "")
+                                                        @(a.UserCount == 0 ? $"data-confirm=\"{T["admin.delete_area_confirm","Delete area"]} '{a.Name}'?\"" : "")>
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
                                     </td>
                                 </tr>
                             }
@@ -359,6 +368,38 @@
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
                     <button type="submit" class="btn btn-bocconi">
                         <i class="bi bi-plus me-1"></i>@T["admin.create_area","Create area"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@* Modale: Modifica area *@
+<div class="modal fade" id="editAreaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-pencil me-2"></i>@T["admin.edit_area","Edit area"]
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="EditArea" method="post" id="editAreaForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editAreaId" value="" />
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">
+                        @T["common.name","Name"] <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" name="name" id="editAreaName" class="form-control"
+                           placeholder="@T["admin.area_name_placeholder","Area name…"]"
+                           maxlength="255" autocomplete="off" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                    <button type="submit" class="btn btn-bocconi">
+                        <i class="bi bi-check-lg me-1"></i>@T["common.save","Save"]
                     </button>
                 </div>
             </form>
@@ -476,6 +517,19 @@
             });
             document.getElementById('createAreaModal').addEventListener('hidden.bs.modal', function () {
                 document.getElementById('createAreaName').value = '';
+            });
+
+            // ── Modale modifica area ──────────────────────────────
+            document.addEventListener('click', function (e) {
+                var btn = e.target.closest('.btn-edit-area');
+                if (!btn) return;
+                document.getElementById('editAreaId').value   = btn.dataset.areaId;
+                document.getElementById('editAreaName').value = btn.dataset.areaName;
+                bootstrap.Modal.getOrCreate(document.getElementById('editAreaModal')).show();
+            });
+            document.getElementById('editAreaModal').addEventListener('shown.bs.modal', function () {
+                document.getElementById('editAreaName').focus();
+                document.getElementById('editAreaName').select();
             });
 
             // ── View courses ──────────────────────────────────────
