@@ -13,17 +13,20 @@ public class MaterialsController : Controller
     private readonly DocumentTypeRepository _docTypes;
     private readonly UserRepository _users;
     private readonly IWebHostEnvironment _env;
+    private readonly ILogger<MaterialsController> _logger;
 
     public MaterialsController(
         MaterialRepository materials,
         DocumentTypeRepository docTypes,
         UserRepository users,
-        IWebHostEnvironment env)
+        IWebHostEnvironment env,
+        ILogger<MaterialsController> logger)
     {
         _materials = materials;
         _docTypes  = docTypes;
         _users     = users;
         _env       = env;
+        _logger    = logger;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -160,7 +163,18 @@ public class MaterialsController : Controller
         var matId = await _materials.CreateAsync(vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, vm.Folder);
 
         if (vm.File != null && vm.File.Length > 0)
-            await SaveVersionAsync(matId, vm.File, vm.Notes, vm.ConvertToPdf);
+        {
+            try
+            {
+                await SaveVersionAsync(matId, vm.File, vm.Notes, vm.ConvertToPdf);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "SaveVersionAsync fallita per materialId={MatId} file={File}", matId, vm.File.FileName);
+                TempData["Warning"] = $"Materiale creato, ma il file non è stato salvato: {ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
+        }
 
         TempData["Success"] = $"Materiale «{vm.Title}» creato con successo.";
         return RedirectToAction(nameof(Index));
@@ -226,7 +240,18 @@ public class MaterialsController : Controller
         await _materials.UpdateAsync(id, vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, vm.Folder);
 
         if (vm.File != null && vm.File.Length > 0)
-            await SaveVersionAsync(id, vm.File, vm.Notes, vm.ConvertToPdf);
+        {
+            try
+            {
+                await SaveVersionAsync(id, vm.File, vm.Notes, vm.ConvertToPdf);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "SaveVersionAsync fallita in Edit per materialId={Id} file={File}", id, vm.File.FileName);
+                TempData["Warning"] = $"Materiale aggiornato, ma il file non è stato salvato: {ex.Message}";
+                return RedirectToAction(nameof(Details), new { id });
+            }
+        }
 
         TempData["Success"] = "Materiale aggiornato.";
         return RedirectToAction(nameof(Details), new { id });
@@ -246,7 +271,16 @@ public class MaterialsController : Controller
             TempData["Error"] = "Seleziona un file da caricare.";
             return RedirectToAction(nameof(Details), new { id });
         }
-        await SaveVersionAsync(id, file, notes);
+        try
+        {
+            await SaveVersionAsync(id, file, notes);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "SaveVersionAsync fallita in UploadVersion per materialId={Id} file={File}", id, file.FileName);
+            TempData["Error"] = $"Errore nel salvataggio del file: {ex.Message}";
+            return RedirectToAction(nameof(Details), new { id });
+        }
         TempData["Success"] = "Nuova versione caricata.";
         return RedirectToAction(nameof(Details), new { id });
     }
