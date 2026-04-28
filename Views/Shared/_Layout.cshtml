@@ -4,6 +4,8 @@
 @{
     var coursesEnabled = await _features.IsCoursesEnabledAsync();
     var _menuRoleName = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    var canSeeMaterials = User.Identity?.IsAuthenticated == true
+        && (User.IsInRole("Admin") || await _menuPerms.HasMenuPermissionAsync(_menuRoleName, "menu.materials"));
     var canSeeUsers = User.Identity?.IsAuthenticated == true
         && (User.IsInRole("Admin") || await _menuPerms.HasMenuPermissionAsync(_menuRoleName, "menu.users"));
     var canSeeTranslations = User.Identity?.IsAuthenticated == true
@@ -49,11 +51,14 @@
                             </a>
                         </li>
                     }
-                    <li class="nav-item">
-                        <a class="nav-link" asp-controller="Materials" asp-action="Index">
-                            <i class="bi bi-collection me-1"></i>@T["mat.nav","Materials"]
-                        </a>
-                    </li>
+                    @if (canSeeMaterials)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Materials" asp-action="Index">
+                                <i class="bi bi-collection me-1"></i>@T["mat.nav","Materials"]
+                            </a>
+                        </li>
+                    }
                     @if (canSeeUsers)
                     {
                         <li class="nav-item">

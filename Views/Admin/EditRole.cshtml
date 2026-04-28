@@ -4,9 +4,11 @@
     ViewData["Title"] = T["admin.edit_role","Edit role"];
     bool coursesEnabled = ViewBag.CoursesEnabled == true;
 
-    var materialPerms = RolePermissionRepository.AllPermissions.Where(p => !p.CoursesOnly && !p.MenuOnly).ToList();
-    var coursePerms   = RolePermissionRepository.AllPermissions.Where(p => p.CoursesOnly).ToList();
-    var menuPerms     = RolePermissionRepository.AllPermissions.Where(p => p.MenuOnly).ToList();
+    var coursePerms = RolePermissionRepository.AllPermissions.Where(p => p.CoursesOnly).ToList();
+    var menuPerms   = RolePermissionRepository.AllPermissions.Where(p => p.MenuOnly && p.Key != "menu.materials"
+                                                                                     && !p.Key.StartsWith("materials.")).ToList();
+    var matOpPerms  = RolePermissionRepository.AllPermissions.Where(p => p.Key.StartsWith("materials.")).ToList();
+    bool matMenuChecked = Model.Permissions.Contains("menu.materials");
 }
 
 <div class="row justify-content-center">
@@ -19,8 +21,6 @@
                 <i class="bi bi-arrow-left me-1"></i>@T["admin.roles_tab","Roles"]
             </a>
         </div>
-
-
 
         <form asp-action="EditRole" method="post">
             @Html.AntiForgeryToken()
@@ -41,27 +41,6 @@
                     </label>
                     <input asp-for="Name" class="form-control" maxlength="50" autocomplete="off" />
                     <span asp-validation-for="Name" class="text-danger small"></span>
-                </div>
-            </div>
-
-            @* ── Permessi Materiali ─────────────────────────────── *@
-            <div class="card shadow-sm mb-3">
-                <div class="card-header bg-white fw-semibold py-3">
-                    <i class="bi bi-collection me-2 text-bocconi"></i>@T["nav.materials","Materials"]
-                </div>
-                <div class="card-body">
-                    @foreach (var p in materialPerms)
-                    {
-                        <div class="form-check mb-2">
-                            <input class="form-check-input" type="checkbox"
-                                   name="permissions" value="@p.Key"
-                                   id="perm_@p.Key.Replace('.','_')"
-                                   @(Model.Permissions.Contains(p.Key) ? "checked" : "") />
-                            <label class="form-check-label" for="perm_@p.Key.Replace('.','_')">
-                                @T[p.TranslationKey, p.Key]
-                            </label>
-                        </div>
-                    }
                 </div>
             </div>
 
@@ -95,7 +74,40 @@
                     <i class="bi bi-layout-text-sidebar me-2 text-bocconi"></i>@T["perm.menu_access","Accesso Menu"]
                 </div>
                 <div class="card-body">
-                    <div class="form-text mb-2">@T["perm.menu_access_hint","Consente agli utenti con questo ruolo di accedere alle seguenti sezioni del pannello."]</div>
+                    <div class="form-text mb-3">@T["perm.menu_access_hint","Consente agli utenti con questo ruolo di accedere alle seguenti sezioni del pannello."]</div>
+
+                    @* ── Materials toggle + sub-opzioni ───────────── *@
+                    <div class="form-check mb-1">
+                        <input class="form-check-input" type="checkbox"
+                               name="permissions" value="menu.materials"
+                               id="perm_menu_materials"
+                               @(matMenuChecked ? "checked" : "")
+                               onchange="toggleMatOps(this.checked)" />
+                        <label class="form-check-label fw-semibold" for="perm_menu_materials">
+                            <i class="bi bi-collection me-1 text-bocconi"></i>@T["perm.menu_materials","Materiali — accesso sezione"]
+                        </label>
+                    </div>
+
+                    @* Sub-opzioni operazioni Materials *@
+                    <div id="matOpsGroup"
+                         class="ps-4 border-start border-2 border-bocconi ms-2 mb-3 @(matMenuChecked ? "" : "d-none")">
+                        <div class="form-text mb-2">@T["perm.mat_ops_hint","Operazioni consentite sui materiali:"]</div>
+                        @foreach (var p in matOpPerms)
+                        {
+                            <div class="form-check mb-2">
+                                <input class="form-check-input mat-op-check" type="checkbox"
+                                       name="permissions" value="@p.Key"
+                                       id="perm_@p.Key.Replace('.','_')"
+                                       @(Model.Permissions.Contains(p.Key) ? "checked" : "")
+                                       @(matMenuChecked ? "" : "disabled") />
+                                <label class="form-check-label" for="perm_@p.Key.Replace('.','_')">
+                                    @T[p.TranslationKey, p.Key]
+                                </label>
+                            </div>
+                        }
+                    </div>
+
+                    @* Altri permessi menu (Utenti, Dictionary…) *@
                     @foreach (var p in menuPerms)
                     {
                         <div class="form-check mb-2">
@@ -122,3 +134,19 @@
         </form>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        function toggleMatOps(enabled) {
+            var group = document.getElementById('matOpsGroup');
+            var checks = group.querySelectorAll('.mat-op-check');
+            if (enabled) {
+                group.classList.remove('d-none');
+                checks.forEach(function(c) { c.disabled = false; });
+            } else {
+                group.classList.add('d-none');
+                checks.forEach(function(c) { c.disabled = true; c.checked = false; });
+            }
+        }
+    </script>
+}

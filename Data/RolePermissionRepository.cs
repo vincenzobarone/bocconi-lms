@@ -9,11 +9,12 @@ public class RolePermissionRepository
 
     public static readonly (string Key, string TranslationKey, bool CoursesOnly, bool MenuOnly)[] AllPermissions =
     {
-        ("materials.create",    "perm.materials_create",    false, false),
-        ("materials.edit",      "perm.materials_edit",      false, false),
-        ("materials.approve",   "perm.materials_approve",   false, false),
         ("courses.teach",       "perm.courses_teach",       true,  false),
         ("courses.enroll",      "perm.courses_enroll",      true,  false),
+        ("menu.materials",      "perm.menu_materials",      false, true),
+        ("materials.create",    "perm.materials_create",    false, true),
+        ("materials.edit",      "perm.materials_edit",      false, true),
+        ("materials.approve",   "perm.materials_approve",   false, true),
         ("menu.users",          "perm.menu_users",          false, true),
         ("menu.translations",   "perm.menu_translations",   false, true),
     };

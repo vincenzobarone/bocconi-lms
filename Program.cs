@@ -1074,8 +1074,31 @@ try
         ('en','perm.menu_translations','Dictionary — section access'),
         ('it','perm.menu_translations','Dictionary — accesso sezione'),
         ('es','perm.menu_translations','Dictionary — acceso a sección'),
-        ('de','perm.menu_translations','Dictionary — Bereichszugang');", conn);
+        ('de','perm.menu_translations','Dictionary — Bereichszugang'),
+        ('en','perm.menu_materials','Materials — section access'),
+        ('it','perm.menu_materials','Materiali — accesso sezione'),
+        ('es','perm.menu_materials','Materiales — acceso a sección'),
+        ('de','perm.menu_materials','Materialien — Bereichszugang'),
+        ('en','perm.mat_ops_hint','Allowed operations on materials:'),
+        ('it','perm.mat_ops_hint','Operazioni consentite sui materiali:'),
+        ('es','perm.mat_ops_hint','Operaciones permitidas en materiales:'),
+        ('de','perm.mat_ops_hint','Erlaubte Vorgänge für Materialien:');", conn);
     await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Migrate: ruoli con permessi materials.* ricevono automaticamente menu.materials ──
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var mig = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO role_permissions (role_id, permission_key)
+        SELECT DISTINCT role_id, 'menu.materials'
+        FROM role_permissions
+        WHERE permission_key IN ('materials.create','materials.edit','materials.approve')", conn);
+    await mig.ExecuteNonQueryAsync();
 }
 catch { }
 
