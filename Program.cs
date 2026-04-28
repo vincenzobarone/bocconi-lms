@@ -619,6 +619,71 @@ try
 }
 catch { }
 
+// ── Migrate: create material_folders table ────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ddl = new MySqlConnector.MySqlCommand(@"
+        CREATE TABLE IF NOT EXISTS material_folders (
+            id         INT AUTO_INCREMENT PRIMARY KEY,
+            name       VARCHAR(255) NOT NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uk_name (name)
+        ) ENGINE=InnoDB;", conn);
+    await ddl.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Migrate: add folder_id column to materials ────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var chk = new MySqlConnector.MySqlCommand(@"
+        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME   = 'materials'
+          AND COLUMN_NAME  = 'folder_id'", conn);
+    if (Convert.ToInt32(await chk.ExecuteScalarAsync()) == 0)
+    {
+        using var ddl = new MySqlConnector.MySqlCommand(@"
+            ALTER TABLE materials
+            ADD COLUMN folder_id INT NULL,
+            ADD CONSTRAINT fk_material_folder
+                FOREIGN KEY (folder_id) REFERENCES material_folders(id) ON DELETE SET NULL;", conn);
+        await ddl.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
+// ── Migrate: change protocol_number from VARCHAR to INT NULL ──────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var chk = new MySqlConnector.MySqlCommand(@"
+        SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME   = 'materials'
+          AND COLUMN_NAME  = 'protocol_number'", conn);
+    var dtype = await chk.ExecuteScalarAsync() as string;
+    if (dtype != null && dtype.ToLower() != "int")
+    {
+        // NULL out non-numeric values before type change
+        using var clr = new MySqlConnector.MySqlCommand(
+            "UPDATE materials SET protocol_number = NULL WHERE protocol_number REGEXP '[^0-9]' OR protocol_number = '';", conn);
+        await clr.ExecuteNonQueryAsync();
+        using var alter = new MySqlConnector.MySqlCommand(
+            "ALTER TABLE materials MODIFY COLUMN protocol_number INT NULL;", conn);
+        await alter.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
 // ── Seed material author + convert_to_pdf translation keys ────────────────
 try
 {

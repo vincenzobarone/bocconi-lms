@@ -8,6 +8,13 @@ public class DocumentType
     public int MaterialCount { get; set; }
 }
 
+public class MaterialFolder
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public DateTime CreatedAt { get; set; }
+}
+
 public class Material
 {
     public int Id { get; set; }
@@ -20,8 +27,9 @@ public class Material
     public string DocumentTypeName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public string Status { get; set; } = "bozza";
-    public string? ProtocolNumber { get; set; }
-    public string? Folder { get; set; }
+    public int? ProtocolNumber { get; set; }
+    public int? FolderId { get; set; }
+    public string FolderName { get; set; } = string.Empty;
 
     public int? AreaId { get; set; }
     public string AreaName { get; set; } = string.Empty;
@@ -37,6 +45,20 @@ public class Material
     ];
 
     public static readonly string[] Statuses = ["bozza", "in_revisione", "verificato"];
+
+    public static string LangPrefix(string language) => language switch
+    {
+        "Italiano"   => "IT",
+        "Inglese"    => "EN",
+        "Francese"   => "FR",
+        "Tedesco"    => "DE",
+        "Spagnolo"   => "ES",
+        "Russo"      => "RU",
+        "Cinese"     => "ZH",
+        "Arabo"      => "AR",
+        "Portoghese" => "PT",
+        _            => "XX"
+    };
 }
 
 public class MaterialVersion

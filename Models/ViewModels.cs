@@ -251,12 +251,14 @@ public class MaterialFormViewModel
 
     public bool ConvertToPdf { get; set; }
 
-    [MaxLength(255)]
-    public string? Folder { get; set; }
-
     public int? AreaId { get; set; }
 
     public DateTime? CatalogationDate { get; set; }
+
+    // ── Verified fields (set via modal) ──────────────────────────────────
+    public int? FolderId { get; set; }
+    [MaxLength(255)]
+    public string? FolderName { get; set; }
 }
 
 public class DocumentTypeFormViewModel

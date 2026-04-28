@@ -44,10 +44,31 @@ public class MaterialsController : Controller
         ViewBag.Languages       = Material.Languages;
         ViewBag.AvailableOwners = await _users.GetTeachersAndAdminsAsync();
         ViewBag.ExistingAuthors = await _materials.GetDistinctAuthorsAsync();
+        ViewBag.ExistingFolders = await _materials.GetAllFoldersAsync();
         // Areas: Admin sees all, Teacher sees only their assigned areas
         ViewBag.AvailableAreas = User.IsInRole("Admin")
             ? await _areas.GetAllAsync()
             : await _areas.GetUserAreasAsync(CurrentUserId());
+    }
+
+    // ── AJAX: next protocol number ─────────────────────────────────────────
+
+    [Authorize(Roles = "Teacher,Admin")]
+    [HttpGet]
+    public async Task<IActionResult> NextProtocol()
+    {
+        var next = await _materials.GetNextProtocolNumberAsync();
+        return Json(new { protocol = next });
+    }
+
+    // ── AJAX: list existing folders ────────────────────────────────────────
+
+    [Authorize(Roles = "Teacher,Admin")]
+    [HttpGet]
+    public async Task<IActionResult> Folders()
+    {
+        var folders = await _materials.GetAllFoldersAsync();
+        return Json(folders.Select(f => new { f.Id, f.Name }));
     }
 
     private string? CurrentUserFullName() =>
@@ -168,7 +189,19 @@ public class MaterialsController : Controller
             return View(vm);
         }
 
-        var matId = await _materials.CreateAsync(vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, vm.Folder, vm.AreaId, vm.CatalogationDate);
+        // Resolve folder and assign protocol when status = verificato
+        int? resolvedFolderId = null;
+        int? assignedProtocol = null;
+        if (vm.Status == "verificato")
+        {
+            if (vm.FolderId.HasValue)
+                resolvedFolderId = vm.FolderId;
+            else if (!string.IsNullOrWhiteSpace(vm.FolderName))
+                resolvedFolderId = await _materials.GetOrCreateFolderAsync(vm.FolderName);
+            assignedProtocol = await _materials.GetNextProtocolNumberAsync();
+        }
+
+        var matId = await _materials.CreateAsync(vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, assignedProtocol);
 
         if (vm.File != null && vm.File.Length > 0)
         {
@@ -206,7 +239,8 @@ public class MaterialsController : Controller
             Language         = material.Language,
             DocumentTypeId   = material.DocumentTypeId,
             Status           = material.Status,
-            Folder           = material.Folder,
+            FolderId         = material.FolderId,
+            FolderName       = material.FolderName,
             AreaId           = material.AreaId,
             CatalogationDate = material.CatalogationDate
         };
@@ -247,7 +281,22 @@ public class MaterialsController : Controller
             return View(vm);
         }
 
-        await _materials.UpdateAsync(id, vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, vm.Folder, vm.AreaId, vm.CatalogationDate);
+        // Resolve folder and assign protocol if transitioning to verificato without them
+        int? resolvedFolderId = null;
+        int? assignedProtocol = null;
+        if (vm.Status == "verificato")
+        {
+            var existing = await _materials.GetByIdAsync(id);
+            if (vm.FolderId.HasValue)
+                resolvedFolderId = vm.FolderId;
+            else if (!string.IsNullOrWhiteSpace(vm.FolderName))
+                resolvedFolderId = await _materials.GetOrCreateFolderAsync(vm.FolderName);
+
+            if (existing?.ProtocolNumber == null)
+                assignedProtocol = await _materials.GetNextProtocolNumberAsync();
+        }
+
+        await _materials.UpdateAsync(id, vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, assignedProtocol);
 
         if (vm.File != null && vm.File.Length > 0)
         {

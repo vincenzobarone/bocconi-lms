@@ -7,6 +7,7 @@
     var existingAuthors = ViewBag.ExistingAuthors as List<string> ?? new();
     var currentOwnerName = ViewBag.CurrentUserFullName as string ?? "";
     var availableAreas = ViewBag.AvailableAreas as List<BocconiLMS.Models.Area> ?? new();
+    var existingFolders = ViewBag.ExistingFolders as List<BocconiLMS.Models.MaterialFolder> ?? new();
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -23,8 +24,11 @@
                 <h5 class="mb-0"><i class="bi bi-file-earmark-plus me-2"></i>@T["mat.create_title","New material"]</h5>
             </div>
             <div class="card-body">
-                <form asp-action="Create" method="post" enctype="multipart/form-data">
+                <form id="matForm" asp-action="Create" method="post" enctype="multipart/form-data"
+                      data-has-protocol="false" data-has-folder="false">
                     @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="FolderId" id="hidFolderId" />
+                    <input type="hidden" asp-for="FolderName" id="hidFolderName" />
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" id="valSummary"></div>
 
                     <div class="row mb-3 g-2 align-items-start">
@@ -72,7 +76,7 @@
                             <label asp-for="Language" class="form-label fw-semibold">
                                 @T["mat.label_language","Language"] <span class="text-danger">*</span>
                             </label>
-                            <select asp-for="Language" class="form-select">
+                            <select asp-for="Language" id="langSelect" class="form-select">
                                 @foreach (var l in languages)
                                 {
                                     <option value="@l">@l</option>
@@ -111,22 +115,6 @@
                             </div>
                         </div>
                     }
-
-                    <div id="verifiedFields" class="@(Model.Status == "verificato" ? "" : "d-none")">
-                        <div class="card border-success mb-3">
-                            <div class="card-header bg-success bg-opacity-10 text-success fw-semibold py-2">
-                                <i class="bi bi-shield-check me-1"></i>@T["mat.verified_fields","Campi verifica"]
-                            </div>
-                            <div class="card-body">
-                                <div class="mb-2">
-                                    <label asp-for="Folder" class="form-label fw-semibold">@T["mat.label_folder","Cartella"]</label>
-                                    <input asp-for="Folder" class="form-control"
-                                           placeholder="@T["mat.label_folder","Cartella"]" />
-                                    <div class="form-text">@T["mat.folder_hint","Cartella di archiviazione per i materiali verificati."]</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <hr />
                     <h6 class="mb-3">
@@ -169,7 +157,7 @@
                         <a asp-action="Index" class="btn btn-outline-secondary">
                             <i class="bi bi-x me-1"></i>@T["mat.cancel","Cancel"]
                         </a>
-                        <button type="submit" class="btn btn-bocconi">
+                        <button type="button" id="submitBtn" class="btn btn-bocconi">
                             <i class="bi bi-check-lg me-1"></i>@T["mat.create_btn","Create material"]
                         </button>
                     </div>
@@ -178,6 +166,55 @@
         </div>
     </div>
 </div>
+
+@* ── Verified-fields modal ──────────────────────────────────────────────── *@
+<div class="modal fade" id="verifiedModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success bg-opacity-10 border-success">
+                <h5 class="modal-title text-success">
+                    <i class="bi bi-shield-check me-2"></i>@T["mat.verified_modal_title","Verifica completata"]
+                </h5>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">@T["mat.verified_modal_hint","Completa i dati di registrazione prima di salvare come Verificato."]</p>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-hash me-1"></i>@T["mat.protocol_number","Numero di protocollo"]
+                    </label>
+                    <input type="text" id="modalProtocol" class="form-control" readonly
+                           placeholder="…" />
+                    <div class="form-text">@T["mat.protocol_auto","Assegnato automaticamente — sola lettura"]</div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-folder2 me-1"></i>@T["mat.label_folder","Cartella"] <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="modalFolderInput" list="folderDatalist"
+                           class="form-control"
+                           placeholder="@T["mat.folder_placeholder","Digita o seleziona una cartella…"]"
+                           autocomplete="off" />
+                    <datalist id="folderDatalist"></datalist>
+                    <div class="form-text">@T["mat.folder_hint","Raggruppamento logico del documento. Inizia con il prefisso della lingua (es. IT, EN)."]</div>
+                    <div id="folderError" class="text-danger small d-none">@T["mat.folder_required","Inserisci il nome della cartella."]</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="modalCancelBtn">
+                    @T["common.cancel","Cancel"]
+                </button>
+                <button type="button" class="btn btn-success" id="modalConfirmBtn">
+                    <i class="bi bi-check-lg me-1"></i>@T["mat.modal_confirm","Conferma e salva"]
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* Hidden datalist mapping: folder id → name for client-side lookup *@
+<div id="folderMap" data-folders="@System.Text.Json.JsonSerializer.Serialize(existingFolders.Select(f => new { f.Id, f.Name }))"></div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
@@ -189,21 +226,113 @@
                 summary.classList.remove('d-none');
         })();
 
-        // ── Status → verified fields ──────────────────────────────────────
-        (function () {
-            var statusSel = document.getElementById('statusSelect');
-            var panel = document.getElementById('verifiedFields');
-            if (!statusSel || !panel) return;
-            function toggle() {
-                panel.classList.toggle('d-none', statusSel.value !== 'verificato');
-            }
-            statusSel.addEventListener('change', toggle);
-        })();
-
         var OFFICE_EXTS = ['doc','docx','ppt','pptx'];
         var ZIP_EXTS    = ['docx','pptx','xlsx'];
 
-        // Extract dc:creator from Office Open XML (docx/pptx/xlsx) client-side
+        // Language → prefix map
+        var LANG_PREFIX = {
+            'Italiano':'IT','Inglese':'EN','Francese':'FR','Tedesco':'DE',
+            'Spagnolo':'ES','Russo':'RU','Cinese':'ZH','Arabo':'AR',
+            'Portoghese':'PT','Altro':'XX'
+        };
+
+        // ── Verified modal logic ───────────────────────────────────────────
+        var verifiedModal = new bootstrap.Modal(document.getElementById('verifiedModal'));
+        var folderMap = [];
+        try { folderMap = JSON.parse(document.getElementById('folderMap').dataset.folders); } catch(e){}
+
+        function langPrefix() {
+            var lang = document.getElementById('langSelect').value;
+            return LANG_PREFIX[lang] || 'XX';
+        }
+
+        function needsModal() {
+            // On create: always show modal when status = verificato
+            return document.getElementById('statusSelect').value === 'verificato';
+        }
+
+        async function openVerifiedModal() {
+            // Load next protocol
+            try {
+                var resp = await fetch('@Url.Action("NextProtocol","Materials")', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+                var data = await resp.json();
+                document.getElementById('modalProtocol').value = data.protocol;
+            } catch(e) { document.getElementById('modalProtocol').value = '—'; }
+
+            // Populate datalist with existing folders
+            var dl = document.getElementById('folderDatalist');
+            dl.innerHTML = '';
+            folderMap.forEach(function(f) {
+                var opt = document.createElement('option');
+                opt.value = f.Name;
+                opt.dataset.id = f.Id;
+                dl.appendChild(opt);
+            });
+
+            // Pre-fill folder input with language prefix
+            var inp = document.getElementById('modalFolderInput');
+            var prefix = langPrefix() + ' - ';
+            if (!inp.value || inp.value === inp.dataset.lastPrefix) {
+                inp.value = prefix;
+            }
+            inp.dataset.lastPrefix = prefix;
+
+            document.getElementById('folderError').classList.add('d-none');
+            verifiedModal.show();
+            setTimeout(function() {
+                inp.focus();
+                inp.setSelectionRange(inp.value.length, inp.value.length);
+            }, 300);
+        }
+
+        document.getElementById('submitBtn').addEventListener('click', async function() {
+            // Run standard HTML5 validation first
+            var form = document.getElementById('matForm');
+            if (!form.reportValidity || !form.reportValidity()) return;
+
+            if (needsModal()) {
+                await openVerifiedModal();
+            } else {
+                // Clear verified fields and submit
+                document.getElementById('hidFolderId').value = '';
+                document.getElementById('hidFolderName').value = '';
+                form.submit();
+            }
+        });
+
+        document.getElementById('modalConfirmBtn').addEventListener('click', function() {
+            var folderInput = document.getElementById('modalFolderInput');
+            var folderValue = folderInput.value.trim();
+
+            if (!folderValue) {
+                document.getElementById('folderError').classList.remove('d-none');
+                return;
+            }
+
+            // Check if it matches an existing folder name → populate FolderId
+            var matched = folderMap.find(function(f) {
+                return f.Name.toLowerCase() === folderValue.toLowerCase();
+            });
+            if (matched) {
+                document.getElementById('hidFolderId').value = matched.Id;
+                document.getElementById('hidFolderName').value = '';
+            } else {
+                document.getElementById('hidFolderId').value = '';
+                document.getElementById('hidFolderName').value = folderValue;
+            }
+
+            verifiedModal.hide();
+            document.getElementById('matForm').submit();
+        });
+
+        document.getElementById('modalCancelBtn').addEventListener('click', function() {
+            // Revert status to previous non-verified value
+            var sel = document.getElementById('statusSelect');
+            sel.value = 'in_revisione';
+            verifiedModal.hide();
+        });
+
+        // ── File input handling ───────────────────────────────────────────
         function extractOfficeAuthor(file) {
             if (typeof JSZip === 'undefined') return Promise.resolve(null);
             return JSZip.loadAsync(file).then(function (zip) {
@@ -234,12 +363,10 @@
             var ext       = file.name.split('.').pop().toLowerCase();
             var nameNoExt = file.name.replace(/\.[^.]+$/, '');
 
-            // Auto-fill title from filename if empty
             if (titleInp && titleInp.value.trim() === '') {
                 titleInp.value = nameNoExt;
             }
 
-            // Show/hide PDF conversion checkbox
             if (OFFICE_EXTS.indexOf(ext) !== -1) {
                 if (pdfBox) pdfBox.classList.remove('d-none');
             } else {
@@ -248,7 +375,6 @@
                 if (cb) cb.checked = false;
             }
 
-            // Auto-fill author from Office document metadata
             if (authorInp && authorInp.value.trim() === '' && ZIP_EXTS.indexOf(ext) !== -1) {
                 extractOfficeAuthor(file).then(function (author) {
                     if (author && authorInp.value.trim() === '') {

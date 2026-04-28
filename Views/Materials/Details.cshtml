@@ -183,7 +183,7 @@
                     {
                         <dt class="col-5 text-muted">@T["mat.col_protocol","Protocollo"]</dt>
                         <dd class="col-7">
-                            @if (!string.IsNullOrEmpty(Model.ProtocolNumber))
+                            @if (Model.ProtocolNumber.HasValue)
                             {
                                 <code class="text-success fw-semibold">@Model.ProtocolNumber</code>
                             }
@@ -194,9 +194,9 @@
                         </dd>
                         <dt class="col-5 text-muted">@T["mat.label_folder","Cartella"]</dt>
                         <dd class="col-7">
-                            @if (!string.IsNullOrEmpty(Model.Folder))
+                            @if (!string.IsNullOrEmpty(Model.FolderName))
                             {
-                                <span>@Model.Folder</span>
+                                <span>@Model.FolderName</span>
                             }
                             else
                             {

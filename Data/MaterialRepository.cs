@@ -9,6 +9,57 @@ public class MaterialRepository
 
     public MaterialRepository(DbHelper db) => _db = db;
 
+    // ── Folders ───────────────────────────────────────────────────────────
+
+    public async Task<List<MaterialFolder>> GetAllFoldersAsync()
+    {
+        var list = new List<MaterialFolder>();
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT id, name, created_at FROM material_folders ORDER BY name", conn);
+        using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
+            list.Add(new MaterialFolder
+            {
+                Id        = r.GetInt32("id"),
+                Name      = r.GetString("name"),
+                CreatedAt = r.GetDateTime("created_at")
+            });
+        return list;
+    }
+
+    public async Task<int> GetOrCreateFolderAsync(string name)
+    {
+        name = name.Trim();
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+
+        using var find = new MySqlCommand(
+            "SELECT id FROM material_folders WHERE name = @name COLLATE utf8mb4_unicode_ci", conn);
+        find.Parameters.AddWithValue("@name", name);
+        var existing = await find.ExecuteScalarAsync();
+        if (existing != null && existing != DBNull.Value)
+            return Convert.ToInt32(existing);
+
+        using var ins = new MySqlCommand(
+            "INSERT INTO material_folders (name) VALUES (@name)", conn);
+        ins.Parameters.AddWithValue("@name", name);
+        await ins.ExecuteNonQueryAsync();
+        return await DbHelper.GetLastInsertIdAsync(conn);
+    }
+
+    // ── Protocol ──────────────────────────────────────────────────────────
+
+    public async Task<int> GetNextProtocolNumberAsync()
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT COALESCE(MAX(protocol_number), 0) + 1 FROM materials", conn);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
     // ── Core CRUD ────────────────────────────────────────────────────────
 
     public async Task<List<Material>> GetAllAsync(
@@ -29,7 +80,8 @@ public class MaterialRepository
 
         var sql = $@"
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
-                   m.status, m.protocol_number, m.folder, m.area_id, m.catalogation_date,
+                   m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
+                   m.area_id, m.catalogation_date,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
@@ -40,6 +92,7 @@ public class MaterialRepository
             LEFT JOIN users u ON u.id = m.owner_id
             LEFT JOIN document_types dt ON dt.id = m.document_type_id
             LEFT JOIN areas a ON a.id = m.area_id
+            LEFT JOIN material_folders mf ON mf.id = m.folder_id
             LEFT JOIN material_versions mv ON mv.material_id = m.id AND mv.is_active = 1
             {(where.Count > 0 ? "WHERE " + string.Join(" AND ", where) : "")}
             ORDER BY m.title";
@@ -64,7 +117,8 @@ public class MaterialRepository
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
-                   m.status, m.protocol_number, m.folder, m.area_id, m.catalogation_date,
+                   m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
+                   m.area_id, m.catalogation_date,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
@@ -75,6 +129,7 @@ public class MaterialRepository
             LEFT JOIN users u ON u.id = m.owner_id
             LEFT JOIN document_types dt ON dt.id = m.document_type_id
             LEFT JOIN areas a ON a.id = m.area_id
+            LEFT JOIN material_folders mf ON mf.id = m.folder_id
             LEFT JOIN material_versions mv ON mv.material_id = m.id AND mv.is_active = 1
             WHERE m.id = @id", conn);
         cmd.Parameters.AddWithValue("@id", id);
@@ -93,56 +148,56 @@ public class MaterialRepository
         return Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
     }
 
-    public async Task<int> CreateAsync(string title, string? authorName, int? ownerId, string language, int? documentTypeId, string status = "bozza", string? folder = null, int? areaId = null, DateTime? catalogationDate = null)
+    public async Task<int> CreateAsync(
+        string title, string? authorName, int? ownerId, string language,
+        int? documentTypeId, string status = "bozza",
+        int? folderId = null, int? areaId = null, DateTime? catalogationDate = null,
+        int? protocolNumber = null)
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            INSERT INTO materials (title, author_name, owner_id, language, document_type_id, status, folder, area_id, catalogation_date)
-            VALUES (@title, @authorName, @ownerId, @lang, @typeId, @status, @folder, @areaId, @catDate)", conn);
+            INSERT INTO materials
+                (title, author_name, owner_id, language, document_type_id,
+                 status, folder_id, area_id, catalogation_date, protocol_number)
+            VALUES
+                (@title, @authorName, @ownerId, @lang, @typeId,
+                 @status, @folderId, @areaId, @catDate, @proto)", conn);
         cmd.Parameters.AddWithValue("@title", title.Trim());
         cmd.Parameters.AddWithValue("@authorName", (object?)authorName?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@ownerId", (object?)ownerId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@lang", language);
         cmd.Parameters.AddWithValue("@typeId", (object?)documentTypeId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@status", status);
-        cmd.Parameters.AddWithValue("@folder", (object?)folder?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@folderId", (object?)folderId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@areaId", (object?)areaId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@catDate", (object?)catalogationDate ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@proto", (object?)protocolNumber ?? DBNull.Value);
         await cmd.ExecuteNonQueryAsync();
         return await DbHelper.GetLastInsertIdAsync(conn);
     }
 
-    public async Task UpdateAsync(int id, string title, string? authorName, int? ownerId, string language, int? documentTypeId, string status, string? folder = null, int? areaId = null, DateTime? catalogationDate = null)
+    public async Task UpdateAsync(
+        int id, string title, string? authorName, int? ownerId, string language,
+        int? documentTypeId, string status,
+        int? folderId = null, int? areaId = null, DateTime? catalogationDate = null,
+        int? protocolNumber = null)
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
 
-        string? newProtocolNumber = null;
-        if (status == "verificato")
-        {
-            using var checkCmd = new MySqlCommand(
-                "SELECT protocol_number FROM materials WHERE id = @id", conn);
-            checkCmd.Parameters.AddWithValue("@id", id);
-            var existing = await checkCmd.ExecuteScalarAsync();
-            if (existing == DBNull.Value || existing == null)
-            {
-                var year = DateTime.Now.Year;
-                using var seqCmd = new MySqlCommand(
-                    "SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(protocol_number,'-',-1) AS UNSIGNED)),0)+1 " +
-                    "FROM materials WHERE protocol_number LIKE @pattern", conn);
-                seqCmd.Parameters.AddWithValue("@pattern", $"PROT-{year}-%");
-                var seq = Convert.ToInt32(await seqCmd.ExecuteScalarAsync());
-                newProtocolNumber = $"PROT-{year}-{seq:D4}";
-            }
-        }
-
         using var cmd = new MySqlCommand(@"
-            UPDATE materials SET title = @title, author_name = @authorName, owner_id = @ownerId,
-                language = @lang, document_type_id = @typeId,
-                status = @status, folder = @folder,
-                area_id = @areaId, catalogation_date = @catDate,
-                protocol_number = CASE
+            UPDATE materials SET
+                title            = @title,
+                author_name      = @authorName,
+                owner_id         = @ownerId,
+                language         = @lang,
+                document_type_id = @typeId,
+                status           = @status,
+                folder_id        = CASE WHEN @folderId IS NOT NULL THEN @folderId ELSE folder_id END,
+                area_id          = @areaId,
+                catalogation_date = @catDate,
+                protocol_number  = CASE
                     WHEN @proto IS NOT NULL THEN @proto
                     ELSE protocol_number
                 END
@@ -153,27 +208,12 @@ public class MaterialRepository
         cmd.Parameters.AddWithValue("@lang", language);
         cmd.Parameters.AddWithValue("@typeId", (object?)documentTypeId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@status", status);
-        cmd.Parameters.AddWithValue("@folder", (object?)folder?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@folderId", (object?)folderId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@areaId", (object?)areaId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@catDate", (object?)catalogationDate ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@proto", (object?)newProtocolNumber ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@proto", (object?)protocolNumber ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@id", id);
         await cmd.ExecuteNonQueryAsync();
-    }
-
-    public async Task<List<string>> GetDistinctAuthorsAsync()
-    {
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync();
-        using var cmd = new MySqlCommand(@"
-            SELECT DISTINCT author_name FROM materials
-            WHERE author_name IS NOT NULL AND author_name <> ''
-            ORDER BY author_name", conn);
-        var list = new List<string>();
-        using var r = await cmd.ExecuteReaderAsync();
-        while (await r.ReadAsync())
-            list.Add(r.GetString(0));
-        return list;
     }
 
     public async Task DeleteAsync(int id)
@@ -299,7 +339,8 @@ public class MaterialRepository
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
-                   m.status, m.protocol_number, m.folder, m.area_id, m.catalogation_date,
+                   m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
+                   m.area_id, m.catalogation_date,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
@@ -311,6 +352,7 @@ public class MaterialRepository
             LEFT JOIN users u ON u.id = m.owner_id
             LEFT JOIN document_types dt ON dt.id = m.document_type_id
             LEFT JOIN areas a ON a.id = m.area_id
+            LEFT JOIN material_folders mf ON mf.id = m.folder_id
             LEFT JOIN material_versions mv ON mv.material_id = m.id AND mv.is_active = 1
             WHERE lm.lesson_id = @lid
             ORDER BY m.title", conn);
@@ -352,7 +394,8 @@ public class MaterialRepository
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
-                   m.status, m.protocol_number, m.folder, m.area_id, m.catalogation_date,
+                   m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
+                   m.area_id, m.catalogation_date,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
@@ -363,6 +406,7 @@ public class MaterialRepository
             LEFT JOIN users u ON u.id = m.owner_id
             LEFT JOIN document_types dt ON dt.id = m.document_type_id
             LEFT JOIN areas a ON a.id = m.area_id
+            LEFT JOIN material_folders mf ON mf.id = m.folder_id
             LEFT JOIN material_versions mv ON mv.material_id = m.id AND mv.is_active = 1
             WHERE m.id NOT IN (
                 SELECT material_id FROM lesson_materials WHERE lesson_id = @lid
@@ -372,6 +416,22 @@ public class MaterialRepository
         using var r = await cmd.ExecuteReaderAsync();
         while (await r.ReadAsync())
             list.Add(MapWithVersion(r));
+        return list;
+    }
+
+    public async Task<List<string>> GetDistinctAuthorsAsync()
+    {
+        var list = new List<string>();
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            SELECT DISTINCT author_name
+            FROM materials
+            WHERE author_name IS NOT NULL AND author_name <> ''
+            ORDER BY author_name", conn);
+        using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
+            list.Add(r.GetString(0));
         return list;
     }
 
@@ -386,13 +446,14 @@ public class MaterialRepository
             AuthorName = r.IsDBNull(r.GetOrdinal("author_name")) ? null : r.GetString("author_name"),
             OwnerId = r.IsDBNull(r.GetOrdinal("owner_id")) ? null : r.GetInt32("owner_id"),
             OwnerName = r.IsDBNull(r.GetOrdinal("owner_name")) ? "" : r.GetString("owner_name"),
-            Folder = r.IsDBNull(r.GetOrdinal("folder")) ? null : r.GetString("folder"),
+            FolderId = r.IsDBNull(r.GetOrdinal("folder_id")) ? null : r.GetInt32("folder_id"),
+            FolderName = r.IsDBNull(r.GetOrdinal("folder_name")) ? "" : r.GetString("folder_name"),
             Language = r.GetString("language"),
             DocumentTypeId = r.IsDBNull(r.GetOrdinal("document_type_id")) ? null : r.GetInt32("document_type_id"),
             DocumentTypeName = r.IsDBNull(r.GetOrdinal("type_name")) ? "" : r.GetString("type_name"),
             CreatedAt = r.GetDateTime("created_at"),
             Status = r.IsDBNull(r.GetOrdinal("status")) ? "bozza" : r.GetString("status"),
-            ProtocolNumber = r.IsDBNull(r.GetOrdinal("protocol_number")) ? null : r.GetString("protocol_number"),
+            ProtocolNumber = r.IsDBNull(r.GetOrdinal("protocol_number")) ? null : r.GetInt32("protocol_number"),
             AreaId = r.IsDBNull(r.GetOrdinal("area_id")) ? null : r.GetInt32("area_id"),
             AreaName = r.IsDBNull(r.GetOrdinal("area_name")) ? "" : r.GetString("area_name"),
             CatalogationDate = r.IsDBNull(r.GetOrdinal("catalogation_date")) ? null : r.GetDateTime("catalogation_date"),

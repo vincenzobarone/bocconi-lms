@@ -7,6 +7,10 @@
     var owners = ViewBag.AvailableOwners as List<BocconiLMS.Models.User> ?? new();
     var existingAuthors = ViewBag.ExistingAuthors as List<string> ?? new();
     var availableAreas = ViewBag.AvailableAreas as List<BocconiLMS.Models.Area> ?? new();
+    var existingFolders = ViewBag.ExistingFolders as List<BocconiLMS.Models.MaterialFolder> ?? new();
+
+    bool hasProtocol = material?.ProtocolNumber != null;
+    bool hasFolder   = material?.FolderId != null;
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -27,9 +31,13 @@
                 <h5 class="mb-0"><i class="bi bi-pencil me-2"></i>@T["mat.edit_title","Edit material"]</h5>
             </div>
             <div class="card-body">
-                <form asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+                <form id="matForm" asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data"
+                      data-has-protocol="@hasProtocol.ToString().ToLower()"
+                      data-has-folder="@hasFolder.ToString().ToLower()">
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="OwnerId" />
+                    <input type="hidden" asp-for="FolderId" id="hidFolderId" />
+                    <input type="hidden" asp-for="FolderName" id="hidFolderName" />
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" id="valSummary"></div>
 
                     <div class="row mb-3 g-2 align-items-start">
@@ -76,7 +84,7 @@
                             <label asp-for="Language" class="form-label fw-semibold">
                                 @T["mat.label_language","Language"] <span class="text-danger">*</span>
                             </label>
-                            <select asp-for="Language" class="form-select">
+                            <select asp-for="Language" id="langSelect" class="form-select">
                                 @foreach (var l in languages)
                                 {
                                     <option value="@l" selected="@(Model.Language == l ? "selected" : null)">@l</option>
@@ -94,6 +102,34 @@
                             <option value="verificato"   selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato","Verified"]</option>
                         </select>
                     </div>
+
+                    @* Show current protocol/folder info if already set (read-only) *@
+                    @if (hasProtocol || hasFolder)
+                    {
+                        <div class="card border-success mb-3">
+                            <div class="card-header bg-success bg-opacity-10 text-success fw-semibold py-2">
+                                <i class="bi bi-shield-check me-1"></i>@T["mat.verified_fields","Dati verifica"]
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    @if (hasProtocol)
+                                    {
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">@T["mat.protocol_number","Numero di protocollo"]</label>
+                                            <input type="text" class="form-control" readonly value="@material!.ProtocolNumber" />
+                                        </div>
+                                    }
+                                    @if (hasFolder)
+                                    {
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">@T["mat.label_folder","Cartella"]</label>
+                                            <input type="text" class="form-control" readonly value="@material!.FolderName" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
 
                     @if (availableAreas.Any())
                     {
@@ -115,33 +151,6 @@
                             </div>
                         </div>
                     }
-
-                    <div id="verifiedFields" class="@(Model.Status == "verificato" ? "" : "d-none")">
-                        <div class="card border-success mb-3">
-                            <div class="card-header bg-success bg-opacity-10 text-success fw-semibold py-2">
-                                <i class="bi bi-shield-check me-1"></i>@T["mat.verified_fields","Campi verifica"]
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label asp-for="Folder" class="form-label fw-semibold">@T["mat.label_folder","Cartella"]</label>
-                                        <input asp-for="Folder" class="form-control"
-                                               placeholder="@T["mat.label_folder","Cartella"]" />
-                                        <div class="form-text">@T["mat.folder_hint","Cartella di archiviazione per i materiali verificati."]</div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label fw-semibold">@T["mat.protocol_number","Numero di protocollo"]</label>
-                                        <input type="text" class="form-control" readonly
-                                               value="@(material?.ProtocolNumber ?? "")"
-                                               placeholder="@T["mat.protocol_auto","Assegnato automaticamente alla verifica"]" />
-                                        <div class="form-text">
-                                            <i class="bi bi-shield-check me-1"></i>@T["mat.protocol_auto","Assegnato automaticamente alla verifica"]
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
 
                     <hr />
                     <h6 class="text-muted mb-3">
@@ -191,7 +200,7 @@
                         <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">
                             <i class="bi bi-x me-1"></i>@T["mat.cancel","Cancel"]
                         </a>
-                        <button type="submit" class="btn btn-bocconi">
+                        <button type="button" id="submitBtn" class="btn btn-bocconi">
                             <i class="bi bi-check-lg me-1"></i>@T["mat.save_btn","Save changes"]
                         </button>
                     </div>
@@ -200,6 +209,54 @@
         </div>
     </div>
 </div>
+
+@* ── Verified-fields modal ──────────────────────────────────────────────── *@
+<div class="modal fade" id="verifiedModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success bg-opacity-10 border-success">
+                <h5 class="modal-title text-success">
+                    <i class="bi bi-shield-check me-2"></i>@T["mat.verified_modal_title","Verifica completata"]
+                </h5>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted small mb-3">@T["mat.verified_modal_hint","Completa i dati di registrazione prima di salvare come Verificato."]</p>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-hash me-1"></i>@T["mat.protocol_number","Numero di protocollo"]
+                    </label>
+                    <input type="text" id="modalProtocol" class="form-control" readonly
+                           placeholder="…" />
+                    <div class="form-text">@T["mat.protocol_auto","Assegnato automaticamente — sola lettura"]</div>
+                </div>
+
+                <div class="mb-2">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-folder2 me-1"></i>@T["mat.label_folder","Cartella"] <span class="text-danger">*</span>
+                    </label>
+                    <input type="text" id="modalFolderInput" list="folderDatalist"
+                           class="form-control"
+                           placeholder="@T["mat.folder_placeholder","Digita o seleziona una cartella…"]"
+                           autocomplete="off" />
+                    <datalist id="folderDatalist"></datalist>
+                    <div class="form-text">@T["mat.folder_hint","Raggruppamento logico del documento. Inizia con il prefisso della lingua (es. IT, EN)."]</div>
+                    <div id="folderError" class="text-danger small d-none">@T["mat.folder_required","Inserisci il nome della cartella."]</div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" id="modalCancelBtn">
+                    @T["common.cancel","Cancel"]
+                </button>
+                <button type="button" class="btn btn-success" id="modalConfirmBtn">
+                    <i class="bi bi-check-lg me-1"></i>@T["mat.modal_confirm","Conferma e salva"]
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="folderMap" data-folders="@System.Text.Json.JsonSerializer.Serialize(existingFolders.Select(f => new { f.Id, f.Name }))"></div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
@@ -211,20 +268,109 @@
                 summary.classList.remove('d-none');
         })();
 
-        // ── Status → verified fields ──────────────────────────────────────
-        (function () {
-            var statusSel = document.getElementById('statusSelect');
-            var panel = document.getElementById('verifiedFields');
-            if (!statusSel || !panel) return;
-            function toggle() {
-                panel.classList.toggle('d-none', statusSel.value !== 'verificato');
-            }
-            statusSel.addEventListener('change', toggle);
-        })();
-
         var OFFICE_EXTS = ['doc','docx','ppt','pptx'];
         var ZIP_EXTS    = ['docx','pptx','xlsx'];
 
+        var LANG_PREFIX = {
+            'Italiano':'IT','Inglese':'EN','Francese':'FR','Tedesco':'DE',
+            'Spagnolo':'ES','Russo':'RU','Cinese':'ZH','Arabo':'AR',
+            'Portoghese':'PT','Altro':'XX'
+        };
+
+        // ── Verified modal logic ───────────────────────────────────────────
+        var verifiedModal = new bootstrap.Modal(document.getElementById('verifiedModal'));
+        var folderMap = [];
+        try { folderMap = JSON.parse(document.getElementById('folderMap').dataset.folders); } catch(e){}
+
+        var form = document.getElementById('matForm');
+        var hasProtocol = form.dataset.hasProtocol === 'true';
+        var hasFolder   = form.dataset.hasFolder === 'true';
+
+        function langPrefix() {
+            var lang = document.getElementById('langSelect').value;
+            return LANG_PREFIX[lang] || 'XX';
+        }
+
+        function needsModal() {
+            if (document.getElementById('statusSelect').value !== 'verificato') return false;
+            return !hasProtocol || !hasFolder;
+        }
+
+        async function openVerifiedModal() {
+            // Load next protocol
+            try {
+                var resp = await fetch('@Url.Action("NextProtocol","Materials")', {headers:{'X-Requested-With':'XMLHttpRequest'}});
+                var data = await resp.json();
+                document.getElementById('modalProtocol').value = data.protocol;
+            } catch(e) { document.getElementById('modalProtocol').value = '—'; }
+
+            // Populate datalist with existing folders
+            var dl = document.getElementById('folderDatalist');
+            dl.innerHTML = '';
+            folderMap.forEach(function(f) {
+                var opt = document.createElement('option');
+                opt.value = f.Name;
+                opt.dataset.id = f.Id;
+                dl.appendChild(opt);
+            });
+
+            // Pre-fill folder input with language prefix if not already set
+            var inp = document.getElementById('modalFolderInput');
+            var prefix = langPrefix() + ' - ';
+            if (!inp.value || inp.value === inp.dataset.lastPrefix) {
+                inp.value = prefix;
+            }
+            inp.dataset.lastPrefix = prefix;
+
+            document.getElementById('folderError').classList.add('d-none');
+            verifiedModal.show();
+            setTimeout(function() {
+                inp.focus();
+                inp.setSelectionRange(inp.value.length, inp.value.length);
+            }, 300);
+        }
+
+        document.getElementById('submitBtn').addEventListener('click', async function() {
+            if (!form.reportValidity || !form.reportValidity()) return;
+
+            if (needsModal()) {
+                await openVerifiedModal();
+            } else {
+                form.submit();
+            }
+        });
+
+        document.getElementById('modalConfirmBtn').addEventListener('click', function() {
+            var folderInput = document.getElementById('modalFolderInput');
+            var folderValue = folderInput.value.trim();
+
+            if (!folderValue) {
+                document.getElementById('folderError').classList.remove('d-none');
+                return;
+            }
+
+            var matched = folderMap.find(function(f) {
+                return f.Name.toLowerCase() === folderValue.toLowerCase();
+            });
+            if (matched) {
+                document.getElementById('hidFolderId').value = matched.Id;
+                document.getElementById('hidFolderName').value = '';
+            } else {
+                document.getElementById('hidFolderId').value = '';
+                document.getElementById('hidFolderName').value = folderValue;
+            }
+
+            verifiedModal.hide();
+            form.submit();
+        });
+
+        document.getElementById('modalCancelBtn').addEventListener('click', function() {
+            // Revert status to in_revisione
+            document.getElementById('statusSelect').value = 'in_revisione';
+            verifiedModal.hide();
+        });
+
+        // ── File input handling ───────────────────────────────────────────
         function extractOfficeAuthor(file) {
             if (typeof JSZip === 'undefined') return Promise.resolve(null);
             return JSZip.loadAsync(file).then(function (zip) {

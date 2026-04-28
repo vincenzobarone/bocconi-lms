@@ -249,19 +249,37 @@ INSERT IGNORE INTO document_types (name, sort_order) VALUES
 ('Traduzione autorizzata articoli e capitoli', 28),
 ('Traduzione autorizzata caso', 29);
 
+-- Cartelle per la libreria materiali
+CREATE TABLE IF NOT EXISTS material_folders (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(255) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_name (name)
+) ENGINE=InnoDB;
+
 -- Libreria materiali (repository centrale)
 CREATE TABLE IF NOT EXISTS materials (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
     title               VARCHAR(255) NOT NULL,
+    author_name         VARCHAR(255) NULL,
     owner_id            INT NULL,
     language            VARCHAR(50) NOT NULL DEFAULT 'Italiano',
     document_type_id    INT NULL,
+    status              VARCHAR(50) NOT NULL DEFAULT 'bozza',
+    protocol_number     INT NULL,
+    folder_id           INT NULL,
+    folder              VARCHAR(255) NULL,
+    area_id             INT NULL,
+    catalogation_date   DATE NULL,
     created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_title (title),
     FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE SET NULL,
     FOREIGN KEY (document_type_id) REFERENCES document_types(id) ON DELETE SET NULL,
-    INDEX idx_owner (owner_id),
-    INDEX idx_type  (document_type_id)
+    FOREIGN KEY (folder_id) REFERENCES material_folders(id) ON DELETE SET NULL,
+    INDEX idx_owner  (owner_id),
+    INDEX idx_type   (document_type_id),
+    INDEX idx_status (status),
+    INDEX idx_folder (folder_id)
 ) ENGINE=InnoDB;
 
 -- Versioni file dei materiali
