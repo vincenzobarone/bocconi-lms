@@ -611,7 +611,9 @@ public class AdminController : Controller
         role.NormalizedName = model.Name.ToUpperInvariant();
         await _roleManager.UpdateAsync(role);
         await _rolePerms.SetRolePermissionsAsync(role.Id, permissions ?? new());
-        TempData["Success"] = $"Ruolo aggiornato in '{model.Name}'.";
+        TempData["Success"] = string.Format(
+            _translationService.T("admin.role_updated", "Ruolo aggiornato in '{0}'."),
+            model.Name);
         return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }
 

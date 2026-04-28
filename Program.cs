@@ -1294,6 +1294,23 @@ try
 }
 catch { }
 
+// ── Fix: admin.role_updated translation key ───────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var upd = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
+            ('en','admin.role_updated','Role updated to ''{0}''.'),
+            ('it','admin.role_updated','Ruolo aggiornato in ''{0}''.'),
+            ('es','admin.role_updated','Rol actualizado a ''{0}''.'),
+            ('de','admin.role_updated','Rolle aktualisiert auf ''{0}''.')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
+    await upd.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Fix: admin.edit_role label (rename from "Edit role name" → "Edit role") ──
 try
 {
