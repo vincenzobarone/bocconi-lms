@@ -507,6 +507,28 @@ try
 }
 catch { }
 
+// ── Migrate: convert users.role from ENUM to VARCHAR(50) ─────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    // Check current column type; only alter if it's still ENUM
+    using var check = new MySqlConnector.MySqlCommand(@"
+        SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME = 'users'
+          AND COLUMN_NAME = 'role'", conn);
+    var dataType = (await check.ExecuteScalarAsync())?.ToString();
+    if (dataType?.Equals("enum", StringComparison.OrdinalIgnoreCase) == true)
+    {
+        using var alter = new MySqlConnector.MySqlCommand(
+            "ALTER TABLE users MODIFY COLUMN role VARCHAR(50) NOT NULL DEFAULT 'Student';", conn);
+        await alter.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
 // ── Migrate: create role_permissions table ────────────────────────────────
 try
 {
