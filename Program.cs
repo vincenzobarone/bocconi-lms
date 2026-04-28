@@ -30,6 +30,7 @@ builder.Services.AddScoped<TranslationRepository>();
 builder.Services.AddScoped<MaterialRepository>();
 builder.Services.AddScoped<DocumentTypeRepository>();
 builder.Services.AddScoped<AreaRepository>();
+builder.Services.AddScoped<RolePermissionRepository>();
 builder.Services.AddScoped<FeatureFlagService>();
 
 builder.Services.AddScoped<IUserStore<ApplicationUser>, CustomUserStore>();
@@ -503,6 +504,55 @@ try
         copy.Parameters.AddWithValue("@lang", lang);
         await copy.ExecuteNonQueryAsync();
     }
+}
+catch { }
+
+// ── Migrate: create role_permissions table ────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ddl = new MySqlConnector.MySqlCommand(@"
+        CREATE TABLE IF NOT EXISTS role_permissions (
+            role_id        INT NOT NULL,
+            permission_key VARCHAR(50) NOT NULL,
+            PRIMARY KEY (role_id, permission_key),
+            CONSTRAINT fk_rp_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;", conn);
+    await ddl.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Seed permission translation keys ──────────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','perm.materials_create','Create Materials'),
+        ('en','perm.materials_edit','Edit Materials'),
+        ('en','perm.materials_approve','Approve Materials'),
+        ('en','perm.courses_teach','Teach a course'),
+        ('en','perm.courses_enroll','Participate in a course'),
+        ('it','perm.materials_create','Crea Materiali'),
+        ('it','perm.materials_edit','Modifica Materiali'),
+        ('it','perm.materials_approve','Approva Materiali'),
+        ('it','perm.courses_teach','Sostieni corso'),
+        ('it','perm.courses_enroll','Partecipa al corso'),
+        ('es','perm.materials_create','Crear Materiales'),
+        ('es','perm.materials_edit','Editar Materiales'),
+        ('es','perm.materials_approve','Aprobar Materiales'),
+        ('es','perm.courses_teach','Impartir un curso'),
+        ('es','perm.courses_enroll','Participar en un curso'),
+        ('de','perm.materials_create','Materialien erstellen'),
+        ('de','perm.materials_edit','Materialien bearbeiten'),
+        ('de','perm.materials_approve','Materialien genehmigen'),
+        ('de','perm.courses_teach','Kurs unterrichten'),
+        ('de','perm.courses_enroll','An einem Kurs teilnehmen');", conn);
+    await ins.ExecuteNonQueryAsync();
 }
 catch { }
 

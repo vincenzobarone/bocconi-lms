@@ -1,43 +1,107 @@
+@using BocconiLMS.Data
 @model RoleFormViewModel
 @{
-    ViewData["Title"] = "Modifica Ruolo";
+    ViewData["Title"] = T["admin.edit_role","Edit role"];
+    bool coursesEnabled = ViewBag.CoursesEnabled == true;
+
+    var materialPerms = RolePermissionRepository.AllPermissions.Where(p => !p.CoursesOnly).ToList();
+    var coursePerms   = RolePermissionRepository.AllPermissions.Where(p => p.CoursesOnly).ToList();
 }
 
 <div class="row justify-content-center">
-    <div class="col-lg-5">
-        <h2 class="fw-bold text-bocconi mb-4">
-            <i class="bi bi-shield-lock me-2"></i>Modifica Ruolo
-        </h2>
-        <div class="card shadow-sm">
-            <div class="card-body p-4">
-                <form asp-action="EditRole" method="post">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" asp-for="Id" />
+    <div class="col-lg-6">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold text-bocconi mb-0">
+                <i class="bi bi-shield-lock me-2"></i>@T["admin.edit_role","Edit role"]
+            </h2>
+            <a asp-action="Users" asp-route-tab="ruoli" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>@T["admin.roles_tab","Roles"]
+            </a>
+        </div>
 
-                    @if (!ViewData.ModelState.IsValid)
+        @if (TempData["Error"] is string err)
+        {
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>@err
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        }
+
+        <form asp-action="EditRole" method="post">
+            @Html.AntiForgeryToken()
+            <input type="hidden" asp-for="Id" />
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger py-2 mb-3">
+                    @Html.ValidationSummary(false, null, new { @class = "mb-0" })
+                </div>
+            }
+
+            @* ── Nome ruolo ─────────────────────────────────────── *@
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <label asp-for="Name" class="form-label fw-semibold">
+                        @T["common.name","Name"] <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="Name" class="form-control" maxlength="50" autocomplete="off" />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                </div>
+            </div>
+
+            @* ── Permessi Materiali ─────────────────────────────── *@
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white fw-semibold py-3">
+                    <i class="bi bi-collection me-2 text-bocconi"></i>@T["nav.materials","Materials"]
+                </div>
+                <div class="card-body">
+                    @foreach (var p in materialPerms)
                     {
-                        <div class="alert alert-danger py-2 mb-3">
-                            @Html.ValidationSummary(false, null, new { @class = "mb-0" })
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox"
+                                   name="permissions" value="@p.Key"
+                                   id="perm_@p.Key.Replace('.','_')"
+                                   @(Model.Permissions.Contains(p.Key) ? "checked" : "") />
+                            <label class="form-check-label" for="perm_@p.Key.Replace('.','_')">
+                                @T[p.TranslationKey, p.Key]
+                            </label>
                         </div>
                     }
-
-                    <div class="mb-4">
-                        <label asp-for="Name" class="form-label fw-semibold">Nome ruolo *</label>
-                        <input asp-for="Name" class="form-control" maxlength="50" autocomplete="off" />
-                        <span asp-validation-for="Name" class="text-danger small"></span>
-                        <div class="form-text">Solo lettere, numeri, underscore e spazi.</div>
-                    </div>
-
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-bocconi px-4">
-                            <i class="bi bi-check2 me-1"></i>@T["common.save", "Save"]
-                        </button>
-                        <a asp-action="Users" asp-route-tab="ruoli" class="btn btn-outline-secondary">
-                            @T["common.cancel", "Cancel"]
-                        </a>
-                    </div>
-                </form>
+                </div>
             </div>
-        </div>
+
+            @* ── Permessi Corsi (solo se abilitati) ─────────────── *@
+            @if (coursesEnabled)
+            {
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-white fw-semibold py-3">
+                        <i class="bi bi-book me-2 text-bocconi"></i>@T["admin.courses","Courses"]
+                    </div>
+                    <div class="card-body">
+                        @foreach (var p in coursePerms)
+                        {
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox"
+                                       name="permissions" value="@p.Key"
+                                       id="perm_@p.Key.Replace('.','_')"
+                                       @(Model.Permissions.Contains(p.Key) ? "checked" : "") />
+                                <label class="form-check-label" for="perm_@p.Key.Replace('.','_')">
+                                    @T[p.TranslationKey, p.Key]
+                                </label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-bocconi px-4">
+                    <i class="bi bi-check2 me-1"></i>@T["common.save","Save"]
+                </button>
+                <a asp-action="Users" asp-route-tab="ruoli" class="btn btn-outline-secondary">
+                    @T["common.cancel","Cancel"]
+                </a>
+            </div>
+        </form>
     </div>
 </div>

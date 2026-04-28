@@ -22,6 +22,7 @@ public class AdminController : Controller
     private readonly DocumentTypeRepository _docTypes;
     private readonly FeatureFlagService _features;
     private readonly AreaRepository _areas;
+    private readonly RolePermissionRepository _rolePerms;
 
     public AdminController(
         UserRepository users,
@@ -35,7 +36,8 @@ public class AdminController : Controller
         TranslationService translationService,
         DocumentTypeRepository docTypes,
         FeatureFlagService features,
-        AreaRepository areas)
+        AreaRepository areas,
+        RolePermissionRepository rolePerms)
     {
         _users = users;
         _courses = courses;
@@ -49,6 +51,7 @@ public class AdminController : Controller
         _docTypes = docTypes;
         _features = features;
         _areas = areas;
+        _rolePerms = rolePerms;
     }
 
     public async Task<IActionResult> Index()
@@ -510,12 +513,14 @@ public class AdminController : Controller
             TempData["Error"] = "Il ruolo Admin è protetto e non può essere modificato.";
             return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
-        return View(new RoleFormViewModel { Id = role.Id, Name = role.Name! });
+        var perms = await _rolePerms.GetRolePermissionsAsync(role.Id);
+        ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
+        return View(new RoleFormViewModel { Id = role.Id, Name = role.Name!, Permissions = perms });
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> EditRole(RoleFormViewModel model)
+    public async Task<IActionResult> EditRole(RoleFormViewModel model, List<string>? permissions)
     {
         var role = await _roleManager.FindByIdAsync(model.Id.ToString());
         if (role == null) return NotFound();
@@ -524,23 +529,33 @@ public class AdminController : Controller
             TempData["Error"] = "Il ruolo Admin è protetto e non può essere modificato.";
             return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
-        if (!ModelState.IsValid) return View(model);
+        if (!ModelState.IsValid)
+        {
+            ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
+            model.Permissions = permissions ?? new();
+            return View(model);
+        }
 
         model.Name = model.Name.Trim();
         if (model.Name.Equals("Admin", StringComparison.OrdinalIgnoreCase))
         {
             ModelState.AddModelError("Name", "Non è possibile rinominare un ruolo 'Admin'.");
+            ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
+            model.Permissions = permissions ?? new();
             return View(model);
         }
         var existing = await _roleManager.FindByNameAsync(model.Name.ToUpperInvariant());
         if (existing != null && existing.Id != model.Id)
         {
             ModelState.AddModelError("Name", $"Esiste già un ruolo con il nome '{model.Name}'.");
+            ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
+            model.Permissions = permissions ?? new();
             return View(model);
         }
         role.Name = model.Name;
         role.NormalizedName = model.Name.ToUpperInvariant();
         await _roleManager.UpdateAsync(role);
+        await _rolePerms.SetRolePermissionsAsync(role.Id, permissions ?? new());
         TempData["Success"] = $"Ruolo aggiornato in '{model.Name}'.";
         return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }

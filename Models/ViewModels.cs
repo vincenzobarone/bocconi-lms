@@ -220,6 +220,8 @@ public class RoleFormViewModel
     [MaxLength(50, ErrorMessage = "Massimo 50 caratteri")]
     [RegularExpression(@"^[a-zA-Z0-9_\s]+$", ErrorMessage = "Solo lettere, numeri, underscore e spazi")]
     public string Name { get; set; } = string.Empty;
+
+    public List<string> Permissions { get; set; } = new();
 }
 
 public class MaterialFormViewModel
