@@ -3,13 +3,10 @@
     bool coursesEnabled = ViewBag.CoursesEnabled == true;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="mb-4">
     <h2 class="fw-bold text-bocconi mb-0">
         <i class="bi bi-sliders me-2"></i>@T["admin.platform_settings","Platform Settings"]
     </h2>
-    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>@T["common.back_to_panel","Back to panel"]
-    </a>
 </div>
 
 
@@ -106,7 +103,7 @@
     </script>
 }
 
-@* ─── Email & Translations ──────────────────────────────────────── *@
+@* ─── Email ──────────────────────────────────────────────────────── *@
 <div class="row g-4">
     <div class="col-md-6">
         <div class="card h-100 shadow-sm">
@@ -116,18 +113,6 @@
                 <p class="text-muted">@T["admin.email_settings_desc","Configure SMTP server and send test emails"]</p>
                 <a asp-action="EmailSettings" class="btn btn-bocconi">
                     @T["admin.configure_email","Configure email"]
-                </a>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="card h-100 shadow-sm">
-            <div class="card-body text-center p-4">
-                <i class="bi bi-translate display-4 text-bocconi mb-3 d-block"></i>
-                <h5 class="fw-bold">@T["admin.translations","Translations"]</h5>
-                <p class="text-muted">@T["admin.translations_desc","Manage interface translations for all languages"]</p>
-                <a asp-action="Translations" class="btn btn-bocconi">
-                    @T["admin.manage_translations","Manage translations"]
                 </a>
             </div>
         </div>
