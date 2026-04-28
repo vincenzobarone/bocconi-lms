@@ -1135,7 +1135,24 @@ try
         ('en','perm.materials_setstatus_all_hint','Bypasses the automatic lock (draft on create, in-review on edit)'),
         ('it','perm.materials_setstatus_all_hint','Bypassa il blocco automatico (bozza in creazione, in revisione in modifica)'),
         ('es','perm.materials_setstatus_all_hint','Evita el bloqueo automático (borrador al crear, en revisión al editar)'),
-        ('de','perm.materials_setstatus_all_hint','Umgeht die automatische Sperre (Entwurf beim Erstellen, In Überprüfung beim Bearbeiten)');", conn);
+        ('de','perm.materials_setstatus_all_hint','Umgeht die automatische Sperre (Entwurf beim Erstellen, In Überprüfung beim Bearbeiten)'),
+        -- Error page
+        ('en','error.page_title','Error'),
+        ('it','error.page_title','Errore'),
+        ('es','error.page_title','Error'),
+        ('de','error.page_title','Fehler'),
+        ('en','error.heading','An error has occurred'),
+        ('it','error.heading','Si è verificato un errore'),
+        ('es','error.heading','Se ha producido un error'),
+        ('de','error.heading','Ein Fehler ist aufgetreten'),
+        ('en','error.message','Please try again or contact technical support.'),
+        ('it','error.message','Riprova o contatta il supporto tecnico.'),
+        ('es','error.message','Inténtalo de nuevo o contacta con el soporte técnico.'),
+        ('de','error.message','Bitte versuchen Sie es erneut oder wenden Sie sich an den technischen Support.'),
+        ('en','error.back_home','Back to home'),
+        ('it','error.back_home','Torna alla home'),
+        ('es','error.back_home','Volver al inicio'),
+        ('de','error.back_home','Zurück zur Startseite');", conn);
     await ins.ExecuteNonQueryAsync();
 }
 catch { }
