@@ -1183,6 +1183,23 @@ try
 }
 catch { }
 
+// ── Ensure nav.users has correct per-language values (fix old Italian fallback) ──
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var upd = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
+            ('en','nav.users','Users'),
+            ('it','nav.users','Utenti'),
+            ('es','nav.users','Usuarios'),
+            ('de','nav.users','Benutzer')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
+    await upd.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Seed bulk-download + delete-version translation keys ─────────────────
 try
 {
