@@ -1294,6 +1294,39 @@ try
 }
 catch { }
 
+// ── Seed: admin email settings messages ──────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var upd = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
+            ('en','admin.email.saved','Email settings saved successfully.'),
+            ('en','admin.email.save_error','Error saving settings: {0}'),
+            ('en','admin.email.test_no_recipient','Enter an email address for the test.'),
+            ('en','admin.email.test_sent','Test email sent to {0}.'),
+            ('en','admin.email.test_failed','Send failed: {0}'),
+            ('it','admin.email.saved','Impostazioni email salvate con successo.'),
+            ('it','admin.email.save_error','Errore nel salvataggio: {0}'),
+            ('it','admin.email.test_no_recipient','Inserire un indirizzo email per il test.'),
+            ('it','admin.email.test_sent','Email di test inviata a {0}.'),
+            ('it','admin.email.test_failed','Invio fallito: {0}'),
+            ('es','admin.email.saved','Configuración de correo guardada correctamente.'),
+            ('es','admin.email.save_error','Error al guardar: {0}'),
+            ('es','admin.email.test_no_recipient','Introduce una dirección de correo para la prueba.'),
+            ('es','admin.email.test_sent','Correo de prueba enviado a {0}.'),
+            ('es','admin.email.test_failed','Envío fallido: {0}'),
+            ('de','admin.email.saved','E-Mail-Einstellungen erfolgreich gespeichert.'),
+            ('de','admin.email.save_error','Fehler beim Speichern: {0}'),
+            ('de','admin.email.test_no_recipient','Bitte eine E-Mail-Adresse für den Test eingeben.'),
+            ('de','admin.email.test_sent','Test-E-Mail an {0} gesendet.'),
+            ('de','admin.email.test_failed','Senden fehlgeschlagen: {0}')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
+    await upd.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Fix: admin.role_updated translation key ───────────────────────────────
 try
 {

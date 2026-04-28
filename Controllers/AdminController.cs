@@ -411,11 +411,13 @@ public class AdminController : Controller
             if (!string.IsNullOrWhiteSpace(model.Password))
                 await _settings.SetAsync("Smtp:Password", model.Password);
 
-            TempData["Success"] = "Impostazioni email salvate con successo.";
+            TempData["Success"] = _translationService.T("admin.email.saved", "Impostazioni email salvate con successo.");
         }
         catch (Exception ex)
         {
-            TempData["Error"] = $"Errore nel salvataggio: {ex.Message}";
+            TempData["Error"] = string.Format(
+                _translationService.T("admin.email.save_error", "Errore nel salvataggio: {0}"),
+                ex.Message);
         }
 
         return RedirectToAction("EmailSettings");
@@ -427,7 +429,7 @@ public class AdminController : Controller
     {
         if (string.IsNullOrWhiteSpace(model.TestEmailRecipient))
         {
-            TempData["Error"] = "Inserire un indirizzo email per il test.";
+            TempData["Error"] = _translationService.T("admin.email.test_no_recipient", "Inserire un indirizzo email per il test.");
             return RedirectToAction("EmailSettings");
         }
 
@@ -435,11 +437,15 @@ public class AdminController : Controller
         {
             var settings = await _emailService.GetEffectiveSettingsAsync();
             await _emailService.SendTestEmailAsync(model.TestEmailRecipient, settings);
-            TempData["Success"] = $"Email di test inviata a {model.TestEmailRecipient}.";
+            TempData["Success"] = string.Format(
+                _translationService.T("admin.email.test_sent", "Email di test inviata a {0}."),
+                model.TestEmailRecipient);
         }
         catch (Exception ex)
         {
-            TempData["Error"] = $"Invio fallito: {ex.Message}";
+            TempData["Error"] = string.Format(
+                _translationService.T("admin.email.test_failed", "Invio fallito: {0}"),
+                ex.Message);
         }
 
         return RedirectToAction("EmailSettings");
