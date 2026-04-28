@@ -45,12 +45,23 @@
                         <div class="col-6">
                             <label asp-for="Password" class="form-label fw-semibold">@T["admin.email.password", "Password"]</label>
                             <div class="input-group">
-                                <input asp-for="Password" id="smtpPassword" class="form-control" type="password" autocomplete="new-password" />
+                                <input id="smtpPassword" name="Password" class="form-control" type="password"
+                                       autocomplete="new-password"
+                                       placeholder="@(string.IsNullOrEmpty(Model.Password) ? "" : T["admin.email.password_keep","Lascia vuoto per mantenerla invariata"])" />
                                 <button type="button" class="btn btn-outline-secondary" id="toggleSmtpPassword" tabindex="-1" title="Mostra/nascondi password">
                                     <i class="bi bi-eye" id="toggleSmtpPasswordIcon"></i>
                                 </button>
                             </div>
-                            <span asp-validation-for="Password" class="text-danger small"></span>
+                            @if (!string.IsNullOrEmpty(Model.Password))
+                            {
+                                <div class="form-text text-success">
+                                    <i class="bi bi-check-circle me-1"></i>@T["admin.email.password_set","Password già impostata — lascia il campo vuoto per mantenerla invariata."]
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="form-text">@T["admin.email.password_empty","Inserisci la password SMTP."]</div>
+                            }
                         </div>
                     </div>
 
