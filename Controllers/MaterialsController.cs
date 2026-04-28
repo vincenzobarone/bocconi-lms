@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
+using BocconiLMS.Services;
 using System.Security.Claims;
 using System.IO.Compression;
 
@@ -17,6 +18,8 @@ public class MaterialsController : Controller
     private readonly ILogger<MaterialsController> _logger;
     private readonly AreaRepository _areas;
     private readonly RolePermissionRepository _rolePerms;
+    private readonly SettingsRepository _settings;
+    private readonly EmailService _emailService;
 
     public MaterialsController(
         MaterialRepository materials,
@@ -25,21 +28,47 @@ public class MaterialsController : Controller
         IWebHostEnvironment env,
         ILogger<MaterialsController> logger,
         AreaRepository areas,
-        RolePermissionRepository rolePerms)
+        RolePermissionRepository rolePerms,
+        SettingsRepository settings,
+        EmailService emailService)
     {
-        _materials = materials;
-        _docTypes  = docTypes;
-        _users     = users;
-        _env       = env;
-        _logger    = logger;
-        _areas     = areas;
-        _rolePerms = rolePerms;
+        _materials    = materials;
+        _docTypes     = docTypes;
+        _users        = users;
+        _env          = env;
+        _logger       = logger;
+        _areas        = areas;
+        _rolePerms    = rolePerms;
+        _settings     = settings;
+        _emailService = emailService;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private int CurrentUserId() =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    private void FireMaterialNotification(string materialTitle, bool isNew)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                if ((await _settings.GetAsync("Notifications:MaterialChanged")) != "true") return;
+                var raw   = await _settings.GetAsync("Notifications:MaterialChangedRoles") ?? "";
+                var roles = raw.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                if (roles.Length == 0) return;
+
+                var recipients = await _users.GetDistinctRecipientsByRoleNamesAsync(roles);
+                foreach (var (email, fullName) in recipients)
+                {
+                    try { await _emailService.SendMaterialNotificationAsync(email, fullName, materialTitle, isNew); }
+                    catch { /* singolo destinatario fallito: ignora e continua */ }
+                }
+            }
+            catch { /* errore globale: non blocca l'operazione principale */ }
+        });
+    }
 
     private string CurrentRoleName() =>
         User.FindFirst(ClaimTypes.Role)?.Value ?? "";
@@ -242,6 +271,7 @@ public class MaterialsController : Controller
             }
         }
 
+        FireMaterialNotification(vm.Title, isNew: true);
         TempData["Success"] = $"Materiale «{vm.Title}» creato con successo.";
         return RedirectToAction(nameof(Index));
     }
@@ -341,11 +371,13 @@ public class MaterialsController : Controller
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SaveVersionAsync fallita in Edit per materialId={Id} file={File}", id, vm.File.FileName);
+                FireMaterialNotification(vm.Title, isNew: false);
                 TempData["Warning"] = $"Materiale aggiornato, ma il file non è stato salvato: {ex.Message}";
                 return RedirectToAction(nameof(Index));
             }
         }
 
+        FireMaterialNotification(vm.Title, isNew: false);
         TempData["Success"] = "Materiale aggiornato.";
         return RedirectToAction(nameof(Index));
     }

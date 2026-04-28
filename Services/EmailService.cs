@@ -171,6 +171,27 @@ public class EmailService
         await SendAsync(toEmail, toName, subject, body);
     }
 
+    public async Task SendMaterialNotificationAsync(string toEmail, string toName, string materialTitle, bool isNew)
+    {
+        var action  = isNew ? "creato" : "modificato";
+        var subject = $"Bocconi LMS – Materiale {action}: {materialTitle}";
+        var body = $@"
+<html><body style='font-family: Arial, sans-serif; color: #333;'>
+<div style='max-width:600px; margin:0 auto; padding:24px;'>
+  <h2 style='color:#003366;'>Materiale {action}</h2>
+  <p>Ciao <strong>{HtmlEncode(toName)}</strong>,</p>
+  <p>Ti informiamo che il seguente materiale è stato <strong>{action}</strong> sulla piattaforma Bocconi LMS:</p>
+  <div style='background:#f5f7fa;border-left:4px solid #003366;padding:12px 16px;margin:16px 0;border-radius:4px;'>
+    <strong style='font-size:16px;'>{HtmlEncode(materialTitle)}</strong>
+  </div>
+  <p>Accedi alla piattaforma per visualizzare il materiale.</p>
+  <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
+  <p style='color:#888;font-size:12px;'>Bocconi LMS – notifica automatica</p>
+</div>
+</body></html>";
+        await SendAsync(toEmail, toName, subject, body);
+    }
+
     public async Task SendTestEmailAsync(string toEmail, SmtpSettings? overrideSettings = null)
     {
         var settings = overrideSettings ?? await GetEffectiveSettingsAsync();

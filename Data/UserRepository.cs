@@ -204,6 +204,46 @@ public class UserRepository
         return list;
     }
 
+    public async Task<List<(string Email, string FullName)>> GetDistinctRecipientsByRoleNamesAsync(IEnumerable<string> roleNames)
+    {
+        var names = roleNames.Where(r => !string.IsNullOrWhiteSpace(r)).ToList();
+        if (names.Count == 0) return new();
+
+        // Parametri IN per evitare SQL injection
+        var paramNames = names.Select((_, i) => $"@r{i}").ToList();
+        var inList = string.Join(",", paramNames);
+
+        var sql = $@"
+            SELECT DISTINCT u.email, u.first_name, u.last_name
+            FROM users u
+            WHERE u.is_active = 1
+              AND (
+                u.role IN ({inList})
+                OR EXISTS (
+                    SELECT 1 FROM user_roles ur
+                    JOIN roles ro ON ro.id = ur.role_id
+                    WHERE ur.user_id = u.id AND ro.name IN ({inList})
+                )
+              )
+            ORDER BY u.last_name, u.first_name";
+
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlConnector.MySqlCommand(sql, conn);
+        for (int i = 0; i < names.Count; i++)
+            cmd.Parameters.AddWithValue($"@r{i}", names[i]);
+
+        var result = new List<(string Email, string FullName)>();
+        using var reader = await cmd.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            var email    = reader.GetString("email");
+            var fullName = $"{reader.GetString("first_name")} {reader.GetString("last_name")}".Trim();
+            result.Add((email, fullName));
+        }
+        return result;
+    }
+
     public async Task<List<User>> GetTeachersAndAdminsAsync()
     {
         using var conn = _db.GetConnection();

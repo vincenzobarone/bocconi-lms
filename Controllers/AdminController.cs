@@ -389,9 +389,8 @@ public class AdminController : Controller
             UseSsl    = current.UseSsl,
             NotifyMaterialChanged = (await _settings.GetAsync("Notifications:MaterialChanged")) == "true",
             MaterialChangedRoles  = notifyRaw.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
-            AvailableRoles        = _roleManager.Roles
-                                        .OrderBy(r => r.Name)
-                                        .Select(r => r.Name!)
+            AvailableRoles        = (await _users.GetAllRolesWithCountAsync())
+                                        .Select(r => r.Name)
                                         .ToList(),
         };
         return View(vm);
@@ -406,7 +405,7 @@ public class AdminController : Controller
         ModelState.Remove("AvailableRoles");
         if (!ModelState.IsValid)
         {
-            model.AvailableRoles = _roleManager.Roles.OrderBy(r => r.Name).Select(r => r.Name!).ToList();
+            model.AvailableRoles = (await _users.GetAllRolesWithCountAsync()).Select(r => r.Name).ToList();
             return View(model);
         }
 
