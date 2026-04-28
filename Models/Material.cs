@@ -21,6 +21,7 @@ public class Material
     public DateTime CreatedAt { get; set; }
     public string Status { get; set; } = "bozza";
     public string? ProtocolNumber { get; set; }
+    public string? Folder { get; set; }
 
     public int CurrentVersion { get; set; }
     public MaterialVersion? ActiveVersion { get; set; }

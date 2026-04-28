@@ -599,6 +599,27 @@ try
 }
 catch { }
 
+// ── Migrate: add folder column to materials ───────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var chk = new MySqlConnector.MySqlCommand(@"
+        SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE()
+          AND TABLE_NAME   = 'materials'
+          AND COLUMN_NAME  = 'folder'", conn);
+    var exists = Convert.ToInt32(await chk.ExecuteScalarAsync()) > 0;
+    if (!exists)
+    {
+        using var ddl = new MySqlConnector.MySqlCommand(
+            "ALTER TABLE materials ADD COLUMN folder VARCHAR(255) NULL;", conn);
+        await ddl.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
 // ── Seed material author + convert_to_pdf translation keys ────────────────
 try
 {
@@ -630,7 +651,23 @@ try
         ('en','mat.owner_hint','Person responsible for managing this material in the system.'),
         ('it','mat.owner_hint','Persona responsabile della gestione di questo materiale nel sistema.'),
         ('es','mat.owner_hint','Persona responsable de gestionar este material en el sistema.'),
-        ('de','mat.owner_hint','Person, die für die Verwaltung dieses Materials im System zuständig ist.');", conn);
+        ('de','mat.owner_hint','Person, die für die Verwaltung dieses Materials im System zuständig ist.'),
+        ('en','mat.label_folder','Folder'),
+        ('it','mat.label_folder','Cartella'),
+        ('es','mat.label_folder','Carpeta'),
+        ('de','mat.label_folder','Ordner'),
+        ('en','mat.folder_hint','Archive folder for verified materials.'),
+        ('it','mat.folder_hint','Cartella di archiviazione per i materiali verificati.'),
+        ('es','mat.folder_hint','Carpeta de archivo para materiales verificados.'),
+        ('de','mat.folder_hint','Archivordner für verifizierte Materialien.'),
+        ('en','mat.verified_fields','Verified fields'),
+        ('it','mat.verified_fields','Campi verifica'),
+        ('es','mat.verified_fields','Campos de verificación'),
+        ('de','mat.verified_fields','Felder Verifikation'),
+        ('en','mat.owner_search_placeholder','Search owner...'),
+        ('it','mat.owner_search_placeholder','Cerca responsabile...'),
+        ('es','mat.owner_search_placeholder','Buscar responsable...'),
+        ('de','mat.owner_search_placeholder','Verantwortlichen suchen...');", conn);
     await ins.ExecuteNonQueryAsync();
 }
 catch { }

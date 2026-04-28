@@ -250,6 +250,9 @@ public class MaterialFormViewModel
     public IFormFile? File { get; set; }
 
     public bool ConvertToPdf { get; set; }
+
+    [MaxLength(255)]
+    public string? Folder { get; set; }
 }
 
 public class DocumentTypeFormViewModel

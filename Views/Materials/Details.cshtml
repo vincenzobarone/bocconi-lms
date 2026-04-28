@@ -158,17 +158,31 @@
                     <dd class="col-7">@(string.IsNullOrEmpty(Model.OwnerName) ? "—" : Model.OwnerName)</dd>
                     <dt class="col-5 text-muted">@T["mat.col_status","Status"]</dt>
                     <dd class="col-7"><span class="badge bg-@stCss">@stLabel</span></dd>
-                    <dt class="col-5 text-muted">@T["mat.col_protocol","Protocol"]</dt>
-                    <dd class="col-7">
-                        @if (!string.IsNullOrEmpty(Model.ProtocolNumber))
-                        {
-                            <code class="text-success fw-semibold">@Model.ProtocolNumber</code>
-                        }
-                        else
-                        {
-                            <span class="text-muted fst-italic" style="font-size:.8rem;">@T["mat.protocol_auto","Auto on verification"]</span>
-                        }
-                    </dd>
+                    @if (Model.Status == "verificato")
+                    {
+                        <dt class="col-5 text-muted">@T["mat.col_protocol","Protocollo"]</dt>
+                        <dd class="col-7">
+                            @if (!string.IsNullOrEmpty(Model.ProtocolNumber))
+                            {
+                                <code class="text-success fw-semibold">@Model.ProtocolNumber</code>
+                            }
+                            else
+                            {
+                                <span class="text-muted fst-italic" style="font-size:.8rem;">—</span>
+                            }
+                        </dd>
+                        <dt class="col-5 text-muted">@T["mat.label_folder","Cartella"]</dt>
+                        <dd class="col-7">
+                            @if (!string.IsNullOrEmpty(Model.Folder))
+                            {
+                                <span>@Model.Folder</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted fst-italic" style="font-size:.8rem;">—</span>
+                            }
+                        </dd>
+                    }
                     <dt class="col-5 text-muted">@T["mat.col_version","Ver."]</dt>
                     <dd class="col-7">
                         @if (Model.CurrentVersion > 0)
