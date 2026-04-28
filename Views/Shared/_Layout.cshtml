@@ -1,7 +1,13 @@
 @inject BocconiLMS.Services.AppVersionService _ver
 @inject BocconiLMS.Services.FeatureFlagService _features
+@inject BocconiLMS.Data.RolePermissionRepository _menuPerms
 @{
     var coursesEnabled = await _features.IsCoursesEnabledAsync();
+    var _menuRoleName = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+    var canSeeUsers = User.Identity?.IsAuthenticated == true
+        && (User.IsInRole("Admin") || await _menuPerms.HasMenuPermissionAsync(_menuRoleName, "menu.users"));
+    var canSeeTranslations = User.Identity?.IsAuthenticated == true
+        && (User.IsInRole("Admin") || await _menuPerms.HasMenuPermissionAsync(_menuRoleName, "menu.translations"));
 }
 <!DOCTYPE html>
 <html lang="@T.CurrentLanguage">
@@ -48,6 +54,22 @@
                             <i class="bi bi-collection me-1"></i>@T["mat.nav","Materials"]
                         </a>
                     </li>
+                    @if (canSeeUsers)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Admin" asp-action="Users">
+                                <i class="bi bi-people me-1"></i>@T["nav.users","Utenti"]
+                            </a>
+                        </li>
+                    }
+                    @if (canSeeTranslations)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Admin" asp-action="Translations">
+                                <i class="bi bi-translate me-1"></i>@T["nav.translations","Traduzioni"]
+                            </a>
+                        </li>
+                    }
                     @if (User.IsInRole("Admin"))
                     {
                         <li class="nav-item">

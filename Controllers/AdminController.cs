@@ -60,8 +60,10 @@ public class AdminController : Controller
         return View(stats);
     }
 
+    [AllowAnonymous]
     public async Task<IActionResult> Users(string? tab)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var activeTab = tab is "ruoli" or "aree" ? tab : "utenti";
         var vm = new UsersAndRolesViewModel
         {
@@ -73,17 +75,21 @@ public class AdminController : Controller
         return View(vm);
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> CreateUser()
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         ViewBag.AvailableRoles = await _users.GetNonAdminRoleNamesAsync();
         return View(new RegisterViewModel());
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateUser(RegisterViewModel model)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var availableRoles = await _users.GetNonAdminRoleNamesAsync();
         if (!ModelState.IsValid)
         {
@@ -125,9 +131,11 @@ public class AdminController : Controller
         return RedirectToAction("Users");
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> EditUser(int id)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var user = await _users.GetByIdAsync(id);
         if (user == null) return NotFound();
         ViewBag.AvailableRoles  = await _users.GetNonAdminRoleNamesAsync();
@@ -136,10 +144,12 @@ public class AdminController : Controller
         return View(user);
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditUser(User model, List<int>? areaIds)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var user = await _users.GetByIdAsync(model.Id);
         if (user == null) return NotFound();
         user.FirstName = model.FirstName;
@@ -248,10 +258,12 @@ public class AdminController : Controller
         return RedirectToAction("Users", new { tab = "aree" });
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteUser(int id)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var user = await _users.GetByIdAsync(id);
         if (user == null) return NotFound();
 
@@ -281,10 +293,12 @@ public class AdminController : Controller
         return RedirectToAction("Users");
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> ToggleUser(int id)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var user = await _users.GetByIdAsync(id);
         if (user == null) return NotFound();
 
@@ -305,9 +319,11 @@ public class AdminController : Controller
         return RedirectToAction("Users");
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> UserCourses(int id)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var user = await _users.GetByIdAsync(id);
         if (user == null) return NotFound();
 
@@ -409,19 +425,23 @@ public class AdminController : Controller
         return RedirectToAction("EmailSettings");
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> Translations()
     {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         var rows = await _translations.GetAllGroupedAsync();
         ViewBag.EnabledLanguages = await _settings.GetEnabledLanguagesAsync();
         ViewBag.MissingCounts = await _translations.GetMissingCountsAsync();
         return View(rows);
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SaveLanguageSettings(List<string> enabledLanguages)
     {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         if (enabledLanguages == null || !enabledLanguages.Contains("en"))
             enabledLanguages = (enabledLanguages ?? new()) .Prepend("en").ToList();
         await _settings.SaveEnabledLanguagesAsync(enabledLanguages);
@@ -430,10 +450,12 @@ public class AdminController : Controller
         return RedirectToAction("Translations");
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> FillMissingTranslations()
     {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         var enabled = await _settings.GetEnabledLanguagesAsync();
         var count = await _translations.FillMissingAsync(enabled.Where(l => l != "en"));
         _translationService.InvalidateCache();
@@ -441,18 +463,22 @@ public class AdminController : Controller
         return RedirectToAction("Translations");
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> EditTranslation(string key)
     {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         var row = await _translations.GetByKeyAsync(key);
         if (row == null) return NotFound();
         return View(row);
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditTranslation(TranslationRow model)
     {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         if (string.IsNullOrWhiteSpace(model.Key)) return BadRequest();
         await _translations.SaveRowAsync(model);
         _translationService.InvalidateCache();
@@ -460,10 +486,12 @@ public class AdminController : Controller
         return RedirectToAction("Translations");
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteTranslationKey(string key)
     {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         await _translations.DeleteKeyAsync(key);
         _translationService.InvalidateCache();
         TempData["Success"] = $"Chiave '{key}' eliminata.";
@@ -665,6 +693,14 @@ public class AdminController : Controller
             ? "Modulo Corsi abilitato."
             : "Modulo Corsi disabilitato. Gli studenti e i docenti accederanno direttamente alla libreria Materiali.";
         return RedirectToAction(nameof(PlatformFeatures));
+    }
+
+    private async Task<bool> CanAccessMenuAsync(string permission)
+    {
+        if (User.Identity?.IsAuthenticated != true) return false;
+        if (User.IsInRole("Admin")) return true;
+        var roleName = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
+        return await _rolePerms.HasMenuPermissionAsync(roleName, permission);
     }
 
     private async Task EnsureRoleExistsAsync(string roleName)

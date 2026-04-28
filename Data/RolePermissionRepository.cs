@@ -7,13 +7,15 @@ public class RolePermissionRepository
     private readonly DbHelper _db;
     public RolePermissionRepository(DbHelper db) => _db = db;
 
-    public static readonly (string Key, string TranslationKey, bool CoursesOnly)[] AllPermissions =
+    public static readonly (string Key, string TranslationKey, bool CoursesOnly, bool MenuOnly)[] AllPermissions =
     {
-        ("materials.create",  "perm.materials_create",  false),
-        ("materials.edit",    "perm.materials_edit",    false),
-        ("materials.approve", "perm.materials_approve", false),
-        ("courses.teach",     "perm.courses_teach",     true),
-        ("courses.enroll",    "perm.courses_enroll",    true),
+        ("materials.create",    "perm.materials_create",    false, false),
+        ("materials.edit",      "perm.materials_edit",      false, false),
+        ("materials.approve",   "perm.materials_approve",   false, false),
+        ("courses.teach",       "perm.courses_teach",       true,  false),
+        ("courses.enroll",      "perm.courses_enroll",      true,  false),
+        ("menu.users",          "perm.menu_users",          false, true),
+        ("menu.translations",   "perm.menu_translations",   false, true),
     };
 
     public async Task<List<string>> GetRolePermissionsAsync(int roleId)
@@ -28,6 +30,19 @@ public class RolePermissionRepository
         while (await r.ReadAsync())
             list.Add(r.GetString(0));
         return list;
+    }
+
+    public async Task<bool> HasMenuPermissionAsync(string roleName, string permissionKey)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            SELECT COUNT(*) FROM role_permissions rp
+            JOIN roles r ON r.id = rp.role_id
+            WHERE r.normalized_name = @rn AND rp.permission_key = @pk", conn);
+        cmd.Parameters.AddWithValue("@rn", roleName.ToUpperInvariant());
+        cmd.Parameters.AddWithValue("@pk", permissionKey);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
     }
 
     public async Task SetRolePermissionsAsync(int roleId, List<string> permissions)
