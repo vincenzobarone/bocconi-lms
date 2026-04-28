@@ -903,7 +903,7 @@ try
         ('en','admin.create_role','Create role'),
         ('en','admin.role_hint','Only letters, numbers, underscores and spaces. The Admin role is reserved.'),
         ('en','admin.role_protected','protected'),
-        ('en','admin.edit_role','Edit role name'),
+        ('en','admin.edit_role','Edit role'),
         ('en','admin.delete_role_blocked','Cannot delete: users have this role'),
         ('en','admin.delete_role','Delete role'),
         ('en','admin.delete_role_confirm','Delete role'),
@@ -914,7 +914,7 @@ try
         ('it','admin.create_role','Crea ruolo'),
         ('it','admin.role_hint','Solo lettere, numeri, underscore e spazi. Il ruolo Admin è riservato.'),
         ('it','admin.role_protected','protetto'),
-        ('it','admin.edit_role','Modifica nome ruolo'),
+        ('it','admin.edit_role','Modifica ruolo'),
         ('it','admin.delete_role_blocked','Impossibile eliminare: utenti hanno questo ruolo'),
         ('it','admin.delete_role','Elimina ruolo'),
         ('it','admin.delete_role_confirm','Eliminare il ruolo');", conn);
@@ -1289,6 +1289,21 @@ try
             ('it','nav.users','Utenti'),
             ('es','nav.users','Usuarios'),
             ('de','nav.users','Benutzer')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
+    await upd.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Fix: admin.edit_role label (rename from "Edit role name" → "Edit role") ──
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var upd = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
+            ('en','admin.edit_role','Edit role'),
+            ('it','admin.edit_role','Modifica ruolo')
         ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
     await upd.ExecuteNonQueryAsync();
 }
