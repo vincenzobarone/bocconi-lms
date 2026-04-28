@@ -12,7 +12,6 @@ public class LessonController : Controller
 {
     private readonly LessonRepository _lessons;
     private readonly CourseRepository _courses;
-    private readonly DocumentRepository _documents;
     private readonly QuizRepository _quizzes;
     private readonly EnrollmentRepository _enrollments;
     private readonly ProgressRepository _progress;
@@ -21,14 +20,13 @@ public class LessonController : Controller
     private readonly MaterialRepository _materials;
 
     public LessonController(LessonRepository lessons, CourseRepository courses,
-        DocumentRepository documents, QuizRepository quizzes,
+        QuizRepository quizzes,
         EnrollmentRepository enrollments, ProgressRepository progress,
         EmailService email, ILogger<LessonController> logger,
         MaterialRepository materials)
     {
         _lessons = lessons;
         _courses = courses;
-        _documents = documents;
         _quizzes = quizzes;
         _enrollments = enrollments;
         _progress = progress;
@@ -65,14 +63,12 @@ public class LessonController : Controller
             return Forbid();
         }
 
-        var documents = await _documents.GetByLessonAsync(id);
         var quizzes = await _quizzes.GetByLessonAsync(id);
         var linkedMaterials = await _materials.GetByLessonAsync(id);
 
         if (CurrentRole == "Student")
             await _progress.MarkLessonCompletedAsync(CurrentUserId, id);
 
-        ViewBag.Documents = documents;
         ViewBag.Quizzes = quizzes;
         ViewBag.LinkedMaterials = linkedMaterials;
         ViewBag.IsOwner = isOwner;

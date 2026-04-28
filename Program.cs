@@ -20,7 +20,6 @@ var connectionString = Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRI
 builder.Services.AddSingleton<DbHelper>(_ => new DbHelper(connectionString));
 builder.Services.AddScoped<CourseRepository>();
 builder.Services.AddScoped<LessonRepository>();
-builder.Services.AddScoped<DocumentRepository>();
 builder.Services.AddScoped<QuizRepository>();
 builder.Services.AddScoped<EnrollmentRepository>();
 builder.Services.AddScoped<ProgressRepository>();
@@ -906,6 +905,37 @@ try
                 'mat.protocol_number','mat.protocol_auto','mat.col_protocol');", conn);
         copy.Parameters.AddWithValue("@lang", lang);
         await copy.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
+// ── Drop legacy documents / document_versions tables (replaced by Materials Library) ─
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+
+    // Drop document_versions first (FK child)
+    using var chkDv = new MySqlConnector.MySqlCommand(@"
+        SELECT COUNT(*) FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'document_versions';", conn);
+    if (Convert.ToInt32(await chkDv.ExecuteScalarAsync()) > 0)
+    {
+        using var dropDv = new MySqlConnector.MySqlCommand(
+            "DROP TABLE document_versions;", conn);
+        await dropDv.ExecuteNonQueryAsync();
+    }
+
+    // Then drop documents
+    using var chkD = new MySqlConnector.MySqlCommand(@"
+        SELECT COUNT(*) FROM information_schema.TABLES
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'documents';", conn);
+    if (Convert.ToInt32(await chkD.ExecuteScalarAsync()) > 0)
+    {
+        using var dropD = new MySqlConnector.MySqlCommand(
+            "DROP TABLE documents;", conn);
+        await dropD.ExecuteNonQueryAsync();
     }
 }
 catch { }

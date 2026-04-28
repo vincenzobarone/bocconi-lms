@@ -104,18 +104,6 @@ public class CourseRepository
         await cmd.ExecuteNonQueryAsync();
     }
 
-    public async Task<int> CountDocumentsAsync(int courseId)
-    {
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync();
-        using var cmd = new MySqlCommand(@"
-            SELECT COUNT(*) FROM documents d
-            JOIN lessons l ON l.id = d.lesson_id
-            WHERE l.course_id = @cid", conn);
-        cmd.Parameters.AddWithValue("@cid", courseId);
-        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
-    }
-
     public async Task DeleteAsync(int id)
     {
         using var conn = _db.GetConnection();
@@ -140,13 +128,6 @@ public class CourseRepository
                   WHERE l.course_id = @id",
                 @"DELETE q FROM quizzes q
                   JOIN lessons l ON l.id = q.lesson_id
-                  WHERE l.course_id = @id",
-                @"DELETE dv FROM document_versions dv
-                  JOIN documents d ON d.id = dv.document_id
-                  JOIN lessons l ON l.id = d.lesson_id
-                  WHERE l.course_id = @id",
-                @"DELETE d FROM documents d
-                  JOIN lessons l ON l.id = d.lesson_id
                   WHERE l.course_id = @id",
                 @"DELETE lp FROM lesson_progress lp
                   JOIN lessons l ON l.id = lp.lesson_id

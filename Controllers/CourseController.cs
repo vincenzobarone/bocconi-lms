@@ -78,8 +78,6 @@ public class CourseController : Controller
         ViewBag.Lessons = lessons;
         ViewBag.IsEnrolled = isEnrolled;
         ViewBag.IsOwner = isOwner;
-        if (isOwner)
-            ViewBag.DocumentCount = await _courses.CountDocumentsAsync(id);
         return View(course);
     }
 
