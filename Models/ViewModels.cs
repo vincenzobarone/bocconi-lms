@@ -232,6 +232,9 @@ public class MaterialFormViewModel
     [MaxLength(255, ErrorMessage = "Massimo 255 caratteri")]
     public string Title { get; set; } = string.Empty;
 
+    [MaxLength(255, ErrorMessage = "Massimo 255 caratteri")]
+    public string? AuthorName { get; set; }
+
     public int? OwnerId { get; set; }
 
     [Required(ErrorMessage = "La lingua è obbligatoria")]

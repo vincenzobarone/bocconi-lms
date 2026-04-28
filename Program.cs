@@ -556,7 +556,20 @@ try
 }
 catch { }
 
-// ── Seed convert_to_pdf translation key ───────────────────────────────────
+// ── Migrate: add author_name column to materials ──────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ddl = new MySqlConnector.MySqlCommand(@"
+        ALTER TABLE materials
+        ADD COLUMN IF NOT EXISTS author_name VARCHAR(255) NULL AFTER title;", conn);
+    await ddl.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Seed material author + convert_to_pdf translation keys ────────────────
 try
 {
     var dbHelper = app.Services.GetRequiredService<DbHelper>();
@@ -567,7 +580,23 @@ try
         ('en','mat.convert_to_pdf','Convert to PDF before saving'),
         ('it','mat.convert_to_pdf','Converti in PDF prima del salvataggio'),
         ('es','mat.convert_to_pdf','Convertir a PDF antes de guardar'),
-        ('de','mat.convert_to_pdf','Vor dem Speichern in PDF konvertieren');", conn);
+        ('de','mat.convert_to_pdf','Vor dem Speichern in PDF konvertieren'),
+        ('en','mat.label_author','Author'),
+        ('it','mat.label_author','Autore'),
+        ('es','mat.label_author','Autor'),
+        ('de','mat.label_author','Autor'),
+        ('en','mat.author_placeholder','Full name of the content author'),
+        ('it','mat.author_placeholder','Nome completo dell''autore del contenuto'),
+        ('es','mat.author_placeholder','Nombre completo del autor del contenido'),
+        ('de','mat.author_placeholder','Vollständiger Name des Inhaltsautors'),
+        ('en','mat.label_owner','Responsible (system)'),
+        ('it','mat.label_owner','Responsabile (sistema)'),
+        ('es','mat.label_owner','Responsable (sistema)'),
+        ('de','mat.label_owner','Verantwortlicher (System)'),
+        ('en','mat.owner_hint','Person responsible for managing this material in the system.'),
+        ('it','mat.owner_hint','Persona responsabile della gestione di questo materiale nel sistema.'),
+        ('es','mat.owner_hint','Persona responsable de gestionar este material en el sistema.'),
+        ('de','mat.owner_hint','Person, die für die Verwaltung dieses Materials im System zuständig ist.');", conn);
     await ins.ExecuteNonQueryAsync();
 }
 catch { }

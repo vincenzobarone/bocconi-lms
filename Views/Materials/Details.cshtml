@@ -153,6 +153,8 @@
                     <dt class="col-5 text-muted">@T["mat.col_lang","Language"]</dt>
                     <dd class="col-7">@Model.Language</dd>
                     <dt class="col-5 text-muted">@T["mat.col_author","Author"]</dt>
+                    <dd class="col-7">@(string.IsNullOrEmpty(Model.AuthorName) ? "—" : Model.AuthorName)</dd>
+                    <dt class="col-5 text-muted">@T["mat.label_owner","Responsible (system)"]</dt>
                     <dd class="col-7">@(string.IsNullOrEmpty(Model.OwnerName) ? "—" : Model.OwnerName)</dd>
                     <dt class="col-5 text-muted">@T["mat.col_status","Status"]</dt>
                     <dd class="col-7"><span class="badge bg-@stCss">@stLabel</span></dd>

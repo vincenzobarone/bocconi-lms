@@ -28,7 +28,7 @@ public class MaterialRepository
             where.Add("m.document_type_id = @typeId");
 
         var sql = $@"
-            SELECT m.id, m.title, m.owner_id, m.language, m.document_type_id, m.created_at,
+            SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
                    m.status, m.protocol_number,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
@@ -61,7 +61,7 @@ public class MaterialRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT m.id, m.title, m.owner_id, m.language, m.document_type_id, m.created_at,
+            SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
                    m.status, m.protocol_number,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
@@ -89,14 +89,15 @@ public class MaterialRepository
         return Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
     }
 
-    public async Task<int> CreateAsync(string title, int? ownerId, string language, int? documentTypeId, string status = "bozza")
+    public async Task<int> CreateAsync(string title, string? authorName, int? ownerId, string language, int? documentTypeId, string status = "bozza")
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            INSERT INTO materials (title, owner_id, language, document_type_id, status)
-            VALUES (@title, @ownerId, @lang, @typeId, @status)", conn);
+            INSERT INTO materials (title, author_name, owner_id, language, document_type_id, status)
+            VALUES (@title, @authorName, @ownerId, @lang, @typeId, @status)", conn);
         cmd.Parameters.AddWithValue("@title", title.Trim());
+        cmd.Parameters.AddWithValue("@authorName", (object?)authorName?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@ownerId", (object?)ownerId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@lang", language);
         cmd.Parameters.AddWithValue("@typeId", (object?)documentTypeId ?? DBNull.Value);
@@ -105,7 +106,7 @@ public class MaterialRepository
         return await DbHelper.GetLastInsertIdAsync(conn);
     }
 
-    public async Task UpdateAsync(int id, string title, int? ownerId, string language, int? documentTypeId, string status)
+    public async Task UpdateAsync(int id, string title, string? authorName, int? ownerId, string language, int? documentTypeId, string status)
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
@@ -130,7 +131,7 @@ public class MaterialRepository
         }
 
         using var cmd = new MySqlCommand(@"
-            UPDATE materials SET title = @title, owner_id = @ownerId,
+            UPDATE materials SET title = @title, author_name = @authorName, owner_id = @ownerId,
                 language = @lang, document_type_id = @typeId,
                 status = @status,
                 protocol_number = CASE
@@ -139,6 +140,7 @@ public class MaterialRepository
                 END
             WHERE id = @id", conn);
         cmd.Parameters.AddWithValue("@title", title.Trim());
+        cmd.Parameters.AddWithValue("@authorName", (object?)authorName?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@ownerId", (object?)ownerId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@lang", language);
         cmd.Parameters.AddWithValue("@typeId", (object?)documentTypeId ?? DBNull.Value);
@@ -250,7 +252,7 @@ public class MaterialRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT m.id, m.title, m.owner_id, m.language, m.document_type_id, m.created_at,
+            SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
                    m.status, m.protocol_number,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
@@ -301,7 +303,7 @@ public class MaterialRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT m.id, m.title, m.owner_id, m.language, m.document_type_id, m.created_at,
+            SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
                    m.status, m.protocol_number,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
@@ -331,6 +333,7 @@ public class MaterialRepository
         {
             Id = r.GetInt32("id"),
             Title = r.GetString("title"),
+            AuthorName = r.IsDBNull(r.GetOrdinal("author_name")) ? null : r.GetString("author_name"),
             OwnerId = r.IsDBNull(r.GetOrdinal("owner_id")) ? null : r.GetInt32("owner_id"),
             OwnerName = r.IsDBNull(r.GetOrdinal("owner_name")) ? "" : r.GetString("owner_name"),
             Language = r.GetString("language"),

@@ -97,7 +97,7 @@ public class MaterialsController : Controller
             return View(vm);
         }
 
-        var matId = await _materials.CreateAsync(vm.Title, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status);
+        var matId = await _materials.CreateAsync(vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status);
 
         if (vm.File != null && vm.File.Length > 0)
             await SaveVersionAsync(matId, vm.File, vm.Notes, vm.ConvertToPdf);
@@ -119,6 +119,7 @@ public class MaterialsController : Controller
         {
             Id             = material.Id,
             Title          = material.Title,
+            AuthorName     = material.AuthorName,
             OwnerId        = material.OwnerId,
             Language       = material.Language,
             DocumentTypeId = material.DocumentTypeId,
@@ -150,7 +151,7 @@ public class MaterialsController : Controller
             return View(vm);
         }
 
-        await _materials.UpdateAsync(id, vm.Title, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status);
+        await _materials.UpdateAsync(id, vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status);
 
         if (vm.File != null && vm.File.Length > 0)
             await SaveVersionAsync(id, vm.File, vm.Notes, vm.ConvertToPdf);

@@ -33,6 +33,15 @@
                         <span asp-validation-for="Title" class="text-danger small"></span>
                     </div>
 
+                    <div class="mb-3">
+                        <label asp-for="AuthorName" class="form-label fw-semibold">
+                            @T["mat.label_author","Author"]
+                        </label>
+                        <input asp-for="AuthorName" class="form-control"
+                               placeholder="@T["mat.author_placeholder","Full name of the content author"]" />
+                        <span asp-validation-for="AuthorName" class="text-danger small"></span>
+                    </div>
+
                     <div class="row mb-3 g-2 align-items-start">
                         <div class="col-md-8">
                             <label asp-for="DocumentTypeId" class="form-label fw-semibold">

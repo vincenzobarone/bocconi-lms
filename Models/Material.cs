@@ -12,6 +12,7 @@ public class Material
 {
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
+    public string? AuthorName { get; set; }
     public int? OwnerId { get; set; }
     public string OwnerName { get; set; } = string.Empty;
     public string Language { get; set; } = "Italiano";
