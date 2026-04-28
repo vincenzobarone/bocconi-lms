@@ -37,6 +37,8 @@ public class PublicRegisterViewModel
     [DataType(DataType.Password)]
     [Compare("Password", ErrorMessage = "Le password non coincidono")]
     public string ConfirmPassword { get; set; } = string.Empty;
+
+    public string MathCaptchaAnswer { get; set; } = string.Empty;
 }
 
 public class RegisterViewModel

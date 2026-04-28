@@ -67,8 +67,18 @@
                         <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
                     </div>
 
-                    <div class="mb-4 d-flex justify-content-center">
-                        <div class="g-recaptcha" data-sitekey="@ViewBag.RecaptchaSiteKey"></div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">
+                            @T["auth.captcha_label","Verifica anti-robot"]
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light fw-bold text-bocconi" style="min-width:6rem;">
+                                @ViewBag.MathQuestion =
+                            </span>
+                            <input asp-for="MathCaptchaAnswer" class="form-control"
+                                   placeholder="?" autocomplete="off" inputmode="numeric" />
+                        </div>
+                        <span asp-validation-for="MathCaptchaAnswer" class="text-danger small"></span>
                     </div>
 
                     <button type="submit" class="btn btn-bocconi w-100 py-2 fw-semibold">
@@ -86,6 +96,5 @@
 </div>
 
 @section Scripts {
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }

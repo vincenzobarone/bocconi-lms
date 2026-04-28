@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using MySqlConnector;
-using System.Text.Json;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
 using BocconiLMS.Services;
@@ -17,7 +16,6 @@ public class AccountController : Controller
     private readonly EmailService _emailService;
     private readonly ILogger<AccountController> _logger;
     private readonly IConfiguration _config;
-    private readonly IHttpClientFactory _httpClientFactory;
 
     public AccountController(
         UserManager<ApplicationUser> userManager,
@@ -25,8 +23,7 @@ public class AccountController : Controller
         DbHelper db,
         EmailService emailService,
         ILogger<AccountController> logger,
-        IConfiguration config,
-        IHttpClientFactory httpClientFactory)
+        IConfiguration config)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -34,7 +31,6 @@ public class AccountController : Controller
         _emailService = emailService;
         _logger = logger;
         _config = config;
-        _httpClientFactory = httpClientFactory;
     }
 
     [HttpGet]
@@ -257,7 +253,10 @@ public class AccountController : Controller
     {
         if (User.Identity?.IsAuthenticated == true)
             return RedirectToAction("Dashboard", "Home");
-        ViewBag.RecaptchaSiteKey = _config["Recaptcha:SiteKey"];
+        var rng = new Random();
+        int a = rng.Next(1, 10), b = rng.Next(1, 10);
+        HttpContext.Session.SetInt32("MathCaptchaAnswer", a + b);
+        ViewBag.MathQuestion = $"{a} + {b}";
         return View(new PublicRegisterViewModel());
     }
 
@@ -265,16 +264,32 @@ public class AccountController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Register(PublicRegisterViewModel model)
     {
-        ViewBag.RecaptchaSiteKey = _config["Recaptcha:SiteKey"];
+        ModelState.Remove("MathCaptchaAnswer");
 
-        var captchaResponse = Request.Form["g-recaptcha-response"].FirstOrDefault();
-        if (!await VerifyRecaptchaAsync(captchaResponse))
+        var expected = HttpContext.Session.GetInt32("MathCaptchaAnswer");
+        bool captchaOk = expected.HasValue
+            && int.TryParse(model.MathCaptchaAnswer?.Trim(), out int submitted)
+            && submitted == expected.Value;
+        if (!captchaOk)
         {
-            ModelState.AddModelError("", "Verifica CAPTCHA non superata. Riprova.");
+            ModelState.AddModelError("MathCaptchaAnswer", "Risposta errata. Riprova.");
+            // Regenerate question for retry
+            var rng = new Random();
+            int a = rng.Next(1, 10), b = rng.Next(1, 10);
+            HttpContext.Session.SetInt32("MathCaptchaAnswer", a + b);
+            ViewBag.MathQuestion = $"{a} + {b}";
             return View(model);
         }
+        HttpContext.Session.Remove("MathCaptchaAnswer");
 
-        if (!ModelState.IsValid) return View(model);
+        if (!ModelState.IsValid)
+        {
+            var rng2 = new Random();
+            int a2 = rng2.Next(1, 10), b2 = rng2.Next(1, 10);
+            HttpContext.Session.SetInt32("MathCaptchaAnswer", a2 + b2);
+            ViewBag.MathQuestion = $"{a2} + {b2}";
+            return View(model);
+        }
 
         var existing = await _userManager.FindByEmailAsync(model.Email);
         if (existing != null)
@@ -304,32 +319,6 @@ public class AccountController : Controller
 
         TempData["RegisterSuccess"] = true;
         return RedirectToAction("Login");
-    }
-
-    private async Task<bool> VerifyRecaptchaAsync(string? token)
-    {
-        if (string.IsNullOrEmpty(token)) return false;
-
-        var secret = _config["Recaptcha:SecretKey"] ?? "";
-        try
-        {
-            var client = _httpClientFactory.CreateClient();
-            var resp = await client.PostAsync(
-                "https://www.google.com/recaptcha/api/siteverify",
-                new FormUrlEncodedContent(new Dictionary<string, string>
-                {
-                    ["secret"]   = secret,
-                    ["response"] = token
-                }));
-            var json = await resp.Content.ReadAsStringAsync();
-            using var doc = JsonDocument.Parse(json);
-            return doc.RootElement.GetProperty("success").GetBoolean();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "reCAPTCHA verification failed");
-            return false;
-        }
     }
 
     private async Task<bool> IsTokenValidAsync(string token)
