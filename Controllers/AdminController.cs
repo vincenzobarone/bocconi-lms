@@ -382,6 +382,7 @@ public class AdminController : Controller
             Host      = current.Host,
             Port      = current.Port,
             Username  = current.Username,
+            Password  = current.Password,
             FromEmail = current.FromEmail,
             FromName  = current.FromName,
             UseSsl    = current.UseSsl,
@@ -394,6 +395,7 @@ public class AdminController : Controller
     public async Task<IActionResult> EmailSettings(EmailSettingsViewModel model)
     {
         ModelState.Remove("TestEmailRecipient");
+        ModelState.Remove("Password");
         if (!ModelState.IsValid) return View(model);
 
         try

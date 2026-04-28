@@ -150,7 +150,7 @@ public class EmailSettingsViewModel
 
     [Display(Name = "Password")]
     [DataType(DataType.Password)]
-    public string Password { get; set; } = string.Empty;
+    public string? Password { get; set; }
 
     [Display(Name = "Email mittente")]
     [EmailAddress(ErrorMessage = "Email non valida")]

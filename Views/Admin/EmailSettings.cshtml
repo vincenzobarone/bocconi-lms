@@ -47,8 +47,12 @@
                         </div>
                         <div class="col-6">
                             <label asp-for="Password" class="form-label fw-semibold">@T["admin.email.password", "Password"]</label>
-                            <input asp-for="Password" class="form-control" type="password" placeholder="••••••••" autocomplete="new-password" />
-                            <div class="form-text"><i class="bi bi-lock me-1"></i>@T["admin.email.password_hint", "Leave blank to keep the existing password."]</div>
+                            <div class="input-group">
+                                <input asp-for="Password" id="smtpPassword" class="form-control" type="password" autocomplete="new-password" />
+                                <button type="button" class="btn btn-outline-secondary" id="toggleSmtpPassword" tabindex="-1" title="Mostra/nascondi password">
+                                    <i class="bi bi-eye" id="toggleSmtpPasswordIcon"></i>
+                                </button>
+                            </div>
                             <span asp-validation-for="Password" class="text-danger small"></span>
                         </div>
                     </div>
@@ -138,4 +142,17 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.getElementById('toggleSmtpPassword').addEventListener('click', function () {
+            var input = document.getElementById('smtpPassword');
+            var icon  = document.getElementById('toggleSmtpPasswordIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        });
+    </script>
 }
