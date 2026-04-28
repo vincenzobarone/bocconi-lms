@@ -127,16 +127,24 @@ public class MaterialsController : Controller
     public async Task<IActionResult> Index(
         string? q = null,
         string? lang = null,
-        int? typeId = null)
+        int? typeId = null,
+        int? catYear = null,
+        int? modYear = null,
+        string? folderName = null,
+        int? folderId = null)
     {
-        var materials = await _materials.GetAllAsync(q, lang, typeId);
+        var materials = await _materials.GetAllAsync(q, lang, typeId, catYear, modYear, folderName, folderId);
         var vm = new MaterialsIndexViewModel
         {
-            Materials      = materials,
-            SearchTitle    = q,
-            FilterLanguage = lang,
-            FilterTypeId   = typeId,
-            DocumentTypes  = await _docTypes.GetAllAsync()
+            Materials             = materials,
+            SearchTitle           = q,
+            FilterLanguage        = lang,
+            FilterTypeId          = typeId,
+            FilterCatalogationYear = catYear,
+            FilterModifiedYear    = modYear,
+            FilterFolderName      = folderName,
+            FilterFolderId        = folderId,
+            DocumentTypes         = await _docTypes.GetAllAsync()
         };
         return View(vm);
     }

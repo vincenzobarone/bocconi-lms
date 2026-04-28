@@ -1183,6 +1183,38 @@ try
 }
 catch { }
 
+// ── Seed filtri Materials: anno catalogazione, anno modifica, cartella ────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','mat.filter_cat_year','Catalogation year'),
+        ('it','mat.filter_cat_year','Anno catalogazione'),
+        ('es','mat.filter_cat_year','Año catalogación'),
+        ('de','mat.filter_cat_year','Katalogisierungsjahr'),
+        ('en','mat.filter_mod_year','Modification year'),
+        ('it','mat.filter_mod_year','Anno modifica'),
+        ('es','mat.filter_mod_year','Año modificación'),
+        ('de','mat.filter_mod_year','Änderungsjahr'),
+        ('en','mat.filter_folder_name','Folder name'),
+        ('it','mat.filter_folder_name','Nome cartella'),
+        ('es','mat.filter_folder_name','Nombre carpeta'),
+        ('de','mat.filter_folder_name','Ordnername'),
+        ('en','mat.filter_folder_name_ph','Search by folder name…'),
+        ('it','mat.filter_folder_name_ph','Cerca per nome cartella…'),
+        ('es','mat.filter_folder_name_ph','Buscar por nombre de carpeta…'),
+        ('de','mat.filter_folder_name_ph','Nach Ordnernamen suchen…'),
+        ('en','mat.filter_folder_id','Folder ID'),
+        ('it','mat.filter_folder_id','ID cartella'),
+        ('es','mat.filter_folder_id','ID carpeta'),
+        ('de','mat.filter_folder_id','Ordner-ID');", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Ensure nav.users has correct per-language values (fix old Italian fallback) ──
 try
 {

@@ -65,7 +65,11 @@ public class MaterialRepository
     public async Task<List<Material>> GetAllAsync(
         string? searchTitle = null,
         string? language = null,
-        int? documentTypeId = null)
+        int? documentTypeId = null,
+        int? catalogationYear = null,
+        int? modifiedYear = null,
+        string? folderName = null,
+        int? folderId = null)
     {
         var list = new List<Material>();
         using var conn = _db.GetConnection();
@@ -77,6 +81,14 @@ public class MaterialRepository
             where.Add("m.language = @lang");
         if (documentTypeId.HasValue)
             where.Add("m.document_type_id = @typeId");
+        if (catalogationYear.HasValue)
+            where.Add("YEAR(m.catalogation_date) = @catYear");
+        if (modifiedYear.HasValue)
+            where.Add("YEAR(m.updated_at) = @modYear");
+        if (!string.IsNullOrWhiteSpace(folderName))
+            where.Add("mf.name LIKE @folderName");
+        if (folderId.HasValue)
+            where.Add("m.folder_id = @folderId");
 
         var sql = $@"
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
@@ -104,6 +116,14 @@ public class MaterialRepository
             cmd.Parameters.AddWithValue("@lang", language);
         if (documentTypeId.HasValue)
             cmd.Parameters.AddWithValue("@typeId", documentTypeId.Value);
+        if (catalogationYear.HasValue)
+            cmd.Parameters.AddWithValue("@catYear", catalogationYear.Value);
+        if (modifiedYear.HasValue)
+            cmd.Parameters.AddWithValue("@modYear", modifiedYear.Value);
+        if (!string.IsNullOrWhiteSpace(folderName))
+            cmd.Parameters.AddWithValue("@folderName", $"%{folderName}%");
+        if (folderId.HasValue)
+            cmd.Parameters.AddWithValue("@folderId", folderId.Value);
 
         using var r = await cmd.ExecuteReaderAsync();
         while (await r.ReadAsync())

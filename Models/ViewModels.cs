@@ -277,4 +277,8 @@ public class MaterialsIndexViewModel
     public string? FilterLanguage { get; set; }
     public int? FilterTypeId { get; set; }
     public List<DocumentType> DocumentTypes { get; set; } = new();
+    public int? FilterCatalogationYear { get; set; }
+    public int? FilterModifiedYear { get; set; }
+    public string? FilterFolderName { get; set; }
+    public int? FilterFolderId { get; set; }
 }

@@ -26,6 +26,7 @@
 <div class="card mb-4">
     <div class="card-body">
         <form method="get" class="row g-2 align-items-end">
+            @* ── Riga 1: filtri originali ──────────────────────────────── *@
             <div class="col-md-4">
                 <label class="form-label small fw-semibold">@T["mat.filter_title","Title"]</label>
                 <input type="text" name="q" value="@Model.SearchTitle" class="form-control form-control-sm"
@@ -59,6 +60,29 @@
                     <i class="bi bi-x-lg"></i>
                 </a>
             </div>
+
+            @* ── Riga 2: nuovi filtri ───────────────────────────────────── *@
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">@T["mat.filter_cat_year","Anno catalogazione"]</label>
+                <input type="number" name="catYear" value="@Model.FilterCatalogationYear"
+                       class="form-control form-control-sm" placeholder="es. 2024" min="2000" max="2099" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">@T["mat.filter_mod_year","Anno modifica"]</label>
+                <input type="number" name="modYear" value="@Model.FilterModifiedYear"
+                       class="form-control form-control-sm" placeholder="es. 2024" min="2000" max="2099" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small fw-semibold">@T["mat.filter_folder_name","Nome cartella"]</label>
+                <input type="text" name="folderName" value="@Model.FilterFolderName"
+                       class="form-control form-control-sm" placeholder="@T["mat.filter_folder_name_ph","Cerca per nome cartella…"]" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small fw-semibold">@T["mat.filter_folder_id","ID cartella"]</label>
+                <input type="number" name="folderId" value="@Model.FilterFolderId"
+                       class="form-control form-control-sm" placeholder="es. 42" min="1" />
+            </div>
+            <div class="col-md-2">@* spacer *@</div>
         </form>
     </div>
 </div>
