@@ -9,14 +9,17 @@ public class RolePermissionRepository
 
     public static readonly (string Key, string TranslationKey, bool CoursesOnly, bool MenuOnly)[] AllPermissions =
     {
-        ("courses.teach",       "perm.courses_teach",       true,  false),
-        ("courses.enroll",      "perm.courses_enroll",      true,  false),
-        ("menu.materials",      "perm.menu_materials",      false, true),
-        ("materials.create",    "perm.materials_create",    false, true),
-        ("materials.edit",      "perm.materials_edit",      false, true),
-        ("materials.approve",   "perm.materials_approve",   false, true),
-        ("menu.users",          "perm.menu_users",          false, true),
-        ("menu.translations",   "perm.menu_translations",   false, true),
+        ("courses.teach",                    "perm.courses_teach",                    true,  false),
+        ("courses.enroll",                   "perm.courses_enroll",                   true,  false),
+        ("menu.materials",                   "perm.menu_materials",                   false, true),
+        ("materials.create",                 "perm.materials_create",                 false, true),
+        ("materials.create.setstatus",       "perm.materials_create_setstatus",       false, true),
+        ("materials.edit",                   "perm.materials_edit",                   false, true),
+        ("materials.edit.setstatus",         "perm.materials_edit_setstatus",         false, true),
+        ("materials.approve",                "perm.materials_approve",                false, true),
+        ("materials.approve.setstatus",      "perm.materials_approve_setstatus",      false, true),
+        ("menu.users",                       "perm.menu_users",                       false, true),
+        ("menu.translations",                "perm.menu_translations",                false, true),
     };
 
     public async Task<List<string>> GetRolePermissionsAsync(int roleId)

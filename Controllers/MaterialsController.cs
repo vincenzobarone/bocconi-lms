@@ -16,6 +16,7 @@ public class MaterialsController : Controller
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<MaterialsController> _logger;
     private readonly AreaRepository _areas;
+    private readonly RolePermissionRepository _rolePerms;
 
     public MaterialsController(
         MaterialRepository materials,
@@ -23,7 +24,8 @@ public class MaterialsController : Controller
         UserRepository users,
         IWebHostEnvironment env,
         ILogger<MaterialsController> logger,
-        AreaRepository areas)
+        AreaRepository areas,
+        RolePermissionRepository rolePerms)
     {
         _materials = materials;
         _docTypes  = docTypes;
@@ -31,12 +33,22 @@ public class MaterialsController : Controller
         _env       = env;
         _logger    = logger;
         _areas     = areas;
+        _rolePerms = rolePerms;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
 
     private int CurrentUserId() =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    private string CurrentRoleName() =>
+        User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+
+    private async Task<bool> CanSetStatusAsync(string operation)
+    {
+        if (User.IsInRole("Admin")) return true;
+        return await _rolePerms.HasMenuPermissionAsync(CurrentRoleName(), $"materials.{operation}.setstatus");
+    }
 
     private async Task PopulateDropdownsAsync()
     {
@@ -148,6 +160,7 @@ public class MaterialsController : Controller
     {
         await PopulateDropdownsAsync();
         ViewBag.CurrentUserFullName = CurrentUserFullName();
+        ViewBag.CanSetStatus = await CanSetStatusAsync("create");
         var vm = new MaterialFormViewModel { Language = "Italiano" };
         return View(vm);
     }
@@ -188,6 +201,10 @@ public class MaterialsController : Controller
             await PopulateDropdownsAsync();
             return View(vm);
         }
+
+        // Enforce status permission: se l'utente non può cambiare stato, forza "bozza"
+        if (!await CanSetStatusAsync("create"))
+            vm.Status = "bozza";
 
         // Resolve folder and assign protocol when status = verificato
         int? resolvedFolderId = null;
@@ -245,6 +262,7 @@ public class MaterialsController : Controller
             CatalogationDate = material.CatalogationDate
         };
         ViewBag.Material = material;
+        ViewBag.CanSetStatus = await CanSetStatusAsync("edit");
         return View(vm);
     }
 
@@ -268,6 +286,7 @@ public class MaterialsController : Controller
         {
             var mat = await _materials.GetByIdAsync(id);
             ViewBag.Material = mat;
+            ViewBag.CanSetStatus = await CanSetStatusAsync("edit");
             await PopulateDropdownsAsync();
             return View(vm);
         }
@@ -279,6 +298,13 @@ public class MaterialsController : Controller
             ViewBag.Material = mat;
             await PopulateDropdownsAsync();
             return View(vm);
+        }
+
+        // Enforce status permission: se l'utente non può cambiare stato, ripristina quello corrente
+        if (!await CanSetStatusAsync("edit"))
+        {
+            var current = await _materials.GetByIdAsync(id);
+            vm.Status = current?.Status ?? "bozza";
         }
 
         // Resolve folder and assign protocol if transitioning to verificato without them

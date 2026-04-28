@@ -8,6 +8,7 @@
     var existingAuthors = ViewBag.ExistingAuthors as List<string> ?? new();
     var availableAreas = ViewBag.AvailableAreas as List<BocconiLMS.Models.Area> ?? new();
     var existingFolders = ViewBag.ExistingFolders as List<BocconiLMS.Models.MaterialFolder> ?? new();
+    bool canSetStatus = ViewBag.CanSetStatus is bool css ? css : true;
 
     bool hasProtocol = material?.ProtocolNumber != null;
     bool hasFolder   = material?.FolderId != null;
@@ -96,11 +97,28 @@
 
                     <div class="mb-3">
                         <label asp-for="Status" class="form-label fw-semibold">@T["mat.label_status","Status"]</label>
-                        <select asp-for="Status" id="statusSelect" class="form-select">
-                            <option value="bozza"        selected="@(Model.Status=="bozza"?"selected":null)">@T["mat.status_bozza","Draft"]</option>
-                            <option value="in_revisione" selected="@(Model.Status=="in_revisione"?"selected":null)">@T["mat.status_in_revisione","In review"]</option>
-                            <option value="verificato"   selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato","Verified"]</option>
-                        </select>
+                        @if (canSetStatus)
+                        {
+                            <select asp-for="Status" id="statusSelect" class="form-select">
+                                <option value="bozza"        selected="@(Model.Status=="bozza"?"selected":null)">@T["mat.status_bozza","Draft"]</option>
+                                <option value="in_revisione" selected="@(Model.Status=="in_revisione"?"selected":null)">@T["mat.status_in_revisione","In review"]</option>
+                                <option value="verificato"   selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato","Verified"]</option>
+                            </select>
+                        }
+                        else
+                        {
+                            var statusLabel = Model.Status switch {
+                                "verificato"   => T["mat.status_verificato","Verified"],
+                                "in_revisione" => T["mat.status_in_revisione","In review"],
+                                _              => T["mat.status_bozza","Draft"]
+                            };
+                            @* Mantieni lo stato corrente, non modificabile *@
+                            <input type="hidden" id="statusSelect" name="Status" value="@Model.Status" />
+                            <input type="text" class="form-control bg-light" readonly value="@statusLabel" />
+                            <div class="form-text">
+                                <i class="bi bi-lock me-1"></i>@T["mat.status_locked_edit","Lo stato non è modificabile con il tuo ruolo."]
+                            </div>
+                        }
                     </div>
 
                     @* Show current protocol/folder info if already set (read-only) *@

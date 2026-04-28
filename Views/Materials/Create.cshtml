@@ -8,6 +8,7 @@
     var currentOwnerName = ViewBag.CurrentUserFullName as string ?? "";
     var availableAreas = ViewBag.AvailableAreas as List<BocconiLMS.Models.Area> ?? new();
     var existingFolders = ViewBag.ExistingFolders as List<BocconiLMS.Models.MaterialFolder> ?? new();
+    bool canSetStatus = ViewBag.CanSetStatus is bool css ? css : true;
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -88,11 +89,23 @@
 
                     <div class="mb-3">
                         <label asp-for="Status" class="form-label fw-semibold">@T["mat.label_status","Status"]</label>
-                        <select asp-for="Status" id="statusSelect" class="form-select">
-                            <option value="bozza"         selected="@(Model.Status=="bozza"?"selected":null)">@T["mat.status_bozza","Draft"]</option>
-                            <option value="in_revisione"  selected="@(Model.Status=="in_revisione"?"selected":null)">@T["mat.status_in_revisione","In review"]</option>
-                            <option value="verificato"    selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato","Verified"]</option>
-                        </select>
+                        @if (canSetStatus)
+                        {
+                            <select asp-for="Status" id="statusSelect" class="form-select">
+                                <option value="bozza"        selected="@(Model.Status=="bozza"?"selected":null)">@T["mat.status_bozza","Draft"]</option>
+                                <option value="in_revisione" selected="@(Model.Status=="in_revisione"?"selected":null)">@T["mat.status_in_revisione","In review"]</option>
+                                <option value="verificato"   selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato","Verified"]</option>
+                            </select>
+                        }
+                        else
+                        {
+                            <input type="hidden" id="statusSelect" name="Status" value="bozza" />
+                            <input type="text" class="form-control bg-light" readonly
+                                   value="@T["mat.status_bozza","Draft"]" />
+                            <div class="form-text">
+                                <i class="bi bi-lock me-1"></i>@T["mat.status_locked_create","Lo stato è bloccato su Bozza per il tuo ruolo."]
+                            </div>
+                        }
                     </div>
 
                     @if (availableAreas.Any())

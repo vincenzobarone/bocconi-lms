@@ -1082,7 +1082,27 @@ try
         ('en','perm.mat_ops_hint','Allowed operations on materials:'),
         ('it','perm.mat_ops_hint','Operazioni consentite sui materiali:'),
         ('es','perm.mat_ops_hint','Operaciones permitidas en materiales:'),
-        ('de','perm.mat_ops_hint','Erlaubte Vorgänge für Materialien:');", conn);
+        ('de','perm.mat_ops_hint','Erlaubte Vorgänge für Materialien:'),
+        ('en','perm.materials_create_setstatus','Can change status when creating'),
+        ('it','perm.materials_create_setstatus','Può modificare lo stato in creazione'),
+        ('es','perm.materials_create_setstatus','Puede cambiar el estado al crear'),
+        ('de','perm.materials_create_setstatus','Status beim Erstellen ändern'),
+        ('en','perm.materials_edit_setstatus','Can change status when editing'),
+        ('it','perm.materials_edit_setstatus','Può modificare lo stato in modifica'),
+        ('es','perm.materials_edit_setstatus','Puede cambiar el estado al editar'),
+        ('de','perm.materials_edit_setstatus','Status beim Bearbeiten ändern'),
+        ('en','perm.materials_approve_setstatus','Can change status when approving'),
+        ('it','perm.materials_approve_setstatus','Può modificare lo stato in approvazione'),
+        ('es','perm.materials_approve_setstatus','Puede cambiar el estado al aprobar'),
+        ('de','perm.materials_approve_setstatus','Status beim Genehmigen ändern'),
+        ('en','mat.status_locked_create','Status is locked to Draft for your role.'),
+        ('it','mat.status_locked_create','Lo stato è bloccato su Bozza per il tuo ruolo.'),
+        ('es','mat.status_locked_create','El estado está bloqueado en Borrador para tu rol.'),
+        ('de','mat.status_locked_create','Status ist für Ihre Rolle auf Entwurf gesperrt.'),
+        ('en','mat.status_locked_edit','Status cannot be changed with your role.'),
+        ('it','mat.status_locked_edit','Lo stato non è modificabile con il tuo ruolo.'),
+        ('es','mat.status_locked_edit','No puedes cambiar el estado con tu rol.'),
+        ('de','mat.status_locked_edit','Status kann mit Ihrer Rolle nicht geändert werden.');", conn);
     await ins.ExecuteNonQueryAsync();
 }
 catch { }
@@ -1096,6 +1116,21 @@ try
     using var mig = new MySqlConnector.MySqlCommand(@"
         INSERT IGNORE INTO role_permissions (role_id, permission_key)
         SELECT DISTINCT role_id, 'menu.materials'
+        FROM role_permissions
+        WHERE permission_key IN ('materials.create','materials.edit','materials.approve')", conn);
+    await mig.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Migrate: ruoli con materials.*.* ricevono il corrispondente setstatus ─────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var mig = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO role_permissions (role_id, permission_key)
+        SELECT role_id, CONCAT(permission_key, '.setstatus')
         FROM role_permissions
         WHERE permission_key IN ('materials.create','materials.edit','materials.approve')", conn);
     await mig.ExecuteNonQueryAsync();
