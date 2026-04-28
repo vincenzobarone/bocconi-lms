@@ -308,9 +308,38 @@ public class MaterialsController : Controller
         if (version == null) return NotFound();
         var fullPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/'));
         if (!System.IO.File.Exists(fullPath)) return NotFound();
-        var contentType = "application/octet-stream";
-        return PhysicalFile(fullPath, contentType, version.FileName);
+        return PhysicalFile(fullPath, "application/octet-stream", version.FileName);
     }
+
+    // ── Preview (inline, no download) ────────────────────────────────────
+
+    [Authorize]
+    public async Task<IActionResult> Preview(int versionId)
+    {
+        var version = await _materials.GetVersionByIdAsync(versionId);
+        if (version == null) return NotFound();
+        var fullPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/'));
+        if (!System.IO.File.Exists(fullPath)) return NotFound();
+        var mime = GetMimeType(version.FileType);
+        return PhysicalFile(fullPath, mime, enableRangeProcessing: true);
+    }
+
+    private static string GetMimeType(string fileType) => fileType.ToUpperInvariant() switch
+    {
+        "PDF"          => "application/pdf",
+        "PNG"          => "image/png",
+        "JPG" or "JPEG"=> "image/jpeg",
+        "GIF"          => "image/gif",
+        "SVG"          => "image/svg+xml",
+        "BMP"          => "image/bmp",
+        "WEBP"         => "image/webp",
+        "MP4"          => "video/mp4",
+        "WEBM"         => "video/webm",
+        "MOV"          => "video/quicktime",
+        "AVI"          => "video/x-msvideo",
+        "MKV"          => "video/x-matroska",
+        _              => "application/octet-stream"
+    };
 
     // ── Delete ────────────────────────────────────────────────────────────
 
