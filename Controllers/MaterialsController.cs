@@ -84,6 +84,9 @@ public class MaterialsController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(MaterialFormViewModel vm)
     {
+        if (vm.File == null || vm.File.Length == 0)
+            ModelState.AddModelError(nameof(vm.File), "Il file è obbligatorio.");
+
         if (!ModelState.IsValid)
         {
             await PopulateDropdownsAsync();
