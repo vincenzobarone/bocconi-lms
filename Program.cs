@@ -938,6 +938,82 @@ try
 }
 catch { }
 
+// ── Seed mat area/catalogation + menu permission + nav labels ─────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        -- Materials: Area and catalogation date labels
+        ('en','mat.label_area','Area'),
+        ('it','mat.label_area','Area'),
+        ('es','mat.label_area','Área'),
+        ('de','mat.label_area','Bereich'),
+        ('en','mat.select_area','— No area —'),
+        ('it','mat.select_area','— Nessuna area —'),
+        ('es','mat.select_area','— Sin área —'),
+        ('de','mat.select_area','— Kein Bereich —'),
+        ('en','mat.label_cat_date','Catalogation date'),
+        ('it','mat.label_cat_date','Data catalogazione'),
+        ('es','mat.label_cat_date','Fecha de catalogación'),
+        ('de','mat.label_cat_date','Katalogisierungsdatum'),
+        -- Navbar menu items (Users / Translations)
+        ('en','nav.users','Users'),
+        ('it','nav.users','Utenti'),
+        ('es','nav.users','Usuarios'),
+        ('de','nav.users','Benutzer'),
+        ('en','nav.translations','Translations'),
+        ('it','nav.translations','Traduzioni'),
+        ('es','nav.translations','Traducciones'),
+        ('de','nav.translations','Übersetzungen'),
+        -- Admin dashboard
+        ('en','admin.dashboard','Administration'),
+        ('it','admin.dashboard','Amministrazione'),
+        ('es','admin.dashboard','Administración'),
+        ('de','admin.dashboard','Verwaltung'),
+        ('en','admin.platform_settings_desc','Platform configuration and feature toggles'),
+        ('it','admin.platform_settings_desc','Configurazione della piattaforma e abilitazione funzionalità'),
+        ('es','admin.platform_settings_desc','Configuración de la plataforma y activación de funciones'),
+        ('de','admin.platform_settings_desc','Plattformkonfiguration und Funktionsschalter'),
+        ('en','admin.email_settings','Email Settings'),
+        ('it','admin.email_settings','Impostazioni Email'),
+        ('es','admin.email_settings','Configuración de correo'),
+        ('de','admin.email_settings','E-Mail-Einstellungen'),
+        ('en','admin.email_settings_desc','Configure SMTP server and send test emails'),
+        ('it','admin.email_settings_desc','Configura il server SMTP e invia email di test'),
+        ('es','admin.email_settings_desc','Configurar servidor SMTP y enviar correos de prueba'),
+        ('de','admin.email_settings_desc','SMTP-Server konfigurieren und Test-E-Mails senden'),
+        ('en','admin.configure','Configure'),
+        ('it','admin.configure','Configura'),
+        ('es','admin.configure','Configurar'),
+        ('de','admin.configure','Konfigurieren'),
+        ('en','admin.configure_email','Configure email'),
+        ('it','admin.configure_email','Configura email'),
+        ('es','admin.configure_email','Configurar correo'),
+        ('de','admin.configure_email','E-Mail konfigurieren'),
+        -- Menu permission labels (EditRole page)
+        ('en','perm.menu_access','Menu Access'),
+        ('it','perm.menu_access','Accesso Menu'),
+        ('es','perm.menu_access','Acceso al Menú'),
+        ('de','perm.menu_access','Menü-Zugang'),
+        ('en','perm.menu_access_hint','Allows users with this role to access the following panel sections.'),
+        ('it','perm.menu_access_hint','Consente agli utenti con questo ruolo di accedere alle seguenti sezioni del pannello.'),
+        ('es','perm.menu_access_hint','Permite a los usuarios con este rol acceder a las siguientes secciones del panel.'),
+        ('de','perm.menu_access_hint','Ermöglicht Benutzern mit dieser Rolle den Zugriff auf folgende Panelbereiche.'),
+        ('en','perm.menu_users','Users — section access'),
+        ('it','perm.menu_users','Utenti — accesso sezione'),
+        ('es','perm.menu_users','Usuarios — acceso a sección'),
+        ('de','perm.menu_users','Benutzer — Bereichszugang'),
+        ('en','perm.menu_translations','Translations — section access'),
+        ('it','perm.menu_translations','Traduzioni — accesso sezione'),
+        ('es','perm.menu_translations','Traducciones — acceso a sección'),
+        ('de','perm.menu_translations','Übersetzungen — Bereichszugang');", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Drop legacy documents / document_versions tables (replaced by Materials Library) ─
 try
 {
