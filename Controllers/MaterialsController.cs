@@ -14,19 +14,22 @@ public class MaterialsController : Controller
     private readonly UserRepository _users;
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<MaterialsController> _logger;
+    private readonly AreaRepository _areas;
 
     public MaterialsController(
         MaterialRepository materials,
         DocumentTypeRepository docTypes,
         UserRepository users,
         IWebHostEnvironment env,
-        ILogger<MaterialsController> logger)
+        ILogger<MaterialsController> logger,
+        AreaRepository areas)
     {
         _materials = materials;
         _docTypes  = docTypes;
         _users     = users;
         _env       = env;
         _logger    = logger;
+        _areas     = areas;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -40,6 +43,10 @@ public class MaterialsController : Controller
         ViewBag.Languages       = Material.Languages;
         ViewBag.AvailableOwners = await _users.GetTeachersAndAdminsAsync();
         ViewBag.ExistingAuthors = await _materials.GetDistinctAuthorsAsync();
+        // Areas: Admin sees all, Teacher sees only their assigned areas
+        ViewBag.AvailableAreas = User.IsInRole("Admin")
+            ? await _areas.GetAllAsync()
+            : await _areas.GetUserAreasAsync(CurrentUserId());
     }
 
     private string? CurrentUserFullName() =>
@@ -160,7 +167,7 @@ public class MaterialsController : Controller
             return View(vm);
         }
 
-        var matId = await _materials.CreateAsync(vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, vm.Folder);
+        var matId = await _materials.CreateAsync(vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, vm.Folder, vm.AreaId, vm.CatalogationDate);
 
         if (vm.File != null && vm.File.Length > 0)
         {
@@ -191,14 +198,16 @@ public class MaterialsController : Controller
         await PopulateDropdownsAsync();
         var vm = new MaterialFormViewModel
         {
-            Id             = material.Id,
-            Title          = material.Title,
-            AuthorName     = material.AuthorName,
-            OwnerId        = material.OwnerId,
-            Language       = material.Language,
-            DocumentTypeId = material.DocumentTypeId,
-            Status         = material.Status,
-            Folder         = material.Folder
+            Id               = material.Id,
+            Title            = material.Title,
+            AuthorName       = material.AuthorName,
+            OwnerId          = material.OwnerId,
+            Language         = material.Language,
+            DocumentTypeId   = material.DocumentTypeId,
+            Status           = material.Status,
+            Folder           = material.Folder,
+            AreaId           = material.AreaId,
+            CatalogationDate = material.CatalogationDate
         };
         ViewBag.Material = material;
         return View(vm);
@@ -237,7 +246,7 @@ public class MaterialsController : Controller
             return View(vm);
         }
 
-        await _materials.UpdateAsync(id, vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, vm.Folder);
+        await _materials.UpdateAsync(id, vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, vm.Folder, vm.AreaId, vm.CatalogationDate);
 
         if (vm.File != null && vm.File.Length > 0)
         {

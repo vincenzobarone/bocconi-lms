@@ -909,6 +909,35 @@ try
 }
 catch { }
 
+// ── Materials: add area_id and catalogation_date columns ────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+
+    using var chkArea = new MySqlConnector.MySqlCommand(@"
+        SELECT COUNT(*) FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'materials' AND COLUMN_NAME = 'area_id';", conn);
+    if (Convert.ToInt32(await chkArea.ExecuteScalarAsync()) == 0)
+    {
+        using var addArea = new MySqlConnector.MySqlCommand(
+            "ALTER TABLE materials ADD COLUMN area_id INT NULL, ADD CONSTRAINT fk_mat_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL;", conn);
+        await addArea.ExecuteNonQueryAsync();
+    }
+
+    using var chkCat = new MySqlConnector.MySqlCommand(@"
+        SELECT COUNT(*) FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'materials' AND COLUMN_NAME = 'catalogation_date';", conn);
+    if (Convert.ToInt32(await chkCat.ExecuteScalarAsync()) == 0)
+    {
+        using var addCat = new MySqlConnector.MySqlCommand(
+            "ALTER TABLE materials ADD COLUMN catalogation_date DATETIME NULL;", conn);
+        await addCat.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
 // ── Drop legacy documents / document_versions tables (replaced by Materials Library) ─
 try
 {

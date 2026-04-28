@@ -23,6 +23,10 @@ public class Material
     public string? ProtocolNumber { get; set; }
     public string? Folder { get; set; }
 
+    public int? AreaId { get; set; }
+    public string AreaName { get; set; } = string.Empty;
+    public DateTime? CatalogationDate { get; set; }
+
     public int CurrentVersion { get; set; }
     public MaterialVersion? ActiveVersion { get; set; }
 

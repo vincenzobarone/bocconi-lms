@@ -253,6 +253,10 @@ public class MaterialFormViewModel
 
     [MaxLength(255)]
     public string? Folder { get; set; }
+
+    public int? AreaId { get; set; }
+
+    public DateTime? CatalogationDate { get; set; }
 }
 
 public class DocumentTypeFormViewModel

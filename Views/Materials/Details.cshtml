@@ -191,6 +191,16 @@
                             }
                         </dd>
                     }
+                    @if (Model.AreaId.HasValue || !string.IsNullOrEmpty(Model.AreaName))
+                    {
+                        <dt class="col-5 text-muted">@T["mat.label_area","Area"]</dt>
+                        <dd class="col-7">@(string.IsNullOrEmpty(Model.AreaName) ? "—" : Model.AreaName)</dd>
+                    }
+                    @if (Model.CatalogationDate.HasValue)
+                    {
+                        <dt class="col-5 text-muted">@T["mat.label_cat_date","Data catalogazione"]</dt>
+                        <dd class="col-7">@Model.CatalogationDate.Value.ToString("dd/MM/yyyy")</dd>
+                    }
                     <dt class="col-5 text-muted">@T["mat.col_version","Ver."]</dt>
                     <dd class="col-7">
                         @if (Model.CurrentVersion > 0)

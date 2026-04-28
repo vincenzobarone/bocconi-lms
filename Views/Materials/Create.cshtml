@@ -6,6 +6,7 @@
     var owners = ViewBag.AvailableOwners as List<BocconiLMS.Models.User> ?? new();
     var existingAuthors = ViewBag.ExistingAuthors as List<string> ?? new();
     var currentOwnerName = ViewBag.CurrentUserFullName as string ?? "";
+    var availableAreas = ViewBag.AvailableAreas as List<BocconiLMS.Models.Area> ?? new();
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -89,6 +90,27 @@
                             <option value="verificato"    selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato","Verified"]</option>
                         </select>
                     </div>
+
+                    @if (availableAreas.Any())
+                    {
+                        <div class="row mb-3 g-2">
+                            <div class="col-md-6">
+                                <label asp-for="AreaId" class="form-label fw-semibold">@T["mat.label_area","Area"]</label>
+                                <select asp-for="AreaId" class="form-select">
+                                    <option value="">@T["mat.select_area","— Nessuna area —"]</option>
+                                    @foreach (var ar in availableAreas)
+                                    {
+                                        <option value="@ar.Id">@ar.Name</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="CatalogationDate" class="form-label fw-semibold">@T["mat.label_cat_date","Data catalogazione"]</label>
+                                <input asp-for="CatalogationDate" type="date" class="form-control"
+                                       value="@(Model.CatalogationDate.HasValue ? Model.CatalogationDate.Value.ToString("yyyy-MM-dd") : "")" />
+                            </div>
+                        </div>
+                    }
 
                     <div id="verifiedFields" class="@(Model.Status == "verificato" ? "" : "d-none")">
                         <div class="card border-success mb-3">
