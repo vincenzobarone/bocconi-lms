@@ -19,13 +19,7 @@
             </a>
         </div>
 
-        @if (TempData["Error"] is string err)
-        {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle me-2"></i>@err
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
+
 
         <form asp-action="EditRole" method="post">
             @Html.AntiForgeryToken()
