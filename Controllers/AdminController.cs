@@ -72,6 +72,7 @@ public class AdminController : Controller
             Areas    = await _areas.GetAllAsync(),
             ActiveTab = activeTab
         };
+        ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
         return View(vm);
     }
 
