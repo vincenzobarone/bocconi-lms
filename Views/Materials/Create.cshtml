@@ -159,6 +159,7 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script>
         (function () {
             var summary = document.getElementById('valSummary');
@@ -178,33 +179,60 @@
         })();
 
         var OFFICE_EXTS = ['doc','docx','ppt','pptx'];
+        var ZIP_EXTS    = ['docx','pptx','xlsx'];
+
+        // Extract dc:creator from Office Open XML (docx/pptx/xlsx) client-side
+        function extractOfficeAuthor(file) {
+            if (typeof JSZip === 'undefined') return Promise.resolve(null);
+            return JSZip.loadAsync(file).then(function (zip) {
+                var entry = zip.file('docProps/core.xml');
+                if (!entry) return null;
+                return entry.async('string').then(function (xml) {
+                    var m = xml.match(/<dc:creator[^>]*>([\s\S]*?)<\/dc:creator>/);
+                    return (m && m[1].trim()) ? m[1].trim() : null;
+                });
+            }).catch(function () { return null; });
+        }
 
         function matFileChanged(inp) {
-            var span = document.getElementById('fileName_File');
-            var pdfBox = document.getElementById('convertPdfBox');
+            var span     = document.getElementById('fileName_File');
+            var pdfBox   = document.getElementById('convertPdfBox');
             var titleInp = document.getElementById('matTitle');
+            var authorInp = document.getElementById('AuthorName');
 
             if (!inp.files || inp.files.length === 0) {
-                span.textContent = span.dataset.placeholder || '';
-                pdfBox.classList.add('d-none');
+                if (span) span.textContent = span.dataset.placeholder || '';
+                if (pdfBox) pdfBox.classList.add('d-none');
                 return;
             }
 
             var file = inp.files[0];
-            span.textContent = file.name;
+            if (span) span.textContent = file.name;
 
-            var ext = file.name.split('.').pop().toLowerCase();
+            var ext       = file.name.split('.').pop().toLowerCase();
             var nameNoExt = file.name.replace(/\.[^.]+$/, '');
 
+            // Auto-fill title from filename if empty
             if (titleInp && titleInp.value.trim() === '') {
                 titleInp.value = nameNoExt;
             }
 
+            // Show/hide PDF conversion checkbox
             if (OFFICE_EXTS.indexOf(ext) !== -1) {
-                pdfBox.classList.remove('d-none');
+                if (pdfBox) pdfBox.classList.remove('d-none');
             } else {
-                pdfBox.classList.add('d-none');
-                document.getElementById('ConvertToPdf').checked = false;
+                if (pdfBox) pdfBox.classList.add('d-none');
+                var cb = document.getElementById('ConvertToPdf');
+                if (cb) cb.checked = false;
+            }
+
+            // Auto-fill author from Office document metadata
+            if (authorInp && authorInp.value.trim() === '' && ZIP_EXTS.indexOf(ext) !== -1) {
+                extractOfficeAuthor(file).then(function (author) {
+                    if (author && authorInp.value.trim() === '') {
+                        authorInp.value = author;
+                    }
+                });
             }
         }
     </script>
