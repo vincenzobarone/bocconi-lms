@@ -342,12 +342,12 @@ public class MaterialsController : Controller
             {
                 _logger.LogError(ex, "SaveVersionAsync fallita in Edit per materialId={Id} file={File}", id, vm.File.FileName);
                 TempData["Warning"] = $"Materiale aggiornato, ma il file non è stato salvato: {ex.Message}";
-                return RedirectToAction(nameof(Details), new { id });
+                return RedirectToAction(nameof(Index));
             }
         }
 
         TempData["Success"] = "Materiale aggiornato.";
-        return RedirectToAction(nameof(Details), new { id });
+        return RedirectToAction(nameof(Index));
     }
 
     // ── Upload new version (from Details page) ────────────────────────────
