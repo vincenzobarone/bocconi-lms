@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
 using System.Security.Claims;
+using System.IO.Compression;
 
 namespace BocconiLMS.Controllers;
 
@@ -306,6 +307,89 @@ public class MaterialsController : Controller
         await _materials.RestoreVersionAsync(materialId, versionId);
         TempData["Success"] = "Versione ripristinata.";
         return RedirectToAction(nameof(Details), new { id = materialId });
+    }
+
+    // ── Delete version ────────────────────────────────────────────────────
+
+    [Authorize(Roles = "Teacher,Admin")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteVersion(int versionId, int materialId)
+    {
+        var material = await _materials.GetByIdAsync(materialId);
+        if (material == null) return NotFound();
+
+        var version = await _materials.GetVersionByIdAsync(versionId);
+        if (version == null || version.MaterialId != materialId) return NotFound();
+
+        var count = await _materials.CountVersionsAsync(materialId);
+        if (count <= 1)
+        {
+            TempData["Error"] = "Non è possibile eliminare l'unica versione del materiale. Elimina il materiale per rimuoverlo completamente.";
+            return RedirectToAction(nameof(Details), new { id = materialId });
+        }
+
+        if (version.IsActive)
+        {
+            var versions = await _materials.GetVersionsAsync(materialId);
+            var prev = versions.Where(v => v.Id != versionId).OrderByDescending(v => v.VersionNumber).FirstOrDefault();
+            if (prev != null)
+                await _materials.RestoreVersionAsync(materialId, prev.Id);
+        }
+
+        var fullPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/'));
+        if (System.IO.File.Exists(fullPath))
+            System.IO.File.Delete(fullPath);
+
+        await _materials.DeleteVersionAsync(versionId);
+        TempData["Success"] = $"Versione v{version.VersionNumber} eliminata.";
+        return RedirectToAction(nameof(Details), new { id = materialId });
+    }
+
+    // ── Bulk download (ZIP) ───────────────────────────────────────────────
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> BulkDownload(List<int> ids)
+    {
+        if (ids == null || ids.Count == 0)
+        {
+            TempData["Error"] = "Seleziona almeno un materiale.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var ms = new MemoryStream();
+        var added = 0;
+        using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+        {
+            foreach (var matId in ids)
+            {
+                var material = await _materials.GetByIdAsync(matId);
+                if (material?.ActiveVersion == null) continue;
+                var version = material.ActiveVersion;
+                var fullPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/'));
+                if (!System.IO.File.Exists(fullPath)) continue;
+
+                var entryName = $"{material.Title} - v{version.VersionNumber}{Path.GetExtension(version.FileName)}";
+                entryName = string.Join("_", entryName.Split(Path.GetInvalidFileNameChars()));
+                var entry = zip.CreateEntry(entryName, CompressionLevel.Optimal);
+                using var entryStream = entry.Open();
+                using var fileStream = System.IO.File.OpenRead(fullPath);
+                await fileStream.CopyToAsync(entryStream);
+                added++;
+            }
+        }
+
+        if (added == 0)
+        {
+            TempData["Error"] = "Nessun file disponibile per i materiali selezionati.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        ms.Position = 0;
+        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmm");
+        return File(ms, "application/zip", $"materiali_{timestamp}.zip");
     }
 
     // ── Download ──────────────────────────────────────────────────────────

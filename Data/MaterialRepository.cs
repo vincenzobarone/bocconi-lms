@@ -270,6 +270,26 @@ public class MaterialRepository
         return await r.ReadAsync() ? MapVersion(r) : null;
     }
 
+    public async Task DeleteVersionAsync(int versionId)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "DELETE FROM material_versions WHERE id = @id", conn);
+        cmd.Parameters.AddWithValue("@id", versionId);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task<int> CountVersionsAsync(int materialId)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM material_versions WHERE material_id = @mid", conn);
+        cmd.Parameters.AddWithValue("@mid", materialId);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
     // ── Lesson links ─────────────────────────────────────────────────────
 
     public async Task<List<Material>> GetByLessonAsync(int lessonId)

@@ -95,6 +95,19 @@
                                                 </button>
                                             </form>
                                         }
+                                        @if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
+                                        {
+                                            <form asp-action="DeleteVersion" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="versionId" value="@v.Id" />
+                                                <input type="hidden" name="materialId" value="@Model.Id" />
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        data-confirm="@T["mat.delete_version_confirm","Eliminare la versione"] v@(v.VersionNumber)?"
+                                                        title="@T["mat.delete_version_btn","Elimina versione"]">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
                                     </div>
                                 </div>
                             </div>

@@ -1014,6 +1014,38 @@ try
 }
 catch { }
 
+// ── Seed bulk-download + delete-version translation keys ─────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','mat.selected','selected'),
+        ('it','mat.selected','selezionati'),
+        ('es','mat.selected','seleccionados'),
+        ('de','mat.selected','ausgewählt'),
+        ('en','mat.deselect_all','Deselect all'),
+        ('it','mat.deselect_all','Deseleziona tutti'),
+        ('es','mat.deselect_all','Deseleccionar todos'),
+        ('de','mat.deselect_all','Alle abwählen'),
+        ('en','mat.bulk_download','Download ZIP'),
+        ('it','mat.bulk_download','Scarica ZIP'),
+        ('es','mat.bulk_download','Descargar ZIP'),
+        ('de','mat.bulk_download','ZIP herunterladen'),
+        ('en','mat.delete_version_confirm','Delete version'),
+        ('it','mat.delete_version_confirm','Eliminare la versione'),
+        ('es','mat.delete_version_confirm','Eliminar versión'),
+        ('de','mat.delete_version_confirm','Version löschen'),
+        ('en','mat.delete_version_btn','Delete version'),
+        ('it','mat.delete_version_btn','Elimina versione'),
+        ('es','mat.delete_version_btn','Eliminar versión'),
+        ('de','mat.delete_version_btn','Version löschen');", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Drop legacy documents / document_versions tables (replaced by Materials Library) ─
 try
 {

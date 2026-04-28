@@ -85,104 +85,131 @@
 }
 else
 {
-    <div class="table-responsive">
-        <table class="table table-hover align-middle" id="materialsTable">
-            <thead class="table-light">
-                <tr>
-                    <th>@T["mat.filter_title","Title"]</th>
-                    <th>@T["mat.col_type","Type"]</th>
-                    <th>@T["mat.filter_lang","Language"]</th>
-                    <th>@T["mat.col_author","Author"]</th>
-                    <th class="text-center">@T["mat.col_status","Status"]</th>
-                    <th class="text-center">@T["mat.col_version","Ver."]</th>
-                    <th class="text-end">@T["common.actions","Actions"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var m in Model.Materials)
-                {
+    <form id="bulkForm" asp-action="BulkDownload" method="post">
+        @Html.AntiForgeryToken()
+
+        @* ── Barra selezione (nascosta finché non si seleziona almeno un elemento) *@
+        <div id="bulkBar" class="d-none mb-3">
+            <div class="alert alert-primary d-flex align-items-center justify-content-between py-2 mb-0">
+                <span><i class="bi bi-check2-square me-2"></i><strong id="bulkCount">0</strong> @T["mat.selected","selezionati"]</span>
+                <div class="d-flex gap-2">
+                    <button type="button" id="deselectAll" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-lg me-1"></i>@T["mat.deselect_all","Deseleziona tutti"]
+                    </button>
+                    <button type="submit" class="btn btn-sm btn-primary">
+                        <i class="bi bi-file-zip me-1"></i>@T["mat.bulk_download","Scarica ZIP"]
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" id="materialsTable">
+                <thead class="table-light">
                     <tr>
-                        <td>
-                            <a asp-action="Details" asp-route-id="@m.Id" class="fw-semibold text-decoration-none">@m.Title</a>
-                            @if (m.ActiveVersion != null)
-                            {
-                                <span class="badge bg-secondary ms-1" style="font-size:.65rem;">@m.ActiveVersion.FileType</span>
-                            }
-                        </td>
-                        <td><span class="badge bg-light text-dark border">@(string.IsNullOrEmpty(m.DocumentTypeName) ? "—" : m.DocumentTypeName)</span></td>
-                        <td>@m.Language</td>
-                        <td class="text-muted small">@(string.IsNullOrEmpty(m.AuthorName) ? "—" : m.AuthorName)</td>
-                        <td class="text-center">
-                            @{
-                                var (statusCss, statusLabel) = m.Status switch {
-                                    "verificato"   => ("success",   T["mat.status_verificato","Verified"]),
-                                    "in_revisione" => ("warning",   T["mat.status_in_revisione","In review"]),
-                                    _              => ("secondary", T["mat.status_bozza","Draft"])
-                                };
-                            }
-                            <span class="badge bg-@statusCss" style="font-size:.7rem;">@statusLabel</span>
-                        </td>
-                        <td class="text-center">
-                            @if (m.CurrentVersion > 0)
-                            {
-                                <a asp-action="Details" asp-route-id="@m.Id"
-                                   class="version-badge text-decoration-none"
-                                   title="@T["mat.details_btn","Details / carica nuova versione"]">v@(m.CurrentVersion)</a>
-                            }
-                            else
-                            {
-                                <span class="text-muted small">—</span>
-                            }
-                        </td>
-                        <td class="text-end">
-                            <div class="d-flex gap-1 justify-content-end">
+                        <th style="width:38px;">
+                            <input type="checkbox" id="selectAll" class="form-check-input" title="Seleziona tutti" />
+                        </th>
+                        <th>@T["mat.filter_title","Title"]</th>
+                        <th>@T["mat.col_type","Type"]</th>
+                        <th>@T["mat.filter_lang","Language"]</th>
+                        <th>@T["mat.col_author","Author"]</th>
+                        <th class="text-center">@T["mat.col_status","Status"]</th>
+                        <th class="text-center">@T["mat.col_version","Ver."]</th>
+                        <th class="text-end">@T["common.actions","Actions"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var m in Model.Materials)
+                    {
+                        <tr>
+                            <td>
+                                <input type="checkbox" name="ids" value="@m.Id"
+                                       class="form-check-input mat-chk"
+                                       @(m.ActiveVersion == null ? "disabled title=\"Nessun file disponibile\"" : "") />
+                            </td>
+                            <td>
+                                <a asp-action="Details" asp-route-id="@m.Id" class="fw-semibold text-decoration-none">@m.Title</a>
                                 @if (m.ActiveVersion != null)
                                 {
-                                    <button type="button"
-                                            class="btn btn-sm btn-outline-info btn-preview"
-                                            data-version-id="@m.ActiveVersion.Id"
-                                            data-file-type="@m.ActiveVersion.FileType"
-                                            data-file-name="@m.ActiveVersion.FileName"
-                                            data-material-id="@m.Id"
-                                            title="@T["mat.preview_btn","Anteprima"]">
-                                        <i class="bi bi-eye"></i>
-                                    </button>
-                                    <a asp-action="Download" asp-route-versionId="@m.ActiveVersion.Id"
-                                       class="btn btn-sm btn-outline-primary"
-                                       title="@T["mat.download_btn","Download active version"]">
-                                        <i class="bi bi-download"></i>
-                                    </a>
+                                    <span class="badge bg-secondary ms-1" style="font-size:.65rem;">@m.ActiveVersion.FileType</span>
+                                }
+                            </td>
+                            <td><span class="badge bg-light text-dark border">@(string.IsNullOrEmpty(m.DocumentTypeName) ? "—" : m.DocumentTypeName)</span></td>
+                            <td>@m.Language</td>
+                            <td class="text-muted small">@(string.IsNullOrEmpty(m.AuthorName) ? "—" : m.AuthorName)</td>
+                            <td class="text-center">
+                                @{
+                                    var (statusCss, statusLabel) = m.Status switch {
+                                        "verificato"   => ("success",   T["mat.status_verificato","Verified"]),
+                                        "in_revisione" => ("warning",   T["mat.status_in_revisione","In review"]),
+                                        _              => ("secondary", T["mat.status_bozza","Draft"])
+                                    };
+                                }
+                                <span class="badge bg-@statusCss" style="font-size:.7rem;">@statusLabel</span>
+                            </td>
+                            <td class="text-center">
+                                @if (m.CurrentVersion > 0)
+                                {
+                                    <a asp-action="Details" asp-route-id="@m.Id"
+                                       class="version-badge text-decoration-none"
+                                       title="@T["mat.details_btn","Details / carica nuova versione"]">v@(m.CurrentVersion)</a>
                                 }
                                 else
                                 {
-                                    <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-sm btn-outline-info"
-                                       title="@T["mat.details_btn","Details"]">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
+                                    <span class="text-muted small">—</span>
                                 }
-                                @if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
-                                {
-                                    <a asp-action="Edit" asp-route-id="@m.Id"
-                                       class="btn btn-sm btn-outline-secondary"
-                                       title="@T["common.edit","Edit"]">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <form asp-action="Delete" asp-route-id="@m.Id" method="post" class="d-inline">
-                                        @Html.AntiForgeryToken()
-                                        <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                data-confirm="@T["common.delete","Delete"] «@m.Title»?"
-                                                title="@T["common.delete","Delete"]">
-                                            <i class="bi bi-trash"></i>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex gap-1 justify-content-end">
+                                    @if (m.ActiveVersion != null)
+                                    {
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-info btn-preview"
+                                                data-version-id="@m.ActiveVersion.Id"
+                                                data-file-type="@m.ActiveVersion.FileType"
+                                                data-file-name="@m.ActiveVersion.FileName"
+                                                data-material-id="@m.Id"
+                                                title="@T["mat.preview_btn","Anteprima"]">
+                                            <i class="bi bi-eye"></i>
                                         </button>
-                                    </form>
-                                }
-                            </div>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
+                                        <a asp-action="Download" asp-route-versionId="@m.ActiveVersion.Id"
+                                           class="btn btn-sm btn-outline-primary"
+                                           title="@T["mat.download_btn","Download active version"]">
+                                            <i class="bi bi-download"></i>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-sm btn-outline-info"
+                                           title="@T["mat.details_btn","Details"]">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    }
+                                    @if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
+                                    {
+                                        <a asp-action="Edit" asp-route-id="@m.Id"
+                                           class="btn btn-sm btn-outline-secondary"
+                                           title="@T["common.edit","Edit"]">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <form asp-action="Delete" asp-route-id="@m.Id" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                    data-confirm="@T["common.delete","Delete"] «@m.Title»?"
+                                                    title="@T["common.delete","Delete"]">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </form>
 }
 
 @* ── Modal anteprima file ──────────────────────────────────────────── *@
@@ -210,8 +237,81 @@ else
 @section Scripts {
     <script>
         $(document).ready(function () {
-            $('#materialsTable').DataTable({ language: window.dtLang(), pageLength: 25 });
+            $('#materialsTable').DataTable({
+                language: window.dtLang(),
+                pageLength: 25,
+                columnDefs: [{ orderable: false, targets: 0 }]
+            });
         });
+
+        // ── Bulk selection logic ──────────────────────────────────────────
+        (function () {
+            var selected = new Set();
+
+            function refreshCheckboxes() {
+                document.querySelectorAll('.mat-chk').forEach(function (cb) {
+                    if (!cb.disabled) cb.checked = selected.has(cb.value);
+                });
+                var all = document.getElementById('selectAll');
+                var total = document.querySelectorAll('.mat-chk:not(:disabled)').length;
+                all.indeterminate = selected.size > 0 && selected.size < document.querySelectorAll('.mat-chk:not(:disabled)[data-selectable]').length;
+                all.checked = total > 0 && document.querySelectorAll('.mat-chk:not(:disabled)').length === selected.size;
+            }
+
+            function updateBulkBar() {
+                var bar = document.getElementById('bulkBar');
+                var cnt = document.getElementById('bulkCount');
+                if (selected.size > 0) {
+                    bar.classList.remove('d-none');
+                    cnt.textContent = selected.size;
+                } else {
+                    bar.classList.add('d-none');
+                }
+                var all = document.getElementById('selectAll');
+                var enabledOnPage = document.querySelectorAll('.mat-chk:not(:disabled)').length;
+                var checkedOnPage = Array.from(document.querySelectorAll('.mat-chk:not(:disabled)')).filter(function(cb){ return selected.has(cb.value); }).length;
+                all.indeterminate = checkedOnPage > 0 && checkedOnPage < enabledOnPage;
+                all.checked = enabledOnPage > 0 && checkedOnPage === enabledOnPage;
+            }
+
+            // Re-sync checkboxes on DataTable page redraw
+            $('#materialsTable').on('draw.dt', function () {
+                refreshCheckboxes();
+                updateBulkBar();
+            });
+
+            document.addEventListener('change', function (e) {
+                if (e.target.id === 'selectAll') {
+                    document.querySelectorAll('.mat-chk:not(:disabled)').forEach(function (cb) {
+                        if (e.target.checked) selected.add(cb.value); else selected.delete(cb.value);
+                        cb.checked = e.target.checked;
+                    });
+                    updateBulkBar();
+                } else if (e.target.classList.contains('mat-chk')) {
+                    if (e.target.checked) selected.add(e.target.value); else selected.delete(e.target.value);
+                    updateBulkBar();
+                }
+            });
+
+            document.getElementById('deselectAll').addEventListener('click', function () {
+                selected.clear();
+                document.querySelectorAll('.mat-chk').forEach(function (cb) { cb.checked = false; });
+                document.getElementById('selectAll').checked = false;
+                updateBulkBar();
+            });
+
+            // Inject hidden inputs on form submit so all selected IDs (across pages) are POSTed
+            document.getElementById('bulkForm').addEventListener('submit', function () {
+                document.querySelectorAll('input[name="ids"]').forEach(function (el) { el.remove(); });
+                selected.forEach(function (id) {
+                    var inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = 'ids';
+                    inp.value = id;
+                    document.getElementById('bulkForm').appendChild(inp);
+                });
+            });
+        })();
 
         (function () {
             var imageTypes = ['PNG','JPG','JPEG','GIF','SVG','BMP','WEBP'];
