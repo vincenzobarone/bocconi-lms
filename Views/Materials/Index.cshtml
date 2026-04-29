@@ -147,10 +147,14 @@ else
                                        @(m.ActiveVersion == null ? "disabled title=\"Nessun file disponibile\"" : "") />
                             </td>
                             <td>
-                                <a asp-action="Details" asp-route-id="@m.Id" class="fw-semibold text-decoration-none">@m.Title</a>
                                 @if (m.ActiveVersion != null)
                                 {
+                                    <a asp-action="Download" asp-route-versionId="@m.ActiveVersion.Id" class="fw-semibold text-decoration-none">@m.Title</a>
                                     <span class="badge bg-secondary ms-1" style="font-size:.65rem;">@m.ActiveVersion.FileType</span>
+                                }
+                                else
+                                {
+                                    <a asp-action="Details" asp-route-id="@m.Id" class="fw-semibold text-decoration-none">@m.Title</a>
                                 }
                             </td>
                             <td><span class="badge bg-light text-dark border">@(string.IsNullOrEmpty(m.DocumentTypeName) ? "—" : m.DocumentTypeName)</span></td>
@@ -191,11 +195,6 @@ else
                                                 title="@T["mat.preview_btn","Anteprima"]">
                                             <i class="bi bi-eye"></i>
                                         </button>
-                                        <a asp-action="Download" asp-route-versionId="@m.ActiveVersion.Id"
-                                           class="btn btn-sm btn-outline-primary"
-                                           title="@T["mat.download_btn","Download active version"]">
-                                            <i class="bi bi-download"></i>
-                                        </a>
                                     }
                                     else
                                     {
@@ -336,8 +335,8 @@ else
             var videoTypes = ['MP4','WEBM','MOV','AVI','MKV'];
 
             function openPreview(versionId, fileType, fileName, materialId) {
-                var previewUrl  = '/Materials/Preview/' + versionId;
-                var downloadUrl = '/Materials/Download/' + versionId;
+                var previewUrl  = '/Materials/Preview?versionId=' + versionId;
+                var downloadUrl = '/Materials/Download?versionId=' + versionId;
 
                 document.getElementById('previewModalLabel').textContent = fileName;
                 document.getElementById('previewDownloadBtn').href = downloadUrl;

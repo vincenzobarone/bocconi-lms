@@ -247,8 +247,8 @@
         var versionId  = btn.dataset.versionId;
         var fileType   = (btn.dataset.fileType || '').toUpperCase();
         var fileName   = btn.dataset.fileName || '';
-        var previewUrl  = '/Materials/Preview/' + versionId;
-        var downloadUrl = '/Materials/Download/' + versionId;
+        var previewUrl  = '/Materials/Preview?versionId=' + versionId;
+        var downloadUrl = '/Materials/Download?versionId=' + versionId;
 
         document.getElementById('previewModalLabel').textContent = fileName;
         document.getElementById('previewDownloadBtn').href = downloadUrl;
