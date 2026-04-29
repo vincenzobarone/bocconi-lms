@@ -929,7 +929,11 @@ try
         ('en','admin.select_role','Select a role'),
         ('it','admin.select_role','Seleziona un ruolo'),
         ('es','admin.select_role','Seleccionar un rol'),
-        ('de','admin.select_role','Eine Rolle auswählen');", conn);
+        ('de','admin.select_role','Eine Rolle auswählen'),
+        ('en','users.delete_warning','This action is permanent and cannot be undone. All data associated with this user will also be deleted.'),
+        ('it','users.delete_warning','Questa operazione è permanente e irreversibile. Tutti i dati associati a questo utente verranno eliminati definitivamente.'),
+        ('es','users.delete_warning','Esta acción es permanente e irreversible. Todos los datos asociados a este usuario también serán eliminados.'),
+        ('de','users.delete_warning','Diese Aktion ist dauerhaft und kann nicht rückgängig gemacht werden. Alle mit diesem Benutzer verknüpften Daten werden ebenfalls gelöscht.');", conn);
     await ins.ExecuteNonQueryAsync();
     foreach (var lang in new[] { "es", "de" })
     {

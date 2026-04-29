@@ -463,8 +463,8 @@
             </div>
             <div class="modal-body">
                 <p id="deleteModalBody"></p>
-                <div id="deleteStudentWarning" class="alert alert-warning small d-none">
-                    <i class="bi bi-exclamation-triangle me-1"></i>@T["users.delete_student_warning","All quiz attempts, lesson progress and enrollment records will also be permanently deleted."]
+                <div class="alert alert-warning small">
+                    <i class="bi bi-exclamation-triangle me-1"></i>@T["users.delete_warning","This action is permanent and cannot be undone. All data associated with this user will also be deleted."]
                 </div>
             </div>
             <div class="modal-footer">
@@ -592,11 +592,6 @@
                 var name = btn.data('user-name');
                 var role = btn.data('user-role');
                 $('#deleteModalBody').text(_lbl.deleteConfirmMsg + ' "' + name + '"?');
-                if (role === 'Student') {
-                    $('#deleteStudentWarning').removeClass('d-none');
-                } else {
-                    $('#deleteStudentWarning').addClass('d-none');
-                }
                 $('#deleteForm').attr('action', '/Admin/DeleteUser/' + btn.data('user-id'));
             });
 
