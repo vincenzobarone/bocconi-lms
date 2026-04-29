@@ -204,7 +204,7 @@
                         <a asp-action="Index" class="btn btn-outline-secondary">
                             <i class="bi bi-x me-1"></i>@T["mat.cancel","Cancel"]
                         </a>
-                        <button type="button" id="submitBtn" class="btn btn-bocconi" data-lockable>
+                        <button type="button" id="submitBtn" class="btn btn-bocconi">
                             <i class="bi bi-check-lg me-1"></i>@T["mat.create_btn","Create material"]
                         </button>
                     </div>
@@ -345,6 +345,23 @@
         }
 
         document.getElementById('submitBtn').addEventListener('click', async function() {
+            // Se non è stato selezionato un file, mostra un avviso nell'area upload
+            var fileInp = document.getElementById('File');
+            if (!fileInp.files || fileInp.files.length === 0) {
+                var dropZone = document.getElementById('uploadDropZone');
+                dropZone.style.borderColor = '#dc3545';
+                dropZone.style.backgroundColor = '#fff5f5';
+                var warn = document.getElementById('noFileUploadWarn');
+                if (!warn) {
+                    warn = document.createElement('p');
+                    warn.id = 'noFileUploadWarn';
+                    warn.className = 'text-danger small mt-2 mb-0 fw-semibold';
+                    warn.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>@T["mat.file_required_warn","Seleziona prima un file da caricare."]';
+                    dropZone.appendChild(warn);
+                }
+                dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return;
+            }
             var form = document.getElementById('matForm');
             if (!form.reportValidity || !form.reportValidity()) return;
             if (needsModal()) {
@@ -488,6 +505,12 @@
             // Mostra area file info, nascondi upload prompt
             document.getElementById('noFileState').classList.add('d-none');
             document.getElementById('hasFileState').classList.remove('d-none');
+            // Azzera eventuale avviso "file obbligatorio"
+            var dropZone = document.getElementById('uploadDropZone');
+            dropZone.style.borderColor = '';
+            dropZone.style.backgroundColor = '';
+            var warn = document.getElementById('noFileUploadWarn');
+            if (warn) warn.remove();
 
             // Opzione conversione PDF
             var pdfBox = document.getElementById('convertPdfBox');
