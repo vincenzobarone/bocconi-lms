@@ -16,7 +16,7 @@
             <i class="bi bi-house-door-fill me-2"></i>@T["dashboard.title", "Dashboard"]
         }
     </h2>
-    @if (!Model.IsPending && Model.IsAdmin)
+    @if (!Model.IsPending)
     {
         var langCode = T.CurrentLanguage;
         var cultureTag = langCode == "en" ? "en-GB" : langCode == "es" ? "es-ES" : langCode == "de" ? "de-DE" : "it-IT";
@@ -25,12 +25,6 @@
             <span><i class="bi bi-calendar3 me-1"></i>@DateTime.Now.ToString("dddd d MMMM yyyy", cult)</span>
             <span class="vr"></span>
             <span><i class="bi bi-clock me-1"></i><span id="adminLiveClock">@DateTime.Now.ToString("HH:mm:ss")</span></span>
-        </div>
-    }
-    else if (!Model.IsPending)
-    {
-        <div class="text-muted small">
-            <i class="bi bi-calendar3 me-1"></i>@DateTime.Now.ToString("dddd d MMMM yyyy", new System.Globalization.CultureInfo("it-IT"))
         </div>
     }
 </div>
