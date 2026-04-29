@@ -42,6 +42,7 @@ public class UserRepository
                    CONCAT(cb.first_name, ' ', cb.last_name) AS created_by_name
             FROM users u
             LEFT JOIN users cb ON cb.id = u.created_by
+            WHERE u.role != 'Admin'
             ORDER BY u.last_name, u.first_name", conn);
         using var reader = await cmd.ExecuteReaderAsync();
         while (reader.Read())
@@ -174,7 +175,8 @@ public class UserRepository
                    CONCAT(cb.first_name, ' ', cb.last_name) AS created_by_name
             FROM roles r
             LEFT JOIN users cb ON cb.id = r.created_by
-            ORDER BY FIELD(r.name, 'Admin', 'Teacher', 'Student'), r.name", conn);
+            WHERE r.name != 'Admin'
+            ORDER BY FIELD(r.name, 'Teacher', 'Student'), r.name", conn);
         var list = new List<RoleViewModel>();
         using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
