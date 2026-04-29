@@ -11,9 +11,9 @@
 1. [Accesso e autenticazione](#1-accesso-e-autenticazione)
 2. [Ruoli e permessi](#2-ruoli-e-permessi)
 3. [Gestione utenti (Admin)](#3-gestione-utenti-admin)
-4. [Gestione corsi](#4-gestione-corsi)
-5. [Lezioni](#5-lezioni)
-6. [Documenti e video](#6-documenti-e-video)
+4. [Materiali didattici](#4-materiali-didattici)
+5. [Gestione corsi](#5-gestione-corsi)
+6. [Lezioni](#6-lezioni)
 7. [Quiz](#7-quiz)
 8. [Dashboard studente](#8-dashboard-studente)
 9. [Dashboard docente](#9-dashboard-docente)
@@ -52,11 +52,13 @@
 | Funzione | Admin | Teacher | Student |
 |---|:---:|:---:|:---:|
 | Gestire utenti | ✅ | — | — |
+| Libreria Materiali — upload/modifica | ✅ | ✅ | — |
+| Libreria Materiali — sfoglia/download | ✅ | ✅ | ✅ |
 | Creare/modificare qualsiasi corso | ✅ | — | — |
 | Assegnare docenti ai corsi | ✅ | — | — |
 | Creare/modificare i propri corsi | ✅ | ✅ | — |
 | Aggiungere lezioni | ✅ | ✅ | — |
-| Caricare documenti/video | ✅ | ✅ | — |
+| Collegare materiali alle lezioni | ✅ | ✅ | — |
 | Creare quiz | ✅ | ✅ | — |
 | Iscriversi ai corsi | — | — | ✅ |
 | Studiare lezioni e sostenere quiz | — | — | ✅ |
@@ -99,7 +101,7 @@ Percorso: **Admin → Utenti → tab "Ruoli"**
 Percorso: **Admin → Utenti**
 
 ### Lista utenti
-La tabella mostra tutti gli utenti con: nome, email, ruolo, stato (Attivo/Inattivo), data di registrazione.
+La tabella mostra tutti gli utenti con: nome, email, ruolo, stato (Attivo/Inattivo), data di registrazione e nome del creatore.
 
 ### Azioni disponibili per utente
 
@@ -120,7 +122,98 @@ Se un docente ha corsi attivi, il sistema blocca l'eliminazione e mostra un mess
 
 ---
 
-## 4. Gestione corsi
+## 4. Materiali didattici
+
+Percorso: **Materiali** (voce navbar)
+
+La **Libreria Materiali** è il repository centralizzato di tutti i documenti e i file multimediali della piattaforma. I materiali vengono prima caricati nella libreria, quindi collegati alle singole lezioni dei corsi. Il modulo deve essere abilitato dall'Admin tramite i Feature Flags.
+
+### Chi può fare cosa
+
+| Operazione | Admin | Teacher | Student |
+|---|:---:|:---:|:---:|
+| Sfogliare e scaricare | ✅ | ✅ | ✅ |
+| Caricare nuovo materiale | ✅ | ✅ | — |
+| Modificare materiale | ✅ | ✅ | — |
+| Cambiare stato | ✅ | solo con permesso | — |
+| Eliminare materiale | ✅ | ✅ | — |
+
+Gli studenti vedono un avviso che ricorda loro che per caricamenti o modifiche devono contattare il docente.
+
+### Campi del materiale
+
+| Campo | Note |
+|---|---|
+| **Autore** | Obbligatorio. Se vuoto, viene estratto automaticamente dai metadati del file (.docx, .pptx, .pdf). |
+| **Titolo** | Obbligatorio, univoco nell'intera libreria. |
+| **Tipo documento** | Lista configurabile dall'Admin (Admin → Dictionary → tab "Tipi documento"). |
+| **Lingua** | Italiano, English, Français, Español, Deutsch, Altro. |
+| **Stato** | `bozza` / `in_revisione` / `verificato` — vedi workflow sotto. |
+| **Cartella** | Organizzazione logica. Digitare un nome esistente (autocomplete) o uno nuovo (la cartella viene creata automaticamente). |
+| **Area didattica** | L'Admin vede tutte le aree; il Teacher vede solo le aree assegnate al proprio account. |
+| **Data catalogazione** | Data di riferimento del documento (opzionale). |
+| **File** | Obbligatorio in creazione; opzionale in modifica (caricarne uno nuovo crea una nuova versione). |
+| **Converti in PDF** | Opzionale: converte automaticamente .doc/.docx/.ppt/.pptx in PDF prima del salvataggio (richiede LibreOffice sul server). |
+| **Note versione** | Testo libero per descrivere le modifiche della versione. |
+
+### Workflow stato
+
+```
+bozza  →  in_revisione  →  verificato
+```
+
+- **bozza** — stato iniziale; il materiale non è ancora pronto per la distribuzione.
+  - Se l'utente non possiede il permesso `setstatus`, il campo stato è bloccato su _bozza_ in creazione.
+- **in_revisione** — materiale inviato alla revisione.
+- **verificato** — materiale approvato e pronto all'uso.
+  - Richiede obbligatoriamente l'assegnazione a una **cartella**.
+  - Viene assegnato automaticamente un **numero protocollo** progressivo univoco.
+  - Se l'utente non possiede il permesso `setstatus`, lo stato non può essere modificato in modifica.
+
+Il permesso `setstatus` per creazione, modifica e approvazione si configura separatamente nei ruoli personalizzati.
+
+### Versioning
+
+Ogni materiale mantiene uno storico completo delle versioni del file.
+
+- **Caricamento nuova versione:** in pagina Edit, caricare un nuovo file crea automaticamente una nuova versione (v2, v3…). La versione caricata diventa quella attiva.
+- **Upload da Details:** nella pagina di dettaglio è presente un riquadro "Carica nuova versione" con campo note.
+- **Ripristina versione:** pulsante ↩ accanto a ogni versione precedente — la versione scelta diventa la versione attiva.
+- **Elimina versione:** pulsante 🗑 accanto a ogni versione — non è possibile eliminare l'unica versione rimasta (per farlo, eliminare il materiale).
+- **Elimina materiale:** rimuove il record e tutti i file fisici di tutte le versioni dal disco.
+
+### Download e anteprima
+
+- **Download singolo:** pulsante nella lista o nella pagina di dettaglio per la versione attiva.
+- **Download multiplo (ZIP):** nella lista, selezionare più materiali con le checkbox e cliccare **"Scarica selezione"** — viene generato un archivio ZIP con i file attivi.
+- **Anteprima inline:** PDF e immagini si aprono direttamente nel browser senza scaricare.
+
+### Filtri nella lista
+
+| Filtro | Tipo |
+|---|---|
+| Titolo | Testo libero |
+| Lingua | Lista a tendina |
+| Tipo documento | Lista a tendina |
+| Anno catalogazione | Anno (es. 2024) |
+| Anno ultima modifica | Anno (es. 2024) |
+| Nome cartella | Testo libero |
+
+### Tipi documento (Admin)
+
+Percorso: **Admin → Dictionary → tab "Tipi documento"**
+
+Lista completamente configurabile: aggiungere, rinominare e riordinare i tipi (es. Dispensa, Slide, Articolo, Video, Esercizio).
+
+### Notifiche email sui materiali
+
+Percorso: **Admin → Email Settings → sezione "Material Notifications"**
+
+Quando un materiale viene creato o modificato, il sistema può inviare una notifica automatica ai ruoli configurati (configurazione: abilita notifica + seleziona i ruoli destinatari).
+
+---
+
+## 5. Gestione corsi
 
 ### Creazione corso (Teacher / Admin)
 
@@ -143,7 +236,7 @@ Campi del form:
 - **Pubblicato** — visibile a tutti gli studenti nel catalogo
 
 ### Eliminazione corso
-L'eliminazione è **a cascata**: vengono eliminati definitivamente lezioni, quiz, documenti (inclusi i file fisici su disco), iscrizioni e progressi degli studenti. Un avviso mostra il numero di documenti che verranno eliminati prima della conferma.
+L'eliminazione è **a cascata**: vengono eliminati definitivamente lezioni, quiz, collegamenti ai materiali (i materiali stessi rimangono nella libreria), iscrizioni e progressi degli studenti. Un avviso mostra il numero di elementi che verranno eliminati prima della conferma.
 
 ### Catalogo corsi (Student)
 - Percorso: menu **Corsi**
@@ -157,7 +250,7 @@ L'eliminazione è **a cascata**: vengono eliminati definitivamente lezioni, quiz
 
 ---
 
-## 5. Lezioni
+## 6. Lezioni
 
 ### Aggiunta lezione (Teacher / Admin)
 - Dal dettaglio corso → pulsante **"Aggiungi lezione"**
@@ -166,33 +259,29 @@ L'eliminazione è **a cascata**: vengono eliminati definitivamente lezioni, quiz
 ### Ordine lezioni
 Le lezioni vengono visualizzate nell'ordine numerico del campo **Ordine**. È possibile riordinare modificando questo valore.
 
+### Collegamento materiali alla lezione
+
+I file e i documenti visibili agli studenti in una lezione provengono dalla **Libreria Materiali** (§4) — non si caricano direttamente nella lezione.
+
+**Come collegare un materiale:**
+1. Aprire il dettaglio della lezione
+2. Sezione **"Materiali"** → pulsante **"Aggiungi dalla libreria"**
+3. Nel modal di selezione cercare il materiale per titolo e cliccare **"Aggiungi"**
+4. Il materiale compare nella sezione con pulsanti: download diretto, link alla scheda dettaglio, rimozione collegamento
+
+**Come rimuovere il collegamento:**
+- Pulsante 🗑 accanto al materiale nella sezione lezione — rimuove solo il collegamento; il materiale resta nella libreria
+
+**Nota:** se la libreria è vuota o tutti i materiali sono già collegati a quella lezione, il modal mostra un link per creare un nuovo materiale.
+
+**Cosa vede lo studente:**
+- Nella pagina della lezione compare la sezione "Materiali" con tutti i documenti collegati
+- Per ogni materiale: nome file, tipo, dimensione e pulsante di download
+- I video sono riproducibili inline senza necessità di download
+
 ### Completamento lezione (Student)
 - Aprire la pagina della lezione conta come "completata"
 - Il progresso viene registrato e mostrato nella dashboard e nella barra di avanzamento del corso
-
----
-
-## 6. Documenti e video
-
-### Caricamento (Teacher / Admin)
-- Dal dettaglio lezione → pulsante **"Carica documento"**
-- Formati supportati:
-  - **Documenti:** PDF, Word (.doc/.docx), PowerPoint (.ppt/.pptx), Excel (.xls/.xlsx), TXT — max **50 MB**
-  - **Video:** MP4, WebM, MOV, AVI, MKV — max **500 MB**
-
-### Versioning
-- Ogni nuovo caricamento sullo stesso documento crea una **nuova versione**
-- Le versioni precedenti sono conservate sul disco e accessibili dal pulsante **"Versioni"**
-- Dal pannello versioni è possibile **ripristinare** una versione precedente (diventa la versione attiva)
-- Eliminando il documento si eliminano **tutti i file di tutte le versioni** dal disco
-
-### Visualizzazione (Student)
-- **Documenti:** pulsante di download
-- **Video:** player HTML5 integrato nella pagina, senza necessità di download
-
-### Icone nella lista
-- 📄 File generico (documenti)
-- ▶ Video (file video con player inline)
 
 ---
 
@@ -281,6 +370,13 @@ Attiva/disattiva selettivamente le email automatiche legate ai corsi:
 | Student on quiz completed | Studente | Ricezione risultato dopo il completamento di un quiz |
 | Teacher on quiz completed | Docente | Notifica quando uno studente completa un quiz nel proprio corso |
 | Teacher on student enrolled | Docente | Notifica quando uno studente si iscrive al proprio corso |
+
+### Notifiche materiali
+
+Sezione **"Material Notifications"** nella stessa pagina di Email Settings.
+
+- **Abilita notifica materiali** — attiva l'invio di email quando un materiale viene creato o modificato
+- **Ruoli destinatari** — lista di ruoli che ricevono la notifica (configurati separatamente)
 
 Le notifiche vengono inviate **solo se** l'invio email è abilitato nelle impostazioni SMTP e la singola opzione è spuntata.
 
@@ -371,13 +467,16 @@ Percorso: Menu utente in alto a destra → **"Profilo"** o **"Cambia password"**
 ```
 artifacts/bocconi-lms/
 ├── Controllers/
-│   ├── AdminController.cs      # Gestione utenti, traduzioni, email, lingue
+│   ├── AdminController.cs      # Gestione utenti, ruoli, aree, traduzioni, email, lingue
+│   ├── MaterialsController.cs  # Libreria materiali: CRUD, versioning, download, link lezioni
 │   ├── CourseController.cs     # CRUD corsi, lezioni, studenti
-│   ├── DocumentController.cs  # Upload, versioning, eliminazione documenti
-│   ├── QuizController.cs      # CRUD quiz, svolgimento, cronologia
+│   ├── LessonController.cs     # Dettaglio lezione, collegamento materiali
+│   ├── QuizController.cs       # CRUD quiz, svolgimento, cronologia
 │   └── AccountController.cs   # Login, logout, profilo, reset password
 ├── Data/
 │   ├── DbHelper.cs            # Factory connessioni MySQL
+│   ├── MaterialRepository.cs  # Query libreria materiali, versioni, cartelle, link lezioni
+│   ├── AreaRepository.cs      # Aree didattiche
 │   ├── TranslationRepository.cs
 │   ├── SettingsRepository.cs  # app_settings (email, lingue abilitate)
 │   ├── UserRepository.cs
@@ -392,12 +491,17 @@ artifacts/bocconi-lms/
 │   │   ├── Users.cshtml
 │   │   ├── Translations.cshtml
 │   │   └── EmailSettings.cshtml
+│   ├── Materials/
+│   │   ├── Index.cshtml       # Lista con filtri e selezione multipla
+│   │   ├── Create.cshtml
+│   │   ├── Edit.cshtml
+│   │   └── Details.cshtml     # Storico versioni, upload nuova versione
 │   ├── Course/
-│   ├── Lesson/
+│   ├── Lesson/                # Details.cshtml include sezione collegamento materiali
 │   ├── Quiz/
 │   └── Shared/_Layout.cshtml
-├── Program.cs                  # DI, Kestrel (500 MB upload), startup migrations
-└── schema.sql                  # DDL puro (niente seed — traduzioni gestite via Admin UI)
+├── Program.cs                  # DI, Kestrel (500 MB upload), startup seeding
+└── schema.sql                  # DDL completo (applicare manualmente su DB nuovo)
 ```
 
 ### Sistema di traduzione
@@ -406,14 +510,17 @@ artifacts/bocconi-lms/
 - Le chiavi vengono create automaticamente nel DB al primo utilizzo
 - Le lingue abilitate sono cachate per 10 minuti (invalidate on save)
 
-### Migrazioni DB
-Le migrazioni incrementali vengono applicate all'avvio in `Program.cs` dentro blocchi `try/catch`. Schema completo in `schema.sql` (da applicare manualmente su un DB nuovo).
+### Schema DB
+Lo schema completo è in `schema.sql` — da applicare manualmente su un DB nuovo. Le modifiche incrementali allo schema si applicano aggiornando `schema.sql` ed eseguendo l'`ALTER TABLE` direttamente sul DB; non si usano migrazioni runtime.
+
+### Relazione materiali ↔ lezioni
+La tabella `lesson_materials` (o equivalente) collega N materiali a N lezioni in modalità N:N. Il materiale esiste indipendentemente dalla lezione; il collegamento può essere aggiunto e rimosso senza toccare il materiale stesso.
 
 ### Upload file
 - Limite Kestrel: 500 MB (`MaxRequestBodySize`)
 - `FormOptions.MultipartBodyLengthLimit`: 500 MB
-- I file vengono salvati in `wwwroot/uploads/` con nome `{guid}_{filename}`
-- Eliminando un documento o ripristinando una versione, i file fisici delle versioni non più attive vengono mantenuti su disco; eliminando il documento tutti i file vengono rimossi
+- I file sono salvati in `wwwroot/uploads/mat_{id}/` con prefisso versione (`v1_nome`, `v2_nome`…)
+- Eliminando un materiale si rimuovono tutti i file di tutte le versioni e la cartella `mat_{id}`
 
 ### Modal di conferma globale
 Pattern usato in tutto il progetto: `data-confirm="messaggio"` su qualsiasi elemento cliccabile. L'handler in `_Layout.cshtml` intercetta il click, mostra il modal Bootstrap e procede solo se confermato.
