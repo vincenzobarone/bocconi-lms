@@ -12,8 +12,7 @@
     bool matMenuChecked  = Model.Permissions.Contains("menu.materials");
     bool anyOpChecked    = matOpPerms.Any(p => Model.Permissions.Contains(p.Key));
     bool anySetStatus    = Model.Permissions.Contains("materials.create.setstatus")
-                        || Model.Permissions.Contains("materials.edit.setstatus")
-                        || Model.Permissions.Contains("materials.approve.setstatus");
+                        || Model.Permissions.Contains("materials.edit.setstatus");
 
     string MenuIcon(string key) => key switch {
         "menu.users"        => "bi-people",
@@ -141,9 +140,6 @@
                             <input type="checkbox" name="permissions" value="materials.edit.setstatus"
                                    id="ss_edit" class="d-none"
                                    @(anySetStatus ? "checked" : "") />
-                            <input type="checkbox" name="permissions" value="materials.approve.setstatus"
-                                   id="ss_approve" class="d-none"
-                                   @(anySetStatus ? "checked" : "") />
                         </div>
                     </div>
 
@@ -181,7 +177,7 @@
         //    con le tre checkbox nascoste che portano i valori reali
         document.getElementById('matSetStatusAll').addEventListener('change', function () {
             var state = this.checked;
-            ['ss_create', 'ss_edit', 'ss_approve'].forEach(function (id) {
+            ['ss_create', 'ss_edit'].forEach(function (id) {
                 document.getElementById(id).checked = state;
             });
         });
@@ -198,7 +194,7 @@
                 grp.classList.add('d-none');
                 // Deseleziona tutto quando non ci sono op attive
                 document.getElementById('matSetStatusAll').checked = false;
-                ['ss_create', 'ss_edit', 'ss_approve'].forEach(function (id) {
+                ['ss_create', 'ss_edit'].forEach(function (id) {
                     document.getElementById(id).checked = false;
                 });
             }
@@ -218,7 +214,7 @@
                 // Nascondi e resetta setstatus
                 document.getElementById('matSetStatusGroup').classList.add('d-none');
                 document.getElementById('matSetStatusAll').checked = false;
-                ['ss_create', 'ss_edit', 'ss_approve'].forEach(function (id) {
+                ['ss_create', 'ss_edit'].forEach(function (id) {
                     document.getElementById(id).checked = false;
                 });
             }

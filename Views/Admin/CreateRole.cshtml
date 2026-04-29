@@ -12,8 +12,7 @@
     bool matMenuChecked = Model.Permissions.Contains("menu.materials");
     bool anyOpChecked   = matOpPerms.Any(p => Model.Permissions.Contains(p.Key));
     bool anySetStatus   = Model.Permissions.Contains("materials.create.setstatus")
-                       || Model.Permissions.Contains("materials.edit.setstatus")
-                       || Model.Permissions.Contains("materials.approve.setstatus");
+                       || Model.Permissions.Contains("materials.edit.setstatus");
 
     string MenuIcon(string key) => key switch {
         "menu.users"        => "bi-people",
@@ -137,8 +136,6 @@
                                    id="ss_create" class="d-none" @(anySetStatus ? "checked" : "") />
                             <input type="checkbox" name="permissions" value="materials.edit.setstatus"
                                    id="ss_edit" class="d-none" @(anySetStatus ? "checked" : "") />
-                            <input type="checkbox" name="permissions" value="materials.approve.setstatus"
-                                   id="ss_approve" class="d-none" @(anySetStatus ? "checked" : "") />
                         </div>
                     </div>
 
@@ -174,7 +171,7 @@
     <script>
         document.getElementById('matSetStatusAll').addEventListener('change', function () {
             var state = this.checked;
-            ['ss_create', 'ss_edit', 'ss_approve'].forEach(function (id) {
+            ['ss_create', 'ss_edit'].forEach(function (id) {
                 document.getElementById(id).checked = state;
             });
         });
@@ -188,7 +185,7 @@
             } else {
                 grp.classList.add('d-none');
                 document.getElementById('matSetStatusAll').checked = false;
-                ['ss_create', 'ss_edit', 'ss_approve'].forEach(function (id) {
+                ['ss_create', 'ss_edit'].forEach(function (id) {
                     document.getElementById(id).checked = false;
                 });
             }
@@ -206,7 +203,7 @@
                 checks.forEach(function (c) { c.disabled = true; c.checked = false; });
                 document.getElementById('matSetStatusGroup').classList.add('d-none');
                 document.getElementById('matSetStatusAll').checked = false;
-                ['ss_create', 'ss_edit', 'ss_approve'].forEach(function (id) {
+                ['ss_create', 'ss_edit'].forEach(function (id) {
                     document.getElementById(id).checked = false;
                 });
             }
