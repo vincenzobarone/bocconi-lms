@@ -266,9 +266,9 @@ public class MaterialsController : Controller
             return View(vm);
         }
 
-        // Enforce status permission: se l'utente non può cambiare stato, forza "bozza"
+        // Enforce status permission: se l'utente non può cambiare stato, forza "in_revisione"
         if (!await CanSetStatusAsync("create"))
-            vm.Status = "bozza";
+            vm.Status = "in_revisione";
 
         // Resolve folder and assign protocol when status = verificato
         int? resolvedFolderId = null;
@@ -368,11 +368,13 @@ public class MaterialsController : Controller
             return View(vm);
         }
 
-        // Enforce status permission: se l'utente non può cambiare stato, ripristina quello corrente
+        // Enforce status permission: se l'utente non può cambiare stato,
+        // promuove da "bozza" a "in_revisione"; lascia invariato altrimenti
         if (!await CanSetStatusAsync("edit"))
         {
             var current = await _materials.GetByIdAsync(id);
-            vm.Status = current?.Status ?? "bozza";
+            var currentStatus = current?.Status ?? "bozza";
+            vm.Status = currentStatus == "bozza" ? "in_revisione" : currentStatus;
         }
 
         // Resolve folder and assign protocol if transitioning to verificato without them
