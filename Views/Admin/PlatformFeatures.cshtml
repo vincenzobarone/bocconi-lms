@@ -1,7 +1,11 @@
+@using BocconiLMS.Services
 @{
     ViewData["Title"] = T["admin.platform_settings","Platform Settings"];
     bool coursesEnabled   = ViewBag.CoursesEnabled == true;
     bool materialsEnabled = ViewBag.MaterialsEnabled != false;
+    var enabledLangs  = ViewBag.EnabledLanguages as List<string> ?? new List<string> { "en" };
+    var missing       = ViewBag.MissingCounts as Dictionary<string, int> ?? new();
+    var allOtherLangs = TranslationService.AllLanguages.Where(l => l.Code != "en").ToList();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -11,6 +15,44 @@
     <a asp-controller="Home" asp-action="Dashboard" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i>@T["common.back_to_panel","Back to panel"]
     </a>
+</div>
+
+@* ── Active Languages ──────────────────────────────────────────────── *@
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-globe me-2 text-bocconi"></i>@T["admin.lang.settings","Active Languages"]
+    </div>
+    <div class="card-body">
+        <form asp-action="SaveLanguageSettings" method="post" class="d-flex align-items-center gap-4 flex-wrap">
+            @Html.AntiForgeryToken()
+            <div class="d-flex align-items-center gap-1">
+                <input class="form-check-input" type="checkbox" checked disabled />
+                <label class="form-check-label ms-1">🇬🇧 English (EN)</label>
+                <input type="hidden" name="enabledLanguages" value="en" />
+                <span class="badge bg-secondary ms-1">@T["admin.lang.required","required"]</span>
+            </div>
+            @foreach (var lang in allOtherLangs)
+            {
+                var isEnabled = enabledLangs.Contains(lang.Code);
+                var mis = missing.GetValueOrDefault(lang.Code, 0);
+                <div class="d-flex align-items-center gap-1">
+                    <input class="form-check-input" type="checkbox"
+                           name="enabledLanguages" value="@lang.Code"
+                           id="lang_@lang.Code" @(isEnabled ? "checked" : "") />
+                    <label class="form-check-label ms-1" for="lang_@lang.Code">
+                        @lang.Flag @lang.Name (@lang.Code.ToUpper())
+                    </label>
+                    @if (isEnabled && mis > 0)
+                    {
+                        <span class="badge bg-warning text-dark ms-1" title="Missing translations">@mis @T["admin.translations.missing","Missing"]</span>
+                    }
+                </div>
+            }
+            <button type="submit" class="btn btn-bocconi btn-sm ms-auto">
+                <i class="bi bi-save me-1"></i>@T["admin.lang.save","Save language settings"]
+            </button>
+        </form>
+    </div>
 </div>
 
 <div class="row g-4 mb-4">

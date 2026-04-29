@@ -8,6 +8,7 @@
     var allOtherLangs   = TranslationService.AllLanguages.Where(l => l.Code != "en").ToList();
     int totalMissing    = missing.Where(kv => enabledLangs.Contains(kv.Key)).Sum(kv => kv.Value);
     var docTypes        = ViewBag.DocTypes as List<BocconiLMS.Models.DocumentType> ?? new();
+    var areas           = ViewBag.Areas as List<BocconiLMS.Models.Area> ?? new();
     var activeTab       = ViewBag.ActiveTab as string ?? "translations";
 }
 
@@ -37,6 +38,14 @@
             <i class="bi bi-tags me-1"></i>@T["admin.doc_types","Document Types"]
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(activeTab == "aree" ? "active" : "")"
+                id="tab-aree" data-bs-toggle="tab"
+                data-bs-target="#panel-aree" type="button" role="tab">
+            <i class="bi bi-diagram-3 me-1"></i>@T["admin.areas_tab","Areas"]
+            <span class="badge bg-secondary ms-1">@areas.Count</span>
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content" id="dictTabContent">
@@ -44,44 +53,6 @@
     @* ── TAB 1: TRANSLATIONS ──────────────────────────────────────────── *@
     <div class="tab-pane fade @(activeTab == "translations" ? "show active" : "")"
          id="panel-translations" role="tabpanel">
-
-        @* Language settings *@
-        <div class="card mb-3 border-0 shadow-sm">
-            <div class="card-header bg-white fw-semibold">
-                <i class="bi bi-globe me-2 text-bocconi"></i>@T["admin.lang.settings","Active Languages"]
-            </div>
-            <div class="card-body">
-                <form asp-action="SaveLanguageSettings" method="post" class="d-flex align-items-center gap-4 flex-wrap">
-                    @Html.AntiForgeryToken()
-                    <div class="d-flex align-items-center gap-1">
-                        <input class="form-check-input" type="checkbox" checked disabled />
-                        <label class="form-check-label ms-1">🇬🇧 English (EN)</label>
-                        <input type="hidden" name="enabledLanguages" value="en" />
-                        <span class="badge bg-secondary ms-1">@T["admin.lang.required","required"]</span>
-                    </div>
-                    @foreach (var lang in allOtherLangs)
-                    {
-                        var isEnabled = enabledLangs.Contains(lang.Code);
-                        var mis = missing.GetValueOrDefault(lang.Code, 0);
-                        <div class="d-flex align-items-center gap-1">
-                            <input class="form-check-input" type="checkbox"
-                                   name="enabledLanguages" value="@lang.Code"
-                                   id="lang_@lang.Code" @(isEnabled ? "checked" : "") />
-                            <label class="form-check-label ms-1" for="lang_@lang.Code">
-                                @lang.Flag @lang.Name (@lang.Code.ToUpper())
-                            </label>
-                            @if (isEnabled && mis > 0)
-                            {
-                                <span class="badge bg-warning text-dark ms-1" title="Missing translations">@mis missing</span>
-                            }
-                        </div>
-                    }
-                    <button type="submit" class="btn btn-bocconi btn-sm ms-auto">
-                        <i class="bi bi-save me-1"></i>@T["admin.lang.save","Save language settings"]
-                    </button>
-                </form>
-            </div>
-        </div>
 
         @* Info bar *@
         <div class="card mb-3 border-0 bg-light">
@@ -271,11 +242,163 @@
             </div>
         </div>
     </div>
+
+    @* ── TAB 3: AREE ──────────────────────────────────────────────────── *@
+    <div class="tab-pane fade @(activeTab == "aree" ? "show active" : "")"
+         id="panel-aree" role="tabpanel">
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <span class="fw-semibold"><i class="bi bi-diagram-3 me-2 text-bocconi"></i>@T["admin.areas_tab","Areas"]</span>
+                <button type="button" class="btn btn-sm btn-bocconi"
+                        data-bs-toggle="modal" data-bs-target="#createAreaModal">
+                    <i class="bi bi-plus me-1"></i>@T["admin.create_area","Create area"]
+                </button>
+            </div>
+            <div class="card-body p-0">
+                @if (!areas.Any())
+                {
+                    <p class="text-muted p-4">@T["admin.no_areas","No areas defined yet."]</p>
+                }
+                else
+                {
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">@T["common.name","Name"]</th>
+                                <th class="text-center" style="width:130px">@T["admin.users_tab","Users"]</th>
+                                <th style="width:110px"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in areas)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-semibold">@a.Name</td>
+                                    <td class="text-center">
+                                        @if (a.UserCount > 0)
+                                        {
+                                            <span class="badge bg-bocconi">@a.UserCount</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">0</span>
+                                        }
+                                    </td>
+                                    <td class="pe-3 text-end">
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary btn-edit-area"
+                                                    data-area-id="@a.Id"
+                                                    data-area-name="@a.Name"
+                                                    title="@T["common.edit","Edit"]">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <form asp-action="DeleteArea" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@a.Id" />
+                                                <button type="submit"
+                                                        class="btn btn-sm @(a.UserCount > 0 ? "btn-outline-secondary" : "btn-outline-danger")"
+                                                        title="@T["admin.delete_area","Delete area"]"
+                                                        @(a.UserCount > 0 ? "disabled" : "")
+                                                        @(a.UserCount == 0 ? $"data-confirm=\"{T["admin.delete_area_confirm","Delete area"]} '{a.Name}'?\"" : "")>
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Modali Aree ──────────────────────────────────────────────────── *@
+<div class="modal fade" id="createAreaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-diagram-3 me-2"></i>@T["admin.create_area","Create area"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="CreateArea" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
+                    <input type="text" name="name" id="createAreaName" class="form-control"
+                           placeholder="@T["admin.area_name_placeholder","Area name…"]"
+                           maxlength="255" autocomplete="off" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                    <button type="submit" class="btn btn-bocconi">
+                        <i class="bi bi-plus me-1"></i>@T["admin.create_area","Create area"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editAreaModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>@T["admin.edit_area","Edit area"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="EditArea" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editAreaId" value="" />
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
+                    <input type="text" name="name" id="editAreaName" class="form-control"
+                           placeholder="@T["admin.area_name_placeholder","Area name…"]"
+                           maxlength="255" autocomplete="off" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                    <button type="submit" class="btn btn-bocconi">
+                        <i class="bi bi-check-lg me-1"></i>@T["common.save","Save"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
     <script>
         $(document).ready(function () {
+            // ── Modali Aree ───────────────────────────────────────
+            var createAreaModal = document.getElementById('createAreaModal');
+            if (createAreaModal) {
+                createAreaModal.addEventListener('shown.bs.modal', function () {
+                    document.getElementById('createAreaName').focus();
+                });
+                createAreaModal.addEventListener('hidden.bs.modal', function () {
+                    document.getElementById('createAreaName').value = '';
+                });
+            }
+            document.addEventListener('click', function (e) {
+                var btn = e.target.closest('.btn-edit-area');
+                if (!btn) return;
+                document.getElementById('editAreaId').value   = btn.dataset.areaId;
+                document.getElementById('editAreaName').value = btn.dataset.areaName;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('editAreaModal')).show();
+            });
+            var editAreaModal = document.getElementById('editAreaModal');
+            if (editAreaModal) {
+                editAreaModal.addEventListener('shown.bs.modal', function () {
+                    document.getElementById('editAreaName').focus();
+                    document.getElementById('editAreaName').select();
+                });
+            }
+
             var filterMissingOnly = false;
 
             $.fn.dataTable.ext.search.push(function (settings, data, dataIndex) {

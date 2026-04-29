@@ -63,7 +63,7 @@ public class AdminController : Controller
     public async Task<IActionResult> Users(string? tab)
     {
         if (!await CanAccessMenuAsync("menu.users")) return Forbid();
-        var activeTab = tab is "ruoli" or "aree" ? tab : "utenti";
+        var activeTab = tab is "ruoli" ? tab : "utenti";
         var vm = new UsersAndRolesViewModel
         {
             Users    = await _users.GetAllAsync(),
@@ -248,17 +248,17 @@ public class AdminController : Controller
         if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
         {
             TempData["Error"] = "Nome area non valido.";
-            return RedirectToAction("Users", new { tab = "aree" });
+            return RedirectToAction("Dictionary", new { tab = "aree" });
         }
         if (await _areas.NameExistsAsync(name))
         {
             TempData["Error"] = $"Un'area con il nome «{name}» esiste già.";
-            return RedirectToAction("Users", new { tab = "aree" });
+            return RedirectToAction("Dictionary", new { tab = "aree" });
         }
         var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
         await _areas.CreateAsync(name, currentUserId);
         TempData["Success"] = $"Area «{name.Trim()}» creata.";
-        return RedirectToAction("Users", new { tab = "aree" });
+        return RedirectToAction("Dictionary", new { tab = "aree" });
     }
 
     [AllowAnonymous]
@@ -270,16 +270,16 @@ public class AdminController : Controller
         if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
         {
             TempData["Error"] = "Nome area non valido.";
-            return RedirectToAction("Users", new { tab = "aree" });
+            return RedirectToAction("Dictionary", new { tab = "aree" });
         }
         if (await _areas.NameExistsAsync(name, excludeId: id))
         {
             TempData["Error"] = $"Un'area con il nome «{name.Trim()}» esiste già.";
-            return RedirectToAction("Users", new { tab = "aree" });
+            return RedirectToAction("Dictionary", new { tab = "aree" });
         }
         await _areas.RenameAsync(id, name);
         TempData["Success"] = $"Area rinominata in «{name.Trim()}».";
-        return RedirectToAction("Users", new { tab = "aree" });
+        return RedirectToAction("Dictionary", new { tab = "aree" });
     }
 
     [AllowAnonymous]
@@ -292,11 +292,11 @@ public class AdminController : Controller
         if (count > 0)
         {
             TempData["Error"] = $"Impossibile eliminare: {count} utente/i ha questa area.";
-            return RedirectToAction("Users", new { tab = "aree" });
+            return RedirectToAction("Dictionary", new { tab = "aree" });
         }
         await _areas.DeleteAsync(id);
         TempData["Success"] = "Area eliminata.";
-        return RedirectToAction("Users", new { tab = "aree" });
+        return RedirectToAction("Dictionary", new { tab = "aree" });
     }
 
     [AllowAnonymous]
@@ -580,7 +580,8 @@ public class AdminController : Controller
         ViewBag.EnabledLanguages  = await _settings.GetEnabledLanguagesAsync();
         ViewBag.MissingCounts     = await _translations.GetMissingCountsAsync();
         ViewBag.DocTypes          = await _docTypes.GetAllAsync();
-        ViewBag.ActiveTab         = tab == "doctypes" ? "doctypes" : "translations";
+        ViewBag.Areas             = await _areas.GetAllAsync();
+        ViewBag.ActiveTab         = tab is "doctypes" or "aree" ? tab : "translations";
         return View(rows);
     }
 
@@ -595,7 +596,7 @@ public class AdminController : Controller
         await _settings.SaveEnabledLanguagesAsync(enabledLanguages);
         _translationService.InvalidateCache();
         TempData["Success"] = "Language settings saved.";
-        return RedirectToAction(nameof(Dictionary));
+        return RedirectToAction(nameof(PlatformFeatures));
     }
 
     [AllowAnonymous]
@@ -863,6 +864,8 @@ public class AdminController : Controller
     {
         ViewBag.CoursesEnabled    = await _features.IsCoursesEnabledAsync();
         ViewBag.MaterialsEnabled  = await _features.IsMaterialsEnabledAsync();
+        ViewBag.EnabledLanguages  = await _settings.GetEnabledLanguagesAsync();
+        ViewBag.MissingCounts     = await _translations.GetMissingCountsAsync();
         return View();
     }
 
