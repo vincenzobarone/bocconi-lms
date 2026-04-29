@@ -1288,20 +1288,6 @@ try
 }
 catch { }
 
-// ── Migrate: ruoli con materials.*.* ricevono il corrispondente setstatus ─────
-try
-{
-    var dbHelper = app.Services.GetRequiredService<DbHelper>();
-    using var conn = dbHelper.GetConnection();
-    await conn.OpenAsync();
-    using var mig = new MySqlConnector.MySqlCommand(@"
-        INSERT IGNORE INTO role_permissions (role_id, permission_key)
-        SELECT role_id, CONCAT(permission_key, '.setstatus')
-        FROM role_permissions
-        WHERE permission_key IN ('materials.create','materials.edit','materials.approve')", conn);
-    await mig.ExecuteNonQueryAsync();
-}
-catch { }
 
 // ── Update perm.menu_translations label to "Dictionary" ───────────────────
 try
