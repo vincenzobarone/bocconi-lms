@@ -937,7 +937,11 @@ try
         ('en','users.click_to_toggle','Click to toggle status'),
         ('it','users.click_to_toggle','Clicca per cambiare stato'),
         ('es','users.click_to_toggle','Haz clic para cambiar el estado'),
-        ('de','users.click_to_toggle','Klicken, um den Status zu ändern');", conn);
+        ('de','users.click_to_toggle','Klicken, um den Status zu ändern'),
+        ('en','nav.change_password','Change password'),
+        ('it','nav.change_password','Cambia password'),
+        ('es','nav.change_password','Cambiar contraseña'),
+        ('de','nav.change_password','Passwort ändern');", conn);
     await ins.ExecuteNonQueryAsync();
     foreach (var lang in new[] { "es", "de" })
     {
