@@ -162,83 +162,64 @@
     <div class="tab-pane fade @(activeTab == "doctypes" ? "show active" : "")"
          id="panel-doctypes" role="tabpanel">
 
-        <div class="row g-4">
-            <div class="col-lg-8">
-                <div class="card shadow-sm">
-                    <div class="card-body p-0">
-                        @if (!docTypes.Any())
-                        {
-                            <p class="text-muted p-4">@T["doctype.none","No types defined."]</p>
-                        }
-                        else
-                        {
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>#</th>
-                                        <th>@T["common.name","Name"]</th>
-                                        <th class="text-center">@T["mat.page_title","Materials"]</th>
-                                        <th class="text-end">@T["common.actions","Actions"]</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var dt in docTypes)
-                                    {
-                                        <tr>
-                                            <td class="text-muted small">@dt.SortOrder</td>
-                                            <td class="fw-semibold">@dt.Name</td>
-                                            <td class="text-center">
-                                                <span class="badge @(dt.MaterialCount > 0 ? "bg-primary" : "bg-light text-dark border")">
-                                                    @dt.MaterialCount
-                                                </span>
-                                            </td>
-                                            <td class="text-end">
-                                                <div class="d-flex gap-1 justify-content-end">
-                                                    <a asp-action="EditDocumentType" asp-route-id="@dt.Id"
-                                                       class="btn btn-sm btn-outline-secondary"
-                                                       title="@T["common.edit","Edit"]">
-                                                        <i class="bi bi-pencil"></i>
-                                                    </a>
-                                                    <form asp-action="DeleteDocumentType" asp-route-id="@dt.Id" method="post" class="d-inline">
-                                                        @Html.AntiForgeryToken()
-                                                        <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                                data-confirm="@T["doctype.delete_confirm","Delete type"] «@dt.Name»?"
-                                                                title="@T["common.delete","Delete"]"
-                                                                @(dt.MaterialCount > 0 ? "disabled" : "")>
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        }
-                    </div>
-                </div>
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <span class="fw-semibold"><i class="bi bi-tags me-2 text-bocconi"></i>@T["admin.doc_types","Document Types"]</span>
+                <button type="button" class="btn btn-sm btn-bocconi"
+                        data-bs-toggle="modal" data-bs-target="#createDocTypeModal">
+                    <i class="bi bi-plus me-1"></i>@T["doctype.create","Create type"]
+                </button>
             </div>
-
-            <div class="col-lg-4">
-                <div class="card shadow-sm">
-                    <div class="card-header fw-semibold">
-                        <i class="bi bi-plus-circle me-1"></i>@T["doctype.add","Add type"]
-                    </div>
-                    <div class="card-body">
-                        <form asp-action="CreateDocumentType" method="post">
-                            @Html.AntiForgeryToken()
-                            <div class="mb-3">
-                                <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
-                                <input name="Name" class="form-control"
-                                       placeholder="@T["doctype.name_placeholder","Document type name…"]"
-                                       maxlength="255" required />
-                            </div>
-                            <button type="submit" class="btn btn-bocconi w-100">
-                                <i class="bi bi-plus-lg me-1"></i>@T["doctype.create","Create type"]
-                            </button>
-                        </form>
-                    </div>
-                </div>
+            <div class="card-body p-0">
+                @if (!docTypes.Any())
+                {
+                    <p class="text-muted p-4">@T["doctype.none","No types defined."]</p>
+                }
+                else
+                {
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>#</th>
+                                <th>@T["common.name","Name"]</th>
+                                <th class="text-center">@T["mat.page_title","Materials"]</th>
+                                <th class="text-end">@T["common.actions","Actions"]</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var dt in docTypes)
+                            {
+                                <tr>
+                                    <td class="text-muted small">@dt.SortOrder</td>
+                                    <td class="fw-semibold">@dt.Name</td>
+                                    <td class="text-center">
+                                        <span class="badge @(dt.MaterialCount > 0 ? "bg-primary" : "bg-light text-dark border")">
+                                            @dt.MaterialCount
+                                        </span>
+                                    </td>
+                                    <td class="text-end">
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            <a asp-action="EditDocumentType" asp-route-id="@dt.Id"
+                                               class="btn btn-sm btn-outline-secondary"
+                                               title="@T["common.edit","Edit"]">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <form asp-action="DeleteDocumentType" asp-route-id="@dt.Id" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        data-confirm="@T["doctype.delete_confirm","Delete type"] «@dt.Name»?"
+                                                        title="@T["common.delete","Delete"]"
+                                                        @(dt.MaterialCount > 0 ? "disabled" : "")>
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
             </div>
         </div>
     </div>
@@ -317,6 +298,33 @@
     </div>
 </div>
 
+@* ── Modale Crea Tipo Documento ───────────────────────────────────── *@
+<div class="modal fade" id="createDocTypeModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-tags me-2"></i>@T["doctype.create","Create type"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="CreateDocumentType" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
+                    <input type="text" name="Name" id="createDocTypeName" class="form-control"
+                           placeholder="@T["doctype.name_placeholder","Document type name…"]"
+                           maxlength="255" autocomplete="off" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                    <button type="submit" class="btn btn-bocconi">
+                        <i class="bi bi-plus me-1"></i>@T["doctype.create","Create type"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @* ── Modali Aree ──────────────────────────────────────────────────── *@
 <div class="modal fade" id="createAreaModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -374,6 +382,17 @@
 @section Scripts {
     <script>
         $(document).ready(function () {
+            // ── Modale Crea Tipo Documento ────────────────────────
+            var createDocTypeModal = document.getElementById('createDocTypeModal');
+            if (createDocTypeModal) {
+                createDocTypeModal.addEventListener('shown.bs.modal', function () {
+                    document.getElementById('createDocTypeName').focus();
+                });
+                createDocTypeModal.addEventListener('hidden.bs.modal', function () {
+                    document.getElementById('createDocTypeName').value = '';
+                });
+            }
+
             // ── Modali Aree ───────────────────────────────────────
             var createAreaModal = document.getElementById('createAreaModal');
             if (createAreaModal) {
