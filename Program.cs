@@ -933,7 +933,11 @@ try
         ('en','users.delete_warning','This action is permanent and cannot be undone. All data associated with this user will also be deleted.'),
         ('it','users.delete_warning','Questa operazione è permanente e irreversibile. Tutti i dati associati a questo utente verranno eliminati definitivamente.'),
         ('es','users.delete_warning','Esta acción es permanente e irreversible. Todos los datos asociados a este usuario también serán eliminados.'),
-        ('de','users.delete_warning','Diese Aktion ist dauerhaft und kann nicht rückgängig gemacht werden. Alle mit diesem Benutzer verknüpften Daten werden ebenfalls gelöscht.');", conn);
+        ('de','users.delete_warning','Diese Aktion ist dauerhaft und kann nicht rückgängig gemacht werden. Alle mit diesem Benutzer verknüpften Daten werden ebenfalls gelöscht.'),
+        ('en','users.click_to_toggle','Click to toggle status'),
+        ('it','users.click_to_toggle','Clicca per cambiare stato'),
+        ('es','users.click_to_toggle','Haz clic para cambiar el estado'),
+        ('de','users.click_to_toggle','Klicken, um den Status zu ändern');", conn);
     await ins.ExecuteNonQueryAsync();
     foreach (var lang in new[] { "es", "de" })
     {

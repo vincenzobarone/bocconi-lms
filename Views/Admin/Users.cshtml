@@ -88,13 +88,29 @@
                                     </span>
                                 </td>
                                 <td>
-                                    @if (u.IsActive)
+                                    @if (u.Role == "Admin")
                                     {
-                                        <span class="badge bg-success">@T["common.active", "Active"]</span>
+                                        @if (u.IsActive)
+                                        {
+                                            <span class="badge bg-success">@T["common.active", "Active"]</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">@T["common.inactive", "Inactive"]</span>
+                                        }
                                     }
                                     else
                                     {
-                                        <span class="badge bg-warning text-dark">@T["common.inactive", "Inactive"]</span>
+                                        <button type="button"
+                                                class="badge border-0 @(u.IsActive ? "bg-success" : "bg-warning text-dark") toggle-status-badge"
+                                                style="cursor:pointer;"
+                                                data-bs-toggle="modal" data-bs-target="#toggleModal"
+                                                data-user-id="@u.Id"
+                                                data-user-name="@u.FullName"
+                                                data-confirm-msg="@(u.IsActive ? T["users.confirm_deactivate","Deactivate"] : T["users.confirm_activate","Activate"]) &quot;@u.FullName&quot;?"
+                                                title="@T["users.click_to_toggle","Click to toggle status"]">
+                                            @(u.IsActive ? T["common.active","Active"] : T["common.inactive","Inactive"])
+                                        </button>
                                     }
                                 </td>
                                 <td class="text-muted small">@u.CreatedAt.ToString("dd/MM/yyyy")</td>
@@ -117,15 +133,6 @@
                                             </button>
                                         }
 
-                                        <button type="button"
-                                                class="btn btn-sm @(u.IsActive ? "btn-outline-warning" : "btn-outline-success")"
-                                                data-bs-toggle="modal" data-bs-target="#toggleModal"
-                                                data-user-id="@u.Id"
-                                                data-user-name="@u.FullName"
-                                                data-confirm-msg="@(u.IsActive ? T["users.confirm_deactivate","Deactivate"] : T["users.confirm_activate","Activate"]) &quot;@u.FullName&quot;?"
-                                                title="@(u.IsActive ? T["users.confirm_deactivate","Deactivate"] : T["users.confirm_activate","Activate"])">
-                                            <i class="bi @(u.IsActive ? "bi-person-dash" : "bi-person-check")"></i>
-                                        </button>
 
                                         @if (u.Id != currentUserId && u.Role != "Admin")
                                         {
@@ -497,6 +504,10 @@
 </div>
 
 @section Scripts {
+    <style>
+        .toggle-status-badge { transition: opacity .15s; }
+        .toggle-status-badge:hover { opacity: .75; }
+    </style>
     <script>
         var _lbl = {
             noCourseTaught:       @Json.Serialize(T["users.no_courses_taught","This teacher has no courses."]),
