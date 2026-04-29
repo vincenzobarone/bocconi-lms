@@ -10,6 +10,7 @@
     var existingFolders = ViewBag.ExistingFolders as List<BocconiLMS.Models.MaterialFolder> ?? new();
     bool canSetStatus   = ViewBag.CanSetStatus == true;
     bool formLocked     = string.IsNullOrEmpty(Model.Title);
+    bool needsReupload  = !formLocked; // POST ritornato: titolo presente ma file perso
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -36,7 +37,14 @@
                     @* ── SEZIONE FILE (sempre attiva) ─────────────────────── *@
 
                     @* Stato: nessun file — pulsante grande di caricamento *@
-                    <div id="noFileState" class="@(formLocked ? "" : "d-none")">
+                    <div id="noFileState">
+                        @if (needsReupload)
+                        {
+                            <div class="alert alert-warning py-2 mb-3">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                @T["mat.file_lost_warn","Il file non è stato salvato. Selezionalo di nuovo per procedere."]
+                            </div>
+                        }
                         <div id="uploadDropZone"
                              class="text-center py-5 mb-3 border rounded-3 bg-light"
                              style="border: 2px dashed #ccc !important; cursor: pointer;">
@@ -53,7 +61,7 @@
                     </div>
 
                     @* Stato: file selezionato — info file *@
-                    <div id="hasFileState" class="@(formLocked ? "d-none" : "") mb-3">
+                    <div id="hasFileState" class="d-none mb-3">
                         <div class="d-flex align-items-center gap-3 p-3 border rounded-3 bg-light">
                             <i id="fileTypeIcon" class="bi bi-file-earmark-text fs-2 text-bocconi flex-shrink-0"></i>
                             <div class="flex-grow-1" style="min-width:0">
@@ -85,7 +93,7 @@
                            onchange="matFileChanged(this)" />
                     <span asp-validation-for="File" class="text-danger small"></span>
 
-                    <hr id="formFieldsSep" class="@(formLocked ? "d-none" : "")" />
+                    <hr id="formFieldsSep" class="@(formLocked && !needsReupload ? "d-none" : "")" />
 
                     @* ── CAMPI DEL FORM (bloccati fino al caricamento del file) *@
 
@@ -195,9 +203,9 @@
 
                     <div class="mb-3">
                         <label asp-for="Notes" class="form-label fw-semibold">@T["mat.label_notes","Version notes"]</label>
-                        <input asp-for="Notes" class="form-control"
-                               placeholder="@T["mat.notes_file_placeholder","File description (optional)"]"
-                               data-lockable />
+                        <textarea asp-for="Notes" class="form-control" rows="3"
+                                  placeholder="@T["mat.notes_file_placeholder","File description (optional)"]"
+                                  data-lockable></textarea>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
@@ -264,7 +272,8 @@
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script>
         // ── Inizializzazione stato form ────────────────────────────────────
-        var FORM_LOCKED_INIT = @(formLocked ? "true" : "false");
+        var FORM_LOCKED_INIT  = @(formLocked ? "true" : "false");
+        var NEEDS_REUPLOAD    = @(needsReupload ? "true" : "false");
         var OFFICE_EXTS = ['doc','docx','ppt','pptx'];
         var ZIP_EXTS    = ['docx','pptx','xlsx'];
         var LANG_PREFIX = {
@@ -409,7 +418,8 @@
             document.getElementById('convertPdfBox').classList.add('d-none');
             document.getElementById('ConvertToPdf').checked = false;
             hideSimilarTitles();
-            lockForm();
+            // Se i campi erano già compilati (ritorno da POST), non li blocchiamo
+            if (!NEEDS_REUPLOAD) lockForm();
         });
 
         // ── Titoli simili ─────────────────────────────────────────────────

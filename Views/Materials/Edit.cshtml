@@ -210,8 +210,8 @@
 
                     <div class="mb-3">
                         <label asp-for="Notes" class="form-label fw-semibold">@T["mat.new_version_notes","New version notes"]</label>
-                        <input asp-for="Notes" class="form-control"
-                               placeholder="@T["mat.version_notes_placeholder","What changes in this version?"]" />
+                        <textarea asp-for="Notes" class="form-control" rows="3"
+                                  placeholder="@T["mat.version_notes_placeholder","What changes in this version?"]"></textarea>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
