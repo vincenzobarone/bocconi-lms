@@ -107,14 +107,10 @@
                         }
                         else
                         {
-                            var statusLabel = Model.Status switch {
-                                "verificato"   => T["mat.status_verificato","Verified"],
-                                "in_revisione" => T["mat.status_in_revisione","In review"],
-                                _              => T["mat.status_bozza","Draft"]
-                            };
-                            @* Mantieni lo stato corrente, non modificabile *@
-                            <input type="hidden" id="statusSelect" name="Status" value="@Model.Status" />
-                            <input type="text" class="form-control bg-light" readonly value="@statusLabel" />
+                            @* Utenti senza flag: l'edit fissa sempre lo stato a "in revisione" *@
+                            <input type="hidden" id="statusSelect" name="Status" value="in_revisione" />
+                            <input type="text" class="form-control bg-light" readonly
+                                   value="@T["mat.status_in_revisione","In review"]" />
                             <div class="form-text">
                                 <i class="bi bi-lock me-1"></i>@T["mat.status_locked_edit","Lo stato non è modificabile con il tuo ruolo."]
                             </div>
