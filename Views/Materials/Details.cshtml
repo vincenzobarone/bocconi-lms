@@ -235,6 +235,7 @@
 </div>
 
 @section Scripts {
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
 <script>
 (function () {
     var imageTypes = ['PNG','JPG','JPEG','GIF','SVG','BMP','WEBP'];
@@ -257,8 +258,50 @@
         bootstrap.Modal.getOrCreateInstance(document.getElementById('previewModal')).show();
 
         if (fileType === 'PDF') {
-            // PDF: iframe diretto all'URL (evita blob: che i browser bloccano in iframe annidati)
-            body.innerHTML = '<iframe src="' + previewUrl + '" style="width:100%;height:80vh;border:none;display:block;"></iframe>';
+            // PDF: PDF.js su canvas — evita blocchi Edge/Chrome per iframe con PDF
+            body.innerHTML =
+                '<div class="d-flex justify-content-center align-items-center" style="min-height:70vh;">' +
+                '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Caricamento...</span></div></div>';
+            fetch(previewUrl, { credentials: 'same-origin' })
+                .then(function(r) { return r.ok ? r.arrayBuffer() : Promise.reject(r.status); })
+                .then(function(buf) {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc =
+                        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    return pdfjsLib.getDocument({ data: buf }).promise;
+                })
+                .then(function(pdf) {
+                    body._pdfDoc = pdf;
+                    var wrap = document.createElement('div');
+                    wrap.style.cssText = 'overflow-y:auto;height:80vh;background:#616161;padding:12px;box-sizing:border-box;';
+                    body.innerHTML = '';
+                    body.appendChild(wrap);
+                    var seq = Promise.resolve();
+                    for (var n = 1; n <= pdf.numPages; n++) {
+                        (function(pageNum) {
+                            seq = seq.then(function() {
+                                return pdf.getPage(pageNum).then(function(page) {
+                                    var vp0 = page.getViewport({ scale: 1 });
+                                    var scale = Math.min((wrap.clientWidth - 24) / vp0.width, 2);
+                                    var vp = page.getViewport({ scale: scale });
+                                    var canvas = document.createElement('canvas');
+                                    canvas.width  = vp.width;
+                                    canvas.height = vp.height;
+                                    canvas.style.cssText = 'display:block;margin:0 auto 8px;box-shadow:0 2px 8px rgba(0,0,0,.5);background:#fff;';
+                                    wrap.appendChild(canvas);
+                                    return page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                                });
+                            });
+                        })(n);
+                    }
+                    return seq;
+                })
+                .catch(function() {
+                    body.innerHTML =
+                        '<div class="text-center p-5">' +
+                        '<i class="bi bi-exclamation-triangle display-1 text-warning d-block mb-3"></i>' +
+                        '<p class="text-muted mb-4">Impossibile caricare l\'anteprima.<br>Prova a scaricare il file.</p>' +
+                        '<a href="' + downloadUrl + '" class="btn btn-bocconi"><i class="bi bi-download me-2"></i>Scarica</a></div>';
+                });
         } else if (imageTypes.includes(fileType) || videoTypes.includes(fileType)) {
             body.innerHTML =
                 '<div class="d-flex justify-content-center align-items-center" style="min-height:70vh;">' +
@@ -289,6 +332,7 @@
     document.getElementById('previewModal').addEventListener('hidden.bs.modal', function () {
         var body = document.getElementById('previewModalBody');
         if (body._blobUrl) { URL.revokeObjectURL(body._blobUrl); body._blobUrl = null; }
+        if (body._pdfDoc) { body._pdfDoc.destroy(); body._pdfDoc = null; }
         body.innerHTML = '';
     });
 })();
