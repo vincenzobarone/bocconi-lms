@@ -74,44 +74,74 @@
     </div>
 
     @* Statistiche piattaforma *@
-    @if (Model.AdminStats != null)
+    @if (Model.AdminStats != null && (Model.CoursesEnabled || Model.MaterialsEnabled))
     {
         <h5 class="text-muted fw-semibold mb-3">
             <i class="bi bi-bar-chart-fill me-2"></i>@T["dashboard.admin.stats", "Panoramica piattaforma"]
         </h5>
         <div class="row g-3">
-            <div class="col-6 col-md-3">
-                <div class="card text-center border-0 bg-light shadow-sm h-100">
-                    <div class="card-body py-3">
-                        <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.TotalCourses</div>
-                        <small class="text-muted">@T["dashboard.admin.courses", "Corsi totali"]</small>
+            @if (Model.CoursesEnabled)
+            {
+                <div class="col-6 col-md-3">
+                    <div class="card text-center border-0 bg-light shadow-sm h-100">
+                        <div class="card-body py-3">
+                            <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.TotalCourses</div>
+                            <small class="text-muted">@T["dashboard.admin.courses", "Corsi totali"]</small>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="card text-center border-0 bg-light shadow-sm h-100">
-                    <div class="card-body py-3">
-                        <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.ActiveStudents</div>
-                        <small class="text-muted">@T["dashboard.admin.students", "Studenti attivi"]</small>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center border-0 bg-light shadow-sm h-100">
+                        <div class="card-body py-3">
+                            <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.ActiveStudents</div>
+                            <small class="text-muted">@T["dashboard.admin.students", "Studenti attivi"]</small>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="card text-center border-0 bg-light shadow-sm h-100">
-                    <div class="card-body py-3">
-                        <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.ActiveTeachers</div>
-                        <small class="text-muted">@T["dashboard.admin.teachers", "Docenti attivi"]</small>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center border-0 bg-light shadow-sm h-100">
+                        <div class="card-body py-3">
+                            <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.ActiveTeachers</div>
+                            <small class="text-muted">@T["dashboard.admin.teachers", "Docenti attivi"]</small>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="col-6 col-md-3">
-                <div class="card text-center border-0 bg-light shadow-sm h-100">
-                    <div class="card-body py-3">
-                        <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.TotalEnrollments</div>
-                        <small class="text-muted">@T["dashboard.admin.enrollments", "Iscrizioni totali"]</small>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center border-0 bg-light shadow-sm h-100">
+                        <div class="card-body py-3">
+                            <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.TotalEnrollments</div>
+                            <small class="text-muted">@T["dashboard.admin.enrollments", "Iscrizioni totali"]</small>
+                        </div>
                     </div>
                 </div>
-            </div>
+            }
+            @if (Model.MaterialsEnabled)
+            {
+                <div class="col-6 col-md-3">
+                    <div class="card text-center border-0 bg-light shadow-sm h-100">
+                        <div class="card-body py-3">
+                            <div class="display-6 fw-bold text-bocconi">@Model.TotalMaterials</div>
+                            <small class="text-muted">@T["dashboard.admin.materials", "Materiali totali"]</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center border-0 bg-light shadow-sm h-100">
+                        <div class="card-body py-3">
+                            <div class="display-6 fw-bold text-success">@Model.RecentMaterials</div>
+                            <small class="text-muted">@T["dashboard.materials.recent", "Ultimi 30 giorni"]</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card text-center border-0 bg-light shadow-sm h-100">
+                        <div class="card-body py-3">
+                            <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.TotalUsers</div>
+                            <small class="text-muted">@T["dashboard.admin.users", "Utenti totali"]</small>
+                        </div>
+                    </div>
+                </div>
+            }
         </div>
     }
 }

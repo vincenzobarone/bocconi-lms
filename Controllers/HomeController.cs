@@ -86,6 +86,8 @@ public class HomeController : Controller
         if (vm.IsAdmin)
         {
             vm.AdminStats = await _users.GetStatsAsync();
+            if (materialsEnabled)
+                (vm.TotalMaterials, vm.RecentMaterials) = await GetMaterialCountsAsync();
             return View(vm);
         }
 
