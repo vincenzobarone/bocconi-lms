@@ -383,7 +383,10 @@ else
 
                 bootstrap.Modal.getOrCreateInstance(document.getElementById('previewModal')).show();
 
-                if (fileType === 'PDF' || imageTypes.includes(fileType) || videoTypes.includes(fileType)) {
+                if (fileType === 'PDF') {
+                    // PDF: iframe diretto all'URL (evita blob: che i browser bloccano in iframe annidati)
+                    body.innerHTML = '<iframe src="' + previewUrl + '" style="width:100%;height:80vh;border:none;display:block;"></iframe>';
+                } else if (imageTypes.includes(fileType) || videoTypes.includes(fileType)) {
                     body.innerHTML =
                         '<div class="d-flex justify-content-center align-items-center" style="min-height:70vh;">' +
                         '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Caricamento...</span></div></div>';
@@ -392,9 +395,7 @@ else
                         .then(function(blob) {
                             var blobUrl = URL.createObjectURL(blob);
                             body._blobUrl = blobUrl;
-                            if (fileType === 'PDF') {
-                                body.innerHTML = '<iframe src="' + blobUrl + '" style="width:100%;height:80vh;border:none;display:block;"></iframe>';
-                            } else if (imageTypes.includes(fileType)) {
+                            if (imageTypes.includes(fileType)) {
                                 body.innerHTML =
                                     '<div class="d-flex align-items-center justify-content-center p-3" style="min-height:70vh;">' +
                                     '<img src="' + blobUrl + '" style="max-width:100%;max-height:80vh;object-fit:contain;" /></div>';
