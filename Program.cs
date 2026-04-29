@@ -1580,6 +1580,22 @@ try
 }
 catch { }
 
+// ── Audit columns: created_by on users / roles / areas ──────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var mig = new MySqlConnector.MySqlCommand(@"
+        ALTER TABLE users  ADD COLUMN IF NOT EXISTS created_by INT NULL;
+        ALTER TABLE roles  ADD COLUMN IF NOT EXISTS created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+        ALTER TABLE roles  ADD COLUMN IF NOT EXISTS created_by INT NULL;
+        ALTER TABLE areas  ADD COLUMN IF NOT EXISTS created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
+        ALTER TABLE areas  ADD COLUMN IF NOT EXISTS created_by INT NULL;", conn);
+    await mig.ExecuteNonQueryAsync();
+}
+catch { }
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

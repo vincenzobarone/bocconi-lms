@@ -127,6 +127,9 @@ public class AdminController : Controller
         await EnsureRoleExistsAsync(role);
         await _userManager.AddToRoleAsync(appUser, role);
 
+        var creatorId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        await _users.SetUserCreatedByAsync(appUser.Id, creatorId);
+
         TempData["Success"] = $"Utente {appUser.FullName} creato con successo.";
         return RedirectToAction("Users");
     }
@@ -250,7 +253,8 @@ public class AdminController : Controller
             TempData["Error"] = $"Un'area con il nome «{name}» esiste già.";
             return RedirectToAction("Users", new { tab = "aree" });
         }
-        await _areas.CreateAsync(name);
+        var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        await _areas.CreateAsync(name, currentUserId);
         TempData["Success"] = $"Area «{name.Trim()}» creata.";
         return RedirectToAction("Users", new { tab = "aree" });
     }
@@ -679,8 +683,13 @@ public class AdminController : Controller
         var role = new ApplicationRole { Name = name, NormalizedName = name.ToUpperInvariant() };
         await _roleManager.CreateAsync(role);
         var created = await _roleManager.FindByNameAsync(name);
-        if (created != null && permissions?.Count > 0)
-            await _rolePerms.SetRolePermissionsAsync(created.Id, permissions);
+        if (created != null)
+        {
+            if (permissions?.Count > 0)
+                await _rolePerms.SetRolePermissionsAsync(created.Id, permissions);
+            var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+            await _users.SetRoleCreatedByAsync(created.Id, currentUserId);
+        }
         TempData["Success"] = $"Ruolo '{name}' creato con successo.";
         return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }

@@ -38,14 +38,18 @@ public class UserRepository
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.role, u.is_active, u.created_at,
-                   (SELECT COUNT(*) FROM courses c WHERE c.teacher_id = u.id) AS course_count
+                   (SELECT COUNT(*) FROM courses c WHERE c.teacher_id = u.id) AS course_count,
+                   CONCAT(cb.first_name, ' ', cb.last_name) AS created_by_name
             FROM users u
+            LEFT JOIN users cb ON cb.id = u.created_by
             ORDER BY u.last_name, u.first_name", conn);
         using var reader = await cmd.ExecuteReaderAsync();
         while (reader.Read())
         {
             var user = MapUser(reader);
             user.CourseCount = reader.GetInt32("course_count");
+            user.CreatedByName = reader.IsDBNull(reader.GetOrdinal("created_by_name"))
+                ? null : reader.GetString("created_by_name").Trim();
             users.Add(user);
         }
         return users;
@@ -165,9 +169,11 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT r.id, r.name,
-                   (SELECT COUNT(*) FROM users u WHERE u.role = r.name) AS user_count
+            SELECT r.id, r.name, r.created_at,
+                   (SELECT COUNT(*) FROM users u WHERE u.role = r.name) AS user_count,
+                   CONCAT(cb.first_name, ' ', cb.last_name) AS created_by_name
             FROM roles r
+            LEFT JOIN users cb ON cb.id = r.created_by
             ORDER BY FIELD(r.name, 'Admin', 'Teacher', 'Student'), r.name", conn);
         var list = new List<RoleViewModel>();
         using var reader = await cmd.ExecuteReaderAsync();
@@ -176,7 +182,10 @@ public class UserRepository
             {
                 Id = reader.GetInt32("id"),
                 Name = reader.GetString("name"),
-                UserCount = reader.GetInt32("user_count")
+                UserCount = reader.GetInt32("user_count"),
+                CreatedAt = reader.IsDBNull(reader.GetOrdinal("created_at")) ? null : reader.GetDateTime("created_at"),
+                CreatedByName = reader.IsDBNull(reader.GetOrdinal("created_by_name"))
+                    ? null : reader.GetString("created_by_name").Trim()
             });
         return list;
     }
@@ -256,6 +265,28 @@ public class UserRepository
         while (await reader.ReadAsync())
             list.Add(MapUser(reader));
         return list;
+    }
+
+    public async Task SetUserCreatedByAsync(int userId, int createdById)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "UPDATE users SET created_by = @createdBy WHERE id = @id", conn);
+        cmd.Parameters.AddWithValue("@createdBy", createdById);
+        cmd.Parameters.AddWithValue("@id", userId);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task SetRoleCreatedByAsync(int roleId, int createdById)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "UPDATE roles SET created_by = @createdBy WHERE id = @id", conn);
+        cmd.Parameters.AddWithValue("@createdBy", createdById);
+        cmd.Parameters.AddWithValue("@id", roleId);
+        await cmd.ExecuteNonQueryAsync();
     }
 
     private static User MapUser(MySqlDataReader r) => new()

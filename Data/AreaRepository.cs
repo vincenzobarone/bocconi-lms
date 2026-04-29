@@ -14,9 +14,11 @@ public class AreaRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT a.id, a.name, a.sort_order,
-                   (SELECT COUNT(*) FROM user_areas ua WHERE ua.area_id = a.id) AS user_count
+            SELECT a.id, a.name, a.sort_order, a.created_at,
+                   (SELECT COUNT(*) FROM user_areas ua WHERE ua.area_id = a.id) AS user_count,
+                   CONCAT(cb.first_name, ' ', cb.last_name) AS created_by_name
             FROM areas a
+            LEFT JOIN users cb ON cb.id = a.created_by
             ORDER BY a.sort_order, a.name", conn);
         using var r = await cmd.ExecuteReaderAsync();
         while (await r.ReadAsync())
@@ -44,7 +46,8 @@ public class AreaRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT a.id, a.name, a.sort_order, 0 AS user_count
+            SELECT a.id, a.name, a.sort_order, 0 AS user_count,
+                   NULL AS created_at, NULL AS created_by_name
             FROM areas a
             INNER JOIN user_areas ua ON ua.area_id = a.id
             WHERE ua.user_id = @uid
@@ -85,14 +88,15 @@ public class AreaRepository
         }
     }
 
-    public async Task<int> CreateAsync(string name)
+    public async Task<int> CreateAsync(string name, int? createdById = null)
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            INSERT INTO areas (name, sort_order)
-            SELECT @name, COALESCE(MAX(sort_order), 0) + 1 FROM areas", conn);
+            INSERT INTO areas (name, sort_order, created_by)
+            SELECT @name, COALESCE(MAX(sort_order), 0) + 1, @createdBy FROM areas", conn);
         cmd.Parameters.AddWithValue("@name", name.Trim());
+        cmd.Parameters.AddWithValue("@createdBy", (object?)createdById ?? DBNull.Value);
         await cmd.ExecuteNonQueryAsync();
         return await DbHelper.GetLastInsertIdAsync(conn);
     }
@@ -160,6 +164,8 @@ public class AreaRepository
         Id = r.GetInt32("id"),
         Name = r.GetString("name"),
         SortOrder = r.GetInt32("sort_order"),
-        UserCount = r.GetInt32("user_count")
+        UserCount = r.GetInt32("user_count"),
+        CreatedAt = r.IsDBNull(r.GetOrdinal("created_at")) ? null : r.GetDateTime("created_at"),
+        CreatedByName = r.IsDBNull(r.GetOrdinal("created_by_name")) ? null : r.GetString("created_by_name").Trim()
     };
 }

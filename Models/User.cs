@@ -10,6 +10,7 @@ public class User
     public string Role { get; set; } = "Student";
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; }
+    public string? CreatedByName { get; set; }
     public int CourseCount { get; set; }
 
     public string FullName => $"{FirstName} {LastName}";

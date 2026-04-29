@@ -277,6 +277,8 @@ public class RoleViewModel
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public int UserCount { get; set; }
+    public DateTime? CreatedAt { get; set; }
+    public string? CreatedByName { get; set; }
     public bool IsAdmin => Name.Equals("Admin", StringComparison.OrdinalIgnoreCase);
 }
 
