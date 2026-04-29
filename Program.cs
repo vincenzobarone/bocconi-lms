@@ -1648,7 +1648,7 @@ try
     using var conn = dbHelper.GetConnection();
     await conn.OpenAsync();
     using var ins = new MySqlConnector.MySqlCommand(@"
-        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
         ('it','admin.email.page_title','Impostazioni Email'),
         ('en','admin.email.page_title','Email Settings'),
         ('es','admin.email.page_title','Configuración de correo'),
@@ -1760,7 +1760,8 @@ try
         ('it','admin.email.notify_teacher_enroll','Notifica al docente quando uno studente si iscrive'),
         ('en','admin.email.notify_teacher_enroll','Notify teacher when a student enrolls'),
         ('es','admin.email.notify_teacher_enroll','Notificar al docente cuando un estudiante se inscribe'),
-        ('de','admin.email.notify_teacher_enroll','Lehrer benachrichtigen, wenn ein Student sich einschreibt');", conn);
+        ('de','admin.email.notify_teacher_enroll','Lehrer benachrichtigen, wenn ein Student sich einschreibt')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
     await ins.ExecuteNonQueryAsync();
 }
 catch { }
@@ -1772,7 +1773,7 @@ try
     using var conn = dbHelper.GetConnection();
     await conn.OpenAsync();
     using var ins = new MySqlConnector.MySqlCommand(@"
-        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
         ('it','dashboard.title','Dashboard'),
         ('en','dashboard.title','Dashboard'),
         ('es','dashboard.title','Panel de control'),
@@ -1844,7 +1845,8 @@ try
         ('it','dashboard.no_modules','Nessun modulo attivo. Contatta l''amministratore.'),
         ('en','dashboard.no_modules','No active modules. Please contact your administrator.'),
         ('es','dashboard.no_modules','No hay módulos activos. Por favor, contacta con el administrador.'),
-        ('de','dashboard.no_modules','Keine aktiven Module. Bitte wende dich an den Administrator.');", conn);
+        ('de','dashboard.no_modules','Keine aktiven Module. Bitte wende dich an den Administrator.')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
     await ins.ExecuteNonQueryAsync();
 }
 catch { }

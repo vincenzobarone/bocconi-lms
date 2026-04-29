@@ -57,23 +57,10 @@ public class TranslationService
         // For non-English languages: if the specific translation is absent,
         // show the key as placeholder (signals the developer that the
         // translation is missing, instead of silently showing English).
+        // NOTE: do NOT auto-insert EN here — the defaultValue passed in views
+        // is often Italian fallback text, which would corrupt the EN translations.
         if (lang != "en")
         {
-            // Auto-insert EN row if it doesn't exist yet
-            var enDict = GetCachedLanguage("en");
-            if (!enDict.ContainsKey(key) && !string.IsNullOrEmpty(defaultValue)
-                && _autoInserted.TryAdd(key, 0))
-            {
-                _ = Task.Run(async () =>
-                {
-                    try
-                    {
-                        await _repo.UpsertAsync("en", key, defaultValue);
-                        _cache.Remove(CachePrefix + "en");
-                    }
-                    catch { }
-                });
-            }
             return key;
         }
 
