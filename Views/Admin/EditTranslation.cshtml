@@ -2,6 +2,10 @@
 @model TranslationRow
 @{
     ViewData["Title"] = T["admin.translations.edit_title", "Edit Translation"] + ": " + Model.Key;
+    var enabled = ViewBag.EnabledLanguages as List<string> ?? new List<string> { "en", "it", "es", "de" };
+    bool showIt = enabled.Contains("it");
+    bool showEs = enabled.Contains("es");
+    bool showDe = enabled.Contains("de");
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -25,6 +29,7 @@
                     @Html.AntiForgeryToken()
                     <input type="hidden" name="Key" value="@Model.Key" />
 
+                    @* ── English (sempre visibile come base/fallback) ───────── *@
                     <div class="mb-4">
                         <label class="form-label fw-semibold">
                             <span class="me-2">🇬🇧</span>English (base)
@@ -35,36 +40,61 @@
                         <div class="form-text">@T["admin.translations.en_hint", "Default English text used as fallback"]</div>
                     </div>
 
-                    <hr class="my-3" />
+                    @* ── Italiano ──────────────────────────────────────────── *@
+                    @if (showIt)
+                    {
+                        <hr class="my-3" />
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <span class="me-2">🇮🇹</span>Italiano
+                                <span class="badge bg-success ms-1 fw-normal">IT</span>
+                            </label>
+                            <input name="It" class="form-control" value="@Model.It"
+                                   placeholder="Traduzione italiana" />
+                        </div>
+                    }
+                    else
+                    {
+                        <input type="hidden" name="It" value="@Model.It" />
+                    }
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">
-                            <span class="me-2">🇮🇹</span>Italiano
-                            <span class="badge bg-success ms-1 fw-normal">IT</span>
-                        </label>
-                        <input name="It" class="form-control" value="@Model.It"
-                               placeholder="Traduzione italiana" />
-                    </div>
+                    @* ── Español ───────────────────────────────────────────── *@
+                    @if (showEs)
+                    {
+                        <hr class="my-3" />
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">
+                                <span class="me-2">🇪🇸</span>Español
+                                <span class="badge bg-danger ms-1 fw-normal">ES</span>
+                            </label>
+                            <input name="Es" class="form-control" value="@Model.Es"
+                                   placeholder="Traducción española" />
+                        </div>
+                    }
+                    else
+                    {
+                        <input type="hidden" name="Es" value="@Model.Es" />
+                    }
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">
-                            <span class="me-2">🇪🇸</span>Español
-                            <span class="badge bg-danger ms-1 fw-normal">ES</span>
-                        </label>
-                        <input name="Es" class="form-control" value="@Model.Es"
-                               placeholder="Traducción española" />
-                    </div>
+                    @* ── Deutsch ───────────────────────────────────────────── *@
+                    @if (showDe)
+                    {
+                        <hr class="my-3" />
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">
+                                <span class="me-2">🇩🇪</span>Deutsch
+                                <span class="badge bg-warning text-dark ms-1 fw-normal">DE</span>
+                            </label>
+                            <input name="De" class="form-control" value="@Model.De"
+                                   placeholder="Deutsche Übersetzung" />
+                        </div>
+                    }
+                    else
+                    {
+                        <input type="hidden" name="De" value="@Model.De" />
+                    }
 
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">
-                            <span class="me-2">🇩🇪</span>Deutsch
-                            <span class="badge bg-warning text-dark ms-1 fw-normal">DE</span>
-                        </label>
-                        <input name="De" class="form-control" value="@Model.De"
-                               placeholder="Deutsche Übersetzung" />
-                    </div>
-
-                    <div class="d-flex gap-2">
+                    <div class="d-flex gap-2 mt-4">
                         <button type="submit" class="btn btn-bocconi px-4">
                             <i class="bi bi-check-lg me-1"></i>@T["admin.translations.save_btn", "Save Translations"]
                         </button>

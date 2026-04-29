@@ -685,6 +685,7 @@ public class AdminController : Controller
         if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         var row = await _translations.GetByKeyAsync(key);
         if (row == null) return NotFound();
+        ViewBag.EnabledLanguages = await _settings.GetEnabledLanguagesAsync();
         return View(row);
     }
 
