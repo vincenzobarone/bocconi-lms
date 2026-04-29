@@ -66,7 +66,7 @@
                                            title="@T["mat.download_btn","Download"]">
                                             <i class="bi bi-download"></i>
                                         </a>
-                                        @if (!v.IsActive && (User.IsInRole("Teacher") || User.IsInRole("Admin")))
+                                        @if (!v.IsActive && (bool)(ViewBag.CanEdit ?? false))
                                         {
                                             <form asp-action="Restore" method="post" class="d-inline">
                                                 @Html.AntiForgeryToken()
@@ -79,7 +79,7 @@
                                                 </button>
                                             </form>
                                         }
-                                        @if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
+                                        @if ((bool)(ViewBag.CanEdit ?? false))
                                         {
                                             <form asp-action="DeleteVersion" method="post" class="d-inline">
                                                 @Html.AntiForgeryToken()
@@ -101,7 +101,7 @@
             </div>
         </div>
 
-        @if (User.IsInRole("Teacher") || User.IsInRole("Admin"))
+        @if ((bool)(ViewBag.CanEdit ?? false))
         {
             <div class="card">
                 <div class="card-header fw-semibold">

@@ -82,6 +82,18 @@ public class MaterialsController : Controller
         return await _rolePerms.HasMenuPermissionAsync(CurrentRoleName(), $"materials.{operation}.setstatus");
     }
 
+    private async Task<bool> CanCreateMaterialAsync()
+    {
+        if (User.IsInRole("Admin") || User.IsInRole("Teacher")) return true;
+        return await _rolePerms.HasMenuPermissionAsync(CurrentRoleName(), "materials.create");
+    }
+
+    private async Task<bool> CanEditMaterialAsync()
+    {
+        if (User.IsInRole("Admin") || User.IsInRole("Teacher")) return true;
+        return await _rolePerms.HasMenuPermissionAsync(CurrentRoleName(), "materials.edit");
+    }
+
     private async Task PopulateDropdownsAsync()
     {
         ViewBag.DocumentTypes   = await _docTypes.GetAllAsync();
@@ -97,20 +109,22 @@ public class MaterialsController : Controller
 
     // ── AJAX: next protocol number ─────────────────────────────────────────
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> NextProtocol()
     {
+        if (!await CanCreateMaterialAsync()) return Forbid();
         var next = await _materials.GetNextProtocolNumberAsync();
         return Json(new { protocol = next });
     }
 
     // ── AJAX: list existing folders ────────────────────────────────────────
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> Folders()
     {
+        if (!await CanCreateMaterialAsync()) return Forbid();
         var folders = await _materials.GetAllFoldersAsync();
         return Json(folders.Select(f => new { f.Id, f.Name }));
     }
@@ -169,6 +183,8 @@ public class MaterialsController : Controller
             return RedirectToAction("NoModules", "Home");
 
         var materials = await _materials.GetAllAsync(q, lang, typeId, catYear, modYear, folderName, folderId);
+        ViewBag.CanCreate = await CanCreateMaterialAsync();
+        ViewBag.CanEdit   = await CanEditMaterialAsync();
         var vm = new MaterialsIndexViewModel
         {
             Materials             = materials,
@@ -192,15 +208,17 @@ public class MaterialsController : Controller
         if (material == null) return NotFound();
         var versions = await _materials.GetVersionsAsync(id);
         ViewBag.Versions = versions;
+        ViewBag.CanEdit  = await CanEditMaterialAsync();
         return View(material);
     }
 
     // ── Create ────────────────────────────────────────────────────────────
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> Create()
     {
+        if (!await CanCreateMaterialAsync()) return Forbid();
         await PopulateDropdownsAsync();
         ViewBag.CurrentUserFullName = CurrentUserFullName();
         ViewBag.CanSetStatus = await CanSetStatusAsync("create");
@@ -208,11 +226,12 @@ public class MaterialsController : Controller
         return View(vm);
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(MaterialFormViewModel vm)
     {
+        if (!await CanCreateMaterialAsync()) return Forbid();
         // Owner is always the current logged-in user on create
         vm.OwnerId = CurrentUserId();
 
@@ -284,10 +303,11 @@ public class MaterialsController : Controller
 
     // ── Edit ──────────────────────────────────────────────────────────────
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize]
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
+        if (!await CanEditMaterialAsync()) return Forbid();
         var material = await _materials.GetByIdAsync(id);
         if (material == null) return NotFound();
         await PopulateDropdownsAsync();
@@ -310,11 +330,12 @@ public class MaterialsController : Controller
         return View(vm);
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, MaterialFormViewModel vm)
     {
+        if (!await CanEditMaterialAsync()) return Forbid();
         // Try to extract author from document metadata if field is empty
         if (string.IsNullOrWhiteSpace(vm.AuthorName) && vm.File != null)
         {
@@ -390,11 +411,12 @@ public class MaterialsController : Controller
 
     // ── Upload new version (from Details page) ────────────────────────────
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UploadVersion(int id, IFormFile file, string? notes)
     {
+        if (!await CanEditMaterialAsync()) return Forbid();
         var material = await _materials.GetByIdAsync(id);
         if (material == null) return NotFound();
         if (file == null || file.Length == 0)
@@ -418,11 +440,12 @@ public class MaterialsController : Controller
 
     // ── Restore version ───────────────────────────────────────────────────
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Restore(int materialId, int versionId)
     {
+        if (!await CanEditMaterialAsync()) return Forbid();
         var material = await _materials.GetByIdAsync(materialId);
         if (material == null) return NotFound();
         await _materials.RestoreVersionAsync(materialId, versionId);
@@ -432,11 +455,12 @@ public class MaterialsController : Controller
 
     // ── Delete version ────────────────────────────────────────────────────
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteVersion(int versionId, int materialId)
     {
+        if (!await CanEditMaterialAsync()) return Forbid();
         var material = await _materials.GetByIdAsync(materialId);
         if (material == null) return NotFound();
 
@@ -557,11 +581,12 @@ public class MaterialsController : Controller
 
     // ── Delete ────────────────────────────────────────────────────────────
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
+        if (!await CanEditMaterialAsync()) return Forbid();
         var material = await _materials.GetByIdAsync(id);
         if (material == null) return NotFound();
 
@@ -583,21 +608,23 @@ public class MaterialsController : Controller
 
     // ── Lesson integration ────────────────────────────────────────────────
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> LinkToLesson(int lessonId, int materialId)
     {
+        if (!await CanEditMaterialAsync()) return Forbid();
         await _materials.LinkToLessonAsync(lessonId, materialId, CurrentUserId());
         TempData["Success"] = "Materiale collegato alla lezione.";
         return RedirectToAction("Details", "Lesson", new { id = lessonId });
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> UnlinkFromLesson(int lessonId, int materialId)
     {
+        if (!await CanEditMaterialAsync()) return Forbid();
         await _materials.UnlinkFromLessonAsync(lessonId, materialId);
         TempData["Success"] = "Materiale rimosso dalla lezione.";
         return RedirectToAction("Details", "Lesson", new { id = lessonId });
