@@ -507,7 +507,7 @@
                 if (!btn) return;
                 document.getElementById('editAreaId').value   = btn.dataset.areaId;
                 document.getElementById('editAreaName').value = btn.dataset.areaName;
-                bootstrap.Modal.getOrCreate(document.getElementById('editAreaModal')).show();
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('editAreaModal')).show();
             });
             document.getElementById('editAreaModal').addEventListener('shown.bs.modal', function () {
                 document.getElementById('editAreaName').focus();

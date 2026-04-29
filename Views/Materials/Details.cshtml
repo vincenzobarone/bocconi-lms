@@ -263,7 +263,7 @@
         } else {
             body.innerHTML = '<div class="text-center p-5"><i class="bi bi-file-earmark-text display-1 text-muted d-block mb-3"></i><p class="text-muted mb-4">Anteprima non disponibile per i file <strong>.' + fileType + '</strong>.<br>Scarica il file per visualizzarlo.</p><a href="' + downloadUrl + '" class="btn btn-bocconi"><i class="bi bi-download me-2"></i>Scarica</a></div>';
         }
-        bootstrap.Modal.getOrCreate(document.getElementById('previewModal')).show();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('previewModal')).show();
     });
 
     document.getElementById('previewModal').addEventListener('hidden.bs.modal', function () {
