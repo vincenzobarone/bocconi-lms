@@ -178,9 +178,9 @@
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                 <span class="fw-semibold"><i class="bi bi-shield-lock me-2 text-bocconi"></i>@T["admin.roles_tab","Roles"]</span>
-                <a asp-action="CreateRole" class="btn btn-sm btn-bocconi">
+                <button type="button" class="btn btn-sm btn-bocconi" onclick="window.location.href='/Admin/CreateRole'">
                     <i class="bi bi-plus me-1"></i>@T["admin.create_role","Create role"]
-                </a>
+                </button>
             </div>
             <div class="card-body p-0">
                 <table class="table table-hover align-middle mb-0">
@@ -216,11 +216,12 @@
                                     @if (!r.IsAdmin)
                                     {
                                         <div class="d-flex gap-1 justify-content-end">
-                                            <a asp-action="EditRole" asp-route-id="@r.Id"
-                                               class="btn btn-sm btn-outline-secondary"
-                                               title="@T["admin.edit_role","Edit role"]">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary"
+                                                    title="@T["admin.edit_role","Edit role"]"
+                                                    onclick="window.location.href='/Admin/EditRole/@r.Id'">
                                                 <i class="bi bi-pencil"></i>
-                                            </a>
+                                            </button>
                                             @if (r.UserCount > 0)
                                             {
                                                 <button type="button" disabled
