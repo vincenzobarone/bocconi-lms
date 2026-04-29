@@ -5,6 +5,10 @@ using BocconiLMS.Models;
 using BocconiLMS.Services;
 using System.Security.Claims;
 using System.IO.Compression;
+using ClosedXML.Excel;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 
 namespace BocconiLMS.Controllers;
 
@@ -225,6 +229,183 @@ public class MaterialsController : Controller
             DocumentTypes         = await _docTypes.GetAllAsync()
         };
         return View(vm);
+    }
+
+    // ── Export Excel ──────────────────────────────────────────────────────
+
+    [HttpGet]
+    public async Task<IActionResult> ExportExcel(
+        string? q = null, string? lang = null, int? typeId = null,
+        int? catYear = null, int? modYear = null,
+        string? folderName = null, int? folderId = null)
+    {
+        var materials = await _materials.GetAllAsync(q, lang, typeId, catYear, modYear, folderName, folderId);
+
+        using var wb = new XLWorkbook();
+        var ws = wb.Worksheets.Add("Materiali");
+
+        // Intestazioni
+        string[] headers = ["#", "Titolo", "Autore", "Lingua", "Tipo documento", "Stato",
+                             "Area", "Cartella", "N. Protocollo", "Data catalogazione", "Data creazione"];
+        for (int i = 0; i < headers.Length; i++)
+        {
+            var cell = ws.Cell(1, i + 1);
+            cell.Value = headers[i];
+            cell.Style.Font.Bold = true;
+            cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#003366");
+            cell.Style.Font.FontColor = XLColor.White;
+            cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+        }
+
+        // Dati
+        int row = 2;
+        foreach (var m in materials)
+        {
+            ws.Cell(row, 1).Value  = m.Id;
+            ws.Cell(row, 2).Value  = m.Title;
+            ws.Cell(row, 3).Value  = m.AuthorName ?? "";
+            ws.Cell(row, 4).Value  = m.Language;
+            ws.Cell(row, 5).Value  = m.DocumentTypeName;
+            ws.Cell(row, 6).Value  = m.Status;
+            ws.Cell(row, 7).Value  = m.AreaName;
+            ws.Cell(row, 8).Value  = m.FolderName;
+            if (m.ProtocolNumber.HasValue) ws.Cell(row, 9).Value = m.ProtocolNumber.Value;
+            else ws.Cell(row, 9).Value = "";
+            ws.Cell(row, 10).Value = m.CatalogationDate.HasValue
+                ? m.CatalogationDate.Value.ToString("dd/MM/yyyy") : "";
+            ws.Cell(row, 11).Value = m.CreatedAt.ToString("dd/MM/yyyy");
+
+            // Zebra stripes
+            if (row % 2 == 0)
+                ws.Row(row).Style.Fill.BackgroundColor = XLColor.FromHtml("#f5f7fa");
+            row++;
+        }
+
+        ws.Columns().AdjustToContents();
+        ws.Column(2).Width = Math.Min(ws.Column(2).Width, 60); // cap titolo
+
+        // Freeze intestazione e autofilter
+        ws.SheetView.FreezeRows(1);
+        ws.RangeUsed()!.SetAutoFilter();
+
+        using var ms = new MemoryStream();
+        wb.SaveAs(ms);
+        ms.Position = 0;
+
+        var fileName = $"materiali_{DateTime.Now:yyyyMMdd_HHmm}.xlsx";
+        return File(ms.ToArray(),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName);
+    }
+
+    // ── Export PDF ────────────────────────────────────────────────────────
+
+    [HttpGet]
+    public async Task<IActionResult> ExportPdf(
+        string? q = null, string? lang = null, int? typeId = null,
+        int? catYear = null, int? modYear = null,
+        string? folderName = null, int? folderId = null)
+    {
+        var materials = await _materials.GetAllAsync(q, lang, typeId, catYear, modYear, folderName, folderId);
+
+        var pdf = Document.Create(container =>
+        {
+            container.Page(page =>
+            {
+                page.Size(PageSizes.A4.Landscape());
+                page.Margin(1.2f, Unit.Centimetre);
+                page.DefaultTextStyle(ts => ts.FontSize(9).FontFamily("Arial"));
+
+                // Header
+                page.Header().Column(col =>
+                {
+                    col.Item().Row(row =>
+                    {
+                        row.RelativeItem().Text("Didasco – Libreria Materiali")
+                            .FontSize(14).Bold().FontColor(Color.FromHex("003366"));
+                        row.ConstantItem(120).AlignRight().Text(
+                            $"Esportato il {DateTime.Now:dd/MM/yyyy HH:mm}")
+                            .FontSize(8).FontColor(Color.FromHex("666666"));
+                    });
+                    col.Item().PaddingTop(2).Text(
+                        $"{materials.Count} materiali – Filtri: " +
+                        string.Join(", ", new[]
+                        {
+                            q != null ? $"titolo={q}" : null,
+                            lang != null ? $"lingua={lang}" : null,
+                            catYear.HasValue ? $"anno cat.={catYear}" : null,
+                            modYear.HasValue ? $"anno mod.={modYear}" : null,
+                            folderName != null ? $"cartella={folderName}" : null
+                        }.Where(x => x != null))
+                    ).FontSize(8).FontColor(Color.FromHex("888888"));
+                    col.Item().PaddingTop(4).LineHorizontal(1).LineColor(Color.FromHex("003366"));
+                });
+
+                // Footer
+                page.Footer().AlignCenter().Text(t =>
+                {
+                    t.Span("Pagina ").FontSize(8);
+                    t.CurrentPageNumber().FontSize(8);
+                    t.Span(" di ").FontSize(8);
+                    t.TotalPages().FontSize(8);
+                });
+
+                // Tabella
+                page.Content().PaddingTop(8).Table(table =>
+                {
+                    table.ColumnsDefinition(cols =>
+                    {
+                        cols.ConstantColumn(30);   // #
+                        cols.RelativeColumn(3);    // Titolo
+                        cols.RelativeColumn(2);    // Autore
+                        cols.RelativeColumn(1.2f); // Lingua
+                        cols.RelativeColumn(1.8f); // Tipo
+                        cols.RelativeColumn(1.2f); // Stato
+                        cols.RelativeColumn(1.5f); // Cartella
+                        cols.RelativeColumn(1.5f); // Data cat.
+                    });
+
+                    IContainer Hcell(IContainer c) =>
+                        c.Background(Color.FromHex("003366")).Padding(4);
+
+                    table.Header(h =>
+                    {
+                        foreach (var hdr in new[] { "#", "Titolo", "Autore", "Lingua", "Tipo documento", "Stato", "Cartella", "Data cat." })
+                        {
+                            var label = hdr;
+                            h.Cell().Element(Hcell).Text(label)
+                                .FontColor(Colors.White).Bold().FontSize(8);
+                        }
+                    });
+
+                    // Data rows
+                    int idx = 0;
+                    foreach (var m in materials)
+                    {
+                        var bg = idx % 2 == 0 ? Colors.White : Color.FromHex("f5f7fa");
+
+                        IContainer Dcell(IContainer c) =>
+                            c.Background(bg).BorderBottom(0.5f).BorderColor(Color.FromHex("dddddd")).Padding(3);
+
+                        table.Cell().Element(Dcell).Text($"{m.Id}").FontSize(8);
+                        table.Cell().Element(Dcell).Text(m.Title).FontSize(8);
+                        table.Cell().Element(Dcell).Text(m.AuthorName ?? "—").FontSize(8);
+                        table.Cell().Element(Dcell).Text(m.Language).FontSize(8);
+                        table.Cell().Element(Dcell).Text(m.DocumentTypeName).FontSize(8);
+                        table.Cell().Element(Dcell).Text(m.Status).FontSize(8);
+                        table.Cell().Element(Dcell).Text(m.FolderName).FontSize(8);
+                        table.Cell().Element(Dcell).Text(
+                            m.CatalogationDate.HasValue ? m.CatalogationDate.Value.ToString("dd/MM/yyyy") : "—"
+                        ).FontSize(8);
+
+                        idx++;
+                    }
+                });
+            });
+        }).GeneratePdf();
+
+        var fileName = $"materiali_{DateTime.Now:yyyyMMdd_HHmm}.pdf";
+        return File(pdf, "application/pdf", fileName);
     }
 
     // ── Details (version history) ─────────────────────────────────────────

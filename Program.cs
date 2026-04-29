@@ -1,6 +1,9 @@
 using BocconiLMS.Data;
 using BocconiLMS.Services;
 using Microsoft.AspNetCore.Identity;
+using QuestPDF.Infrastructure;
+
+QuestPDF.Settings.License = LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
