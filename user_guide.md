@@ -9,9 +9,9 @@
 ## Indice
 
 1. [Accesso e autenticazione](#1-accesso-e-autenticazione)
-2. [Ruoli e permessi](#2-ruoli-e-permessi)
-3. [Gestione utenti (Admin)](#3-gestione-utenti-admin)
-4. [Materiali didattici](#4-materiali-didattici)
+2. [Materiali didattici](#2-materiali-didattici)
+3. [Ruoli e permessi](#3-ruoli-e-permessi)
+4. [Gestione utenti (Admin)](#4-gestione-utenti-admin)
 5. [Gestione corsi](#5-gestione-corsi)
 6. [Lezioni](#6-lezioni)
 7. [Quiz](#7-quiz)
@@ -47,82 +47,7 @@
 
 ---
 
-## 2. Ruoli e permessi
-
-| Funzione | Admin | Teacher | Student |
-|---|:---:|:---:|:---:|
-| Gestire utenti | ✅ | — | — |
-| Libreria Materiali — upload/modifica | ✅ | ✅ | — |
-| Libreria Materiali — sfoglia/download | ✅ | ✅ | ✅ |
-| Creare/modificare qualsiasi corso | ✅ | — | — |
-| Assegnare docenti ai corsi | ✅ | — | — |
-| Creare/modificare i propri corsi | ✅ | ✅ | — |
-| Aggiungere lezioni | ✅ | ✅ | — |
-| Collegare materiali alle lezioni | ✅ | ✅ | — |
-| Creare quiz | ✅ | ✅ | — |
-| Iscriversi ai corsi | — | — | ✅ |
-| Studiare lezioni e sostenere quiz | — | — | ✅ |
-| Gestire traduzioni | ✅ | — | — |
-| Configurare email SMTP | ✅ | — | — |
-| Selezionare lingue attive | ✅ | — | — |
-
-**Regole sui ruoli:**
-- Il ruolo **Admin** non può essere assegnato tramite l'interfaccia (è unico e non modificabile)
-- Un **Teacher** non può cambiare ruolo se ha corsi attivi
-- Uno **Student** non può cambiare ruolo se è iscritto a dei corsi
-- Alla creazione di un nuovo utente, il ruolo Admin non è disponibile nel menu a tendina
-
-### Ruoli personalizzati
-
-Oltre ai tre ruoli di sistema (Admin, Teacher, Student) è possibile creare **ruoli personalizzati** con permessi granulari.
-
-Percorso: **Admin → Utenti → tab "Ruoli"**
-
-**Creazione ruolo:**
-- Pulsante **"+ Create role"** — apre una pagina dedicata con form completo
-- Campi: nome del ruolo (obbligatorio, max 50 caratteri, solo lettere/numeri/underscore/spazi)
-- Il nome **Admin** è riservato e non può essere usato
-- **Permessi configurabili per ogni ruolo:**
-  - *Corsi* (se il modulo Corsi è abilitato): accesso al catalogo, iscrizione, gestione corsi docente, ecc.
-  - *Accesso Menu — Materiali*: abilita l'accesso alla sezione Materiali con controllo granulare delle operazioni consentite (crea, modifica, approva) e del flag "Consenti modifica stato" (bypassa il blocco automatico bozza/in revisione)
-  - *Accesso Menu — Utenti*: visibilità del pannello Utenti
-  - *Accesso Menu — Dictionary*: visibilità del pannello Traduzioni
-
-**Modifica ruolo:**
-- Pulsante ✏ sulla riga del ruolo — stessa pagina con nome e permessi precompilati
-
-**Eliminazione ruolo:**
-- Pulsante 🗑 — non è possibile eliminare un ruolo con utenti assegnati
-
----
-
-## 3. Gestione utenti (Admin)
-
-Percorso: **Admin → Utenti**
-
-### Lista utenti
-La tabella mostra tutti gli utenti con: nome, email, ruolo, stato (Attivo/Inattivo), data di registrazione e nome del creatore.
-
-### Azioni disponibili per utente
-
-| Icona | Azione | Descrizione |
-|---|---|---|
-| 👁 (occhio) | Vedi corsi | Per i **docenti**: lista dei corsi tenuti. Per gli **studenti**: corsi iscritti con barra di progresso (lezioni completate / totale). |
-| ✏ (matita) | Modifica | Cambia nome, email, ruolo e stato account. Il cambio ruolo è bloccato se il docente ha corsi attivi o lo studente è iscritto a corsi. |
-| 🔄 (freccia) | Attiva/Disattiva | Cambia lo stato dell'account. Gli utenti inattivi non possono accedere alla piattaforma. |
-| 🗑 (cestino) | Elimina | Eliminazione permanente dell'utente e di tutti i dati correlati: tentativi quiz, progressi nelle lezioni, iscrizioni. **Azione irreversibile.** |
-
-### Creazione utente
-- Pulsante **"Nuovo utente"** in alto a destra
-- Campi: nome, cognome, email, ruolo (Teacher o Student), password temporanea, stato iniziale
-- Il campo Admin non è disponibile per sicurezza
-
-### Blocco eliminazione docente
-Se un docente ha corsi attivi, il sistema blocca l'eliminazione e mostra un messaggio con il numero di corsi. Il docente va prima riassegnato o i corsi vanno eliminati.
-
----
-
-## 4. Materiali didattici
+## 2. Materiali didattici
 
 Percorso: **Materiali** (voce navbar)
 
@@ -156,6 +81,13 @@ Gli studenti vedono un avviso che ricorda loro che per caricamenti o modifiche d
 | **Converti in PDF** | Opzionale: converte automaticamente .doc/.docx/.ppt/.pptx in PDF prima del salvataggio (richiede LibreOffice sul server). |
 | **Note versione** | Testo libero per descrivere le modifiche della versione. |
 
+### Flusso di caricamento
+
+1. Cliccare **"Carica Documento"** — il form rimane bloccato finché non si sceglie un file
+2. Dopo la selezione del file, il sistema estrae automaticamente autore e numero pagine dai metadati (.docx, .pptx) e controlla se esistono materiali con titolo simile
+3. Compilare titolo, tipo documento, lingua e gli altri campi
+4. Cliccare **"Salva"** — il materiale viene creato con stato `in_revisione` (chi possiede il permesso `setstatus` può scegliere liberamente lo stato)
+
 ### Workflow stato
 
 ```
@@ -170,7 +102,7 @@ bozza  →  in_revisione  →  verificato
   - Viene assegnato automaticamente un **numero protocollo** progressivo univoco.
   - Se l'utente non possiede il permesso `setstatus`, lo stato non può essere modificato in modifica.
 
-Il permesso `setstatus` per creazione, modifica e approvazione si configura separatamente nei ruoli personalizzati.
+Il permesso `setstatus` per creazione e modifica si configura separatamente nei ruoli personalizzati.
 
 ### Versioning
 
@@ -213,10 +145,90 @@ Quando un materiale viene creato o modificato, il sistema può inviare una notif
 
 ---
 
+## 3. Ruoli e permessi
+
+| Funzione | Admin | Teacher | Student |
+|---|:---:|:---:|:---:|
+| Gestire utenti | ✅ | — | — |
+| Libreria Materiali — upload/modifica | ✅ | ✅ | — |
+| Libreria Materiali — sfoglia/download | ✅ | ✅ | ✅ |
+| Creare/modificare qualsiasi corso | ✅ | — | — |
+| Assegnare docenti ai corsi | ✅ | — | — |
+| Creare/modificare i propri corsi | ✅ | ✅ | — |
+| Aggiungere lezioni | ✅ | ✅ | — |
+| Collegare materiali alle lezioni | ✅ | ✅ | — |
+| Creare quiz | ✅ | ✅ | — |
+| Iscriversi ai corsi | — | — | ✅ |
+| Studiare lezioni e sostenere quiz | — | — | ✅ |
+| Gestire traduzioni | ✅ | — | — |
+| Configurare email SMTP | ✅ | — | — |
+| Selezionare lingue attive | ✅ | — | — |
+
+**Regole sui ruoli:**
+- Il ruolo **Admin** non può essere assegnato tramite l'interfaccia (è unico e non modificabile)
+- Un **Teacher** non può cambiare ruolo se ha corsi attivi
+- Uno **Student** non può cambiare ruolo se è iscritto a dei corsi
+- Alla creazione di un nuovo utente, il ruolo Admin non è disponibile nel menu a tendina
+
+### Ruoli personalizzati
+
+Oltre ai tre ruoli di sistema (Admin, Teacher, Student) è possibile creare **ruoli personalizzati** con permessi granulari.
+
+Percorso: **Admin → Utenti → tab "Ruoli"**
+
+**Creazione ruolo:**
+- Pulsante **"+ Create role"** — apre una pagina dedicata con form completo
+- Campi: nome del ruolo (obbligatorio, max 50 caratteri, solo lettere/numeri/underscore/spazi)
+- Il nome **Admin** è riservato e non può essere usato
+- **Permessi configurabili per ogni ruolo:**
+  - *Corsi — sezione accesso*: abilita l'accesso al modulo Corsi. Sotto-permessi:
+    - **Teach a course** — l'utente può creare e gestire i propri corsi, aggiungere lezioni, collegare materiali e creare quiz (equivalente al ruolo Teacher)
+    - **Participate in a course** — l'utente può iscriversi ai corsi pubblicati, visualizzare le lezioni e sostenere i quiz (equivalente al ruolo Student)
+  - *Accesso Menu — Materiali*: abilita l'accesso alla sezione Materiali con controllo granulare delle operazioni consentite (crea, modifica) e del flag "Consenti modifica stato" (bypassa il blocco automatico bozza/in revisione)
+  - *Accesso Menu — Utenti*: visibilità del pannello Utenti
+  - *Accesso Menu — Dictionary*: visibilità del pannello Traduzioni
+
+**Modifica ruolo:**
+- Pulsante ✏ sulla riga del ruolo — stessa pagina con nome e permessi precompilati
+
+**Eliminazione ruolo:**
+- Pulsante 🗑 — non è possibile eliminare un ruolo con utenti assegnati
+
+---
+
+## 4. Gestione utenti (Admin)
+
+Percorso: **Admin → Utenti**
+
+### Lista utenti
+La tabella mostra tutti gli utenti con: nome, email, ruolo, stato (Attivo/Inattivo), data di registrazione e nome del creatore.
+
+### Azioni disponibili per utente
+
+| Icona | Azione | Descrizione |
+|---|---|---|
+| 👁 (occhio) | Vedi corsi | Per i **docenti**: lista dei corsi tenuti. Per gli **studenti**: corsi iscritti con barra di progresso (lezioni completate / totale). |
+| ✏ (matita) | Modifica | Cambia nome, email, ruolo e stato account. Il cambio ruolo è bloccato se il docente ha corsi attivi o lo studente è iscritto a corsi. |
+| 🔄 (freccia) | Attiva/Disattiva | Cambia lo stato dell'account. Gli utenti inattivi non possono accedere alla piattaforma. |
+| 🗑 (cestino) | Elimina | Eliminazione permanente dell'utente e di tutti i dati correlati: tentativi quiz, progressi nelle lezioni, iscrizioni. **Azione irreversibile.** |
+
+### Creazione utente
+- Pulsante **"Nuovo utente"** in alto a destra
+- Campi: nome, cognome, email, ruolo (Teacher o Student), password temporanea, stato iniziale
+- Il campo Admin non è disponibile per sicurezza
+
+### Blocco eliminazione docente
+Se un docente ha corsi attivi, il sistema blocca l'eliminazione e mostra un messaggio con il numero di corsi. Il docente va prima riassegnato o i corsi vanno eliminati.
+
+---
+
 ## 5. Gestione corsi
 
-### Creazione corso (Teacher / Admin)
+### Ruolo Docente
 
+Il **Docente** (Teacher) è la figura che crea e gestisce i corsi. L'Admin può anche creare corsi e assegnarli a qualsiasi docente.
+
+#### Creare un corso
 Percorso: **Dashboard → Crea Corso**
 
 Campi del form:
@@ -225,28 +237,40 @@ Campi del form:
 - **Categoria** — lista a tendina: Economia, Finanza, Informatica, Lingue, Diritto, Management, Marketing, Statistica, Altro
 - **Data inizio / Data fine** — opzionali
 - **Pubblica subito** — se spuntato, il corso è visibile agli studenti; altrimenti rimane in stato Bozza
-- **Docente** _(solo Admin)_ — menu a tendina con tutti i docenti attivi; consente di assegnare o riassegnare il corso a qualsiasi docente
 
-### Modifica corso
+#### Modificare un corso
 - Dal dettaglio corso → pulsante **"Modifica"**
-- L'Admin può riassegnare il corso a un docente diverso senza perdere dati
+- Consente di aggiornare titolo, descrizione, categoria, date e stato di pubblicazione
 
-### Stato corso
-- **Bozza** — visibile solo al docente/admin; non appare nel catalogo studenti
+#### Stato del corso
+- **Bozza** — visibile solo al docente/Admin; non appare nel catalogo studenti
 - **Pubblicato** — visibile a tutti gli studenti nel catalogo
 
-### Eliminazione corso
+#### Studenti iscritti
+- Dal dettaglio corso → **"Studenti iscritti"** — mostra nome, email, data di iscrizione e progresso di ogni studente
+
+#### Eliminazione corso
 L'eliminazione è **a cascata**: vengono eliminati definitivamente lezioni, quiz, collegamenti ai materiali (i materiali stessi rimangono nella libreria), iscrizioni e progressi degli studenti. Un avviso mostra il numero di elementi che verranno eliminati prima della conferma.
 
-### Catalogo corsi (Student)
+---
+
+### Ruolo Studente
+
+Lo **Studente** (Student) può sfogliare il catalogo dei corsi pubblicati, iscriversi e seguire le lezioni.
+
+#### Catalogo corsi
 - Percorso: menu **Corsi**
 - Mostra tutti i corsi pubblicati con titolo, categoria, docente, numero di lezioni e iscritti
 - Campo di ricerca in tempo reale per filtrare per titolo
 
-### Iscrizione (Student)
-- Dal dettaglio corso → pulsante **"Iscriviti"**
-- Possibile disiscriversi dal pulsante **"Annulla iscrizione"** nella stessa pagina
-- Per visualizzare il dettaglio senza iscriversi occorre comunque essere autenticati
+#### Iscrizione e disiscrizione
+- Dal dettaglio corso → pulsante **"Iscriviti"** per iscriversi
+- Dal dettaglio corso → pulsante **"Annulla iscrizione"** per disiscriversi
+- Per visualizzare il dettaglio di un corso occorre comunque essere autenticati
+
+#### Progresso
+- Il completamento di ogni lezione viene registrato automaticamente alla prima visualizzazione
+- La dashboard studente mostra la barra di avanzamento per ogni corso iscritto
 
 ---
 
@@ -261,7 +285,7 @@ Le lezioni vengono visualizzate nell'ordine numerico del campo **Ordine**. È po
 
 ### Collegamento materiali alla lezione
 
-I file e i documenti visibili agli studenti in una lezione provengono dalla **Libreria Materiali** (§4) — non si caricano direttamente nella lezione.
+I file e i documenti visibili agli studenti in una lezione provengono dalla **Libreria Materiali** (§2) — non si caricano direttamente nella lezione.
 
 **Come collegare un materiale:**
 1. Aprire il dettaglio della lezione
