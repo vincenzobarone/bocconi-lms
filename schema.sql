@@ -13,9 +13,10 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash   VARCHAR(255) NOT NULL,
     first_name      VARCHAR(100) NOT NULL,
     last_name       VARCHAR(100) NOT NULL,
-    role            ENUM('Student','Teacher','Admin') NOT NULL DEFAULT 'Student',
+    role            VARCHAR(256) NOT NULL DEFAULT 'Student',
     is_active       TINYINT(1) NOT NULL DEFAULT 1,
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by      INT NULL,
     INDEX idx_email (email),
     INDEX idx_role  (role)
 ) ENGINE=InnoDB;
@@ -174,6 +175,8 @@ CREATE TABLE IF NOT EXISTS roles (
     id              INT AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(256) NOT NULL,
     normalized_name VARCHAR(256) NOT NULL,
+    created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by      INT NULL,
     UNIQUE KEY uk_normalized (normalized_name)
 ) ENGINE=InnoDB;
 
@@ -186,9 +189,24 @@ CREATE TABLE IF NOT EXISTS user_roles (
 ) ENGINE=InnoDB;
 
 INSERT IGNORE INTO roles (name, normalized_name) VALUES
-    ('Student', 'STUDENT'),
-    ('Teacher', 'TEACHER'),
     ('Admin',   'ADMIN');
+
+-- Aree didattiche
+CREATE TABLE IF NOT EXISTS areas (
+    id         INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(255) NOT NULL,
+    sort_order INT NOT NULL DEFAULT 0,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by INT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS user_areas (
+    user_id INT NOT NULL,
+    area_id INT NOT NULL,
+    PRIMARY KEY (user_id, area_id),
+    CONSTRAINT fk_ua_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ua_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ============================================================
 -- Dati iniziali: utente Admin di default
