@@ -70,6 +70,28 @@
 - Uno **Student** non può cambiare ruolo se è iscritto a dei corsi
 - Alla creazione di un nuovo utente, il ruolo Admin non è disponibile nel menu a tendina
 
+### Ruoli personalizzati
+
+Oltre ai tre ruoli di sistema (Admin, Teacher, Student) è possibile creare **ruoli personalizzati** con permessi granulari.
+
+Percorso: **Admin → Utenti → tab "Ruoli"**
+
+**Creazione ruolo:**
+- Pulsante **"+ Create role"** — apre una pagina dedicata con form completo
+- Campi: nome del ruolo (obbligatorio, max 50 caratteri, solo lettere/numeri/underscore/spazi)
+- Il nome **Admin** è riservato e non può essere usato
+- **Permessi configurabili per ogni ruolo:**
+  - *Corsi* (se il modulo Corsi è abilitato): accesso al catalogo, iscrizione, gestione corsi docente, ecc.
+  - *Accesso Menu — Materiali*: abilita l'accesso alla sezione Materiali con controllo granulare delle operazioni consentite (crea, modifica, approva) e del flag "Consenti modifica stato" (bypassa il blocco automatico bozza/in revisione)
+  - *Accesso Menu — Utenti*: visibilità del pannello Utenti
+  - *Accesso Menu — Dictionary*: visibilità del pannello Traduzioni
+
+**Modifica ruolo:**
+- Pulsante ✏ sulla riga del ruolo — stessa pagina con nome e permessi precompilati
+
+**Eliminazione ruolo:**
+- Pulsante 🗑 — non è possibile eliminare un ruolo con utenti assegnati
+
 ---
 
 ## 3. Gestione utenti (Admin)
@@ -212,11 +234,11 @@ Eliminando un quiz vengono eliminati definitivamente **tutti i tentativi degli s
 
 Percorso: **Dashboard** (per utenti Student)
 
-Mostra:
-- **Statistiche in evidenza:** corsi seguiti, corsi completati, quiz superati
-- **I miei corsi:** lista dei corsi a cui si è iscritti con barra di progresso e pulsante "Continua"
-- **Quiz recenti:** ultimi tentativi di quiz con risultato
-- Link **"Esplora il catalogo"** se non si è iscritti ad alcun corso
+Mostra (se i rispettivi moduli sono abilitati):
+- **Statistiche corsi:** numero di corsi iscritti e lezioni completate
+- **Statistiche materiali:** totale materiali disponibili e aggiunti negli ultimi 30 giorni
+
+Per navigare tra le sezioni usare la barra di navigazione in alto.
 
 ---
 
@@ -224,10 +246,11 @@ Mostra:
 
 Percorso: **Dashboard** (per utenti Teacher)
 
-Mostra:
-- **Statistiche in evidenza:** corsi creati, corsi pubblicati, studenti iscritti
-- **I miei corsi:** lista con stato (Bozza/Pubblicato), numero lezioni, numero studenti iscritti
-- Pulsanti **"Gestisci"** per accedere al dettaglio di ogni corso
+Mostra (se i rispettivi moduli sono abilitati):
+- **Statistiche corsi:** numero di corsi creati e studenti iscritti
+- **Statistiche materiali:** totale materiali e aggiunti negli ultimi 30 giorni
+
+Per navigare tra le sezioni usare la barra di navigazione in alto.
 
 ---
 
@@ -245,6 +268,21 @@ Campi:
 - **Email mittente** — indirizzo che appare nel campo "Da:" delle email
 - **Nome mittente** — nome visualizzato nel campo "Da:"
 - **Abilita invio email** — se disattivato, le email vengono solo registrate nel log ma non inviate (utile in sviluppo/test)
+
+### Notifiche corsi
+
+Sezione **"Courses Notifications"** nella stessa pagina di Email Settings.
+
+Attiva/disattiva selettivamente le email automatiche legate ai corsi:
+
+| Impostazione | Destinatario | Evento |
+|---|---|---|
+| Student on enroll | Studente | Conferma iscrizione a un corso |
+| Student on quiz completed | Studente | Ricezione risultato dopo il completamento di un quiz |
+| Teacher on quiz completed | Docente | Notifica quando uno studente completa un quiz nel proprio corso |
+| Teacher on student enrolled | Docente | Notifica quando uno studente si iscrive al proprio corso |
+
+Le notifiche vengono inviate **solo se** l'invio email è abilitato nelle impostazioni SMTP e la singola opzione è spuntata.
 
 ### Test email
 - Sezione separata nella stessa pagina
