@@ -293,6 +293,14 @@
             'jpeg':'bi-file-earmark-image text-info',
             'png':'bi-file-earmark-image text-info'
         };
+        // Stringhe tradotte per uso in JS (Json.Serialize evita problemi di encoding HTML nelle property textContent)
+        var _t = {
+            fileRequired:    @Json.Serialize(T["mat.file_required_warn","Seleziona prima un file da caricare."]),
+            titleRequired:   @Json.Serialize(T["mat.title_required","Il titolo è obbligatorio"]),
+            doctypeRequired: @Json.Serialize(T["mat.doctype_required","Il tipo documento è obbligatorio"]),
+            pages:           @Json.Serialize(T["mat.pages","pagine"]),
+            slides:          @Json.Serialize(T["mat.slides","slide"])
+        };
 
         // Valida la summary di ModelState
         (function () {
@@ -386,7 +394,7 @@
                     warn = document.createElement('p');
                     warn.id = 'noFileUploadWarn';
                     warn.className = 'text-danger small mt-2 mb-0 fw-semibold';
-                    warn.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>@T["mat.file_required_warn","Seleziona prima un file da caricare."]';
+                    warn.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>' + _t.fileRequired;
                     dropZone.appendChild(warn);
                 }
                 hasError = true;
@@ -394,7 +402,7 @@
 
             // 2. Verifica Titolo
             if (!titleInp || !titleInp.value.trim()) {
-                setFieldError(titleInp, titleSpan, '@T["mat.title_required","Il titolo è obbligatorio"]');
+                setFieldError(titleInp, titleSpan, _t.titleRequired);
                 hasError = true;
             } else {
                 clearFieldError(titleInp, titleSpan);
@@ -402,7 +410,7 @@
 
             // 3. Verifica Tipo Documento
             if (!dtSelect || !dtSelect.value) {
-                setFieldError(dtSelect, dtSpan, '@T["mat.doctype_required","Il tipo documento è obbligatorio"]');
+                setFieldError(dtSelect, dtSpan, _t.doctypeRequired);
                 hasError = true;
             } else {
                 clearFieldError(dtSelect, dtSpan);
@@ -524,9 +532,9 @@
                 if (!entry) return null;
                 return entry.async('string').then(function(xml) {
                     var mp = xml.match(/<Pages>(\d+)<\/Pages>/);
-                    if (mp) return { count: parseInt(mp[1]), unit: '@T["mat.pages","pagine"]' };
+                    if (mp) return { count: parseInt(mp[1]), unit: _t.pages };
                     var ms = xml.match(/<Slides>(\d+)<\/Slides>/);
-                    if (ms) return { count: parseInt(ms[1]), unit: '@T["mat.slides","slide"]' };
+                    if (ms) return { count: parseInt(ms[1]), unit: _t.slides };
                     return null;
                 });
             }).catch(function() { return null; });

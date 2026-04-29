@@ -1569,6 +1569,78 @@ try
 }
 catch { }
 
+// ── Seed mat.* UI validation & upload keys ────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('it','mat.file_required_warn','Seleziona prima un file da caricare.'),
+        ('en','mat.file_required_warn','Please select a file to upload.'),
+        ('es','mat.file_required_warn','Por favor, selecciona un archivo para cargar.'),
+        ('de','mat.file_required_warn','Bitte wähle zuerst eine Datei zum Hochladen aus.'),
+        ('it','mat.title_required','Il titolo è obbligatorio'),
+        ('en','mat.title_required','Title is required'),
+        ('es','mat.title_required','El título es obligatorio'),
+        ('de','mat.title_required','Titel ist erforderlich'),
+        ('it','mat.doctype_required','Il tipo documento è obbligatorio'),
+        ('en','mat.doctype_required','Document type is required'),
+        ('es','mat.doctype_required','El tipo de documento es obligatorio'),
+        ('de','mat.doctype_required','Dokumenttyp ist erforderlich'),
+        ('it','mat.similar_titles_found','Attenzione: materiali con titolo simile già presenti'),
+        ('en','mat.similar_titles_found','Warning: materials with a similar title already exist'),
+        ('es','mat.similar_titles_found','Atención: ya existen materiales con un título similar'),
+        ('de','mat.similar_titles_found','Achtung: Materialien mit ähnlichem Titel bereits vorhanden'),
+        ('it','mat.upload_document','Carica Documento'),
+        ('en','mat.upload_document','Upload Document'),
+        ('es','mat.upload_document','Subir Documento'),
+        ('de','mat.upload_document','Dokument hochladen'),
+        ('it','mat.upload_hint','Clicca per selezionare un file dal tuo computer'),
+        ('en','mat.upload_hint','Click to select a file from your computer'),
+        ('es','mat.upload_hint','Haz clic para seleccionar un archivo de tu ordenador'),
+        ('de','mat.upload_hint','Klicke, um eine Datei von deinem Computer auszuwählen'),
+        ('it','mat.file_lost_warn','Il file non è stato salvato. Selezionalo di nuovo per procedere.'),
+        ('en','mat.file_lost_warn','The file was not saved. Please select it again to continue.'),
+        ('es','mat.file_lost_warn','El archivo no se guardó. Vuelve a seleccionarlo para continuar.'),
+        ('de','mat.file_lost_warn','Die Datei wurde nicht gespeichert. Bitte wähle sie erneut aus, um fortzufahren.'),
+        ('it','mat.remove_file','Rimuovi file'),
+        ('en','mat.remove_file','Remove file'),
+        ('es','mat.remove_file','Eliminar archivo'),
+        ('de','mat.remove_file','Datei entfernen'),
+        ('it','mat.verified_modal_title','Verifica completata'),
+        ('en','mat.verified_modal_title','Verification complete'),
+        ('es','mat.verified_modal_title','Verificación completada'),
+        ('de','mat.verified_modal_title','Überprüfung abgeschlossen'),
+        ('it','mat.verified_modal_hint','Completa i dati di registrazione prima di salvare come Verificato.'),
+        ('en','mat.verified_modal_hint','Complete the registration data before saving as Verified.'),
+        ('es','mat.verified_modal_hint','Completa los datos de registro antes de guardar como Verificado.'),
+        ('de','mat.verified_modal_hint','Füllen Sie die Registrierungsdaten aus, bevor Sie als Verifiziert speichern.'),
+        ('it','mat.folder_placeholder','Digita o seleziona una cartella…'),
+        ('en','mat.folder_placeholder','Type or select a folder…'),
+        ('es','mat.folder_placeholder','Escribe o selecciona una carpeta…'),
+        ('de','mat.folder_placeholder','Ordner eingeben oder auswählen…'),
+        ('it','mat.folder_required','Inserisci il nome della cartella.'),
+        ('en','mat.folder_required','Please enter the folder name.'),
+        ('es','mat.folder_required','Por favor, introduce el nombre de la carpeta.'),
+        ('de','mat.folder_required','Bitte gib den Ordnernamen ein.'),
+        ('it','mat.modal_confirm','Conferma e salva'),
+        ('en','mat.modal_confirm','Confirm and save'),
+        ('es','mat.modal_confirm','Confirmar y guardar'),
+        ('de','mat.modal_confirm','Bestätigen und speichern'),
+        ('it','mat.pages','pagine'),
+        ('en','mat.pages','pages'),
+        ('es','mat.pages','páginas'),
+        ('de','mat.pages','Seiten'),
+        ('it','mat.slides','slide'),
+        ('en','mat.slides','slides'),
+        ('es','mat.slides','diapositivas'),
+        ('de','mat.slides','Folien');", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
