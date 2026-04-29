@@ -1581,20 +1581,27 @@ try
 catch { }
 
 // ── Audit columns: created_by on users / roles / areas ──────────────────────
-try
 {
     var dbHelper = app.Services.GetRequiredService<DbHelper>();
-    using var conn = dbHelper.GetConnection();
-    await conn.OpenAsync();
-    using var mig = new MySqlConnector.MySqlCommand(@"
-        ALTER TABLE users  ADD COLUMN IF NOT EXISTS created_by INT NULL;
-        ALTER TABLE roles  ADD COLUMN IF NOT EXISTS created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
-        ALTER TABLE roles  ADD COLUMN IF NOT EXISTS created_by INT NULL;
-        ALTER TABLE areas  ADD COLUMN IF NOT EXISTS created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;
-        ALTER TABLE areas  ADD COLUMN IF NOT EXISTS created_by INT NULL;", conn);
-    await mig.ExecuteNonQueryAsync();
+    foreach (var ddl in new[]
+    {
+        "ALTER TABLE users ADD COLUMN created_by INT NULL",
+        "ALTER TABLE roles ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
+        "ALTER TABLE roles ADD COLUMN created_by INT NULL",
+        "ALTER TABLE areas ADD COLUMN created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP",
+        "ALTER TABLE areas ADD COLUMN created_by INT NULL"
+    })
+    {
+        try
+        {
+            using var conn = dbHelper.GetConnection();
+            await conn.OpenAsync();
+            using var cmd = new MySqlConnector.MySqlCommand(ddl, conn);
+            await cmd.ExecuteNonQueryAsync();
+        }
+        catch { }
+    }
 }
-catch { }
 
 if (!app.Environment.IsDevelopment())
 {
