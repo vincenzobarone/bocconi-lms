@@ -12,24 +12,24 @@
 </div>
 
 <div class="row g-4">
-    @* ── Colonna sinistra: config SMTP ── *@
-    <div class="col-lg-7">
+    <div class="col-12">
         <div class="card shadow-sm">
             <div class="card-header bg-white fw-semibold">
                 <i class="bi bi-server me-2 text-bocconi"></i>@T["admin.email.smtp_config", "SMTP Configuration"]
             </div>
             <div class="card-body">
-                <form asp-action="EmailSettings" method="post">
+
+                @* ── Campi SMTP (dentro il form principale) ── *@
+                <form id="smtpMainForm" asp-action="EmailSettings" method="post">
                     @Html.AntiForgeryToken()
 
-                    @* Campi SMTP *@
                     <div class="row g-3">
-                        <div class="col-8">
+                        <div class="col-sm-8">
                             <label asp-for="Host" class="form-label fw-semibold">@T["admin.email.host", "SMTP Host"]</label>
                             <input asp-for="Host" class="form-control" placeholder="smtp.example.com" />
                             <span asp-validation-for="Host" class="text-danger small"></span>
                         </div>
-                        <div class="col-4">
+                        <div class="col-sm-4">
                             <label asp-for="Port" class="form-label fw-semibold">@T["admin.email.port", "Port"]</label>
                             <input asp-for="Port" class="form-control" type="number" min="1" max="65535" />
                             <span asp-validation-for="Port" class="text-danger small"></span>
@@ -37,18 +37,17 @@
                     </div>
 
                     <div class="row g-3 mt-1">
-                        <div class="col-6">
+                        <div class="col-sm-6">
                             <label asp-for="Username" class="form-label fw-semibold">@T["admin.email.username", "Username"]</label>
                             <input asp-for="Username" class="form-control" placeholder="user@example.com" autocomplete="username" />
                             <span asp-validation-for="Username" class="text-danger small"></span>
                         </div>
-                        <div class="col-6">
+                        <div class="col-sm-6">
                             <label asp-for="Password" class="form-label fw-semibold">@T["admin.email.password", "Password"]</label>
                             <div class="input-group">
                                 <input id="smtpPassword" name="Password" class="form-control" type="password"
-                                       value="@Model.Password"
-                                       autocomplete="new-password" />
-                                <button type="button" class="btn btn-outline-secondary" id="toggleSmtpPassword" tabindex="-1" title="Mostra/nascondi password">
+                                       value="@Model.Password" autocomplete="new-password" />
+                                <button type="button" class="btn btn-outline-secondary" id="toggleSmtpPassword" tabindex="-1">
                                     <i class="bi bi-eye" id="toggleSmtpPasswordIcon"></i>
                                 </button>
                             </div>
@@ -56,12 +55,12 @@
                     </div>
 
                     <div class="row g-3 mt-1">
-                        <div class="col-6">
+                        <div class="col-sm-6">
                             <label asp-for="FromEmail" class="form-label fw-semibold">@T["admin.email.from_email", "Sender Email"]</label>
                             <input asp-for="FromEmail" class="form-control" placeholder="noreply@bocconilms.it" />
                             <span asp-validation-for="FromEmail" class="text-danger small"></span>
                         </div>
-                        <div class="col-6">
+                        <div class="col-sm-6">
                             <label asp-for="FromName" class="form-label fw-semibold">@T["admin.email.from_name", "Sender Name"]</label>
                             <input asp-for="FromName" class="form-control" placeholder="Bocconi LMS" />
                             <span asp-validation-for="FromName" class="text-danger small"></span>
@@ -74,14 +73,7 @@
                         <div class="form-text">@T["admin.email.use_ssl_desc", "Disable to use STARTTLS (port 587)."]</div>
                     </div>
 
-                    @* Pulsante salva *@
-                    <div class="d-flex gap-2 mt-4">
-                        <button type="submit" class="btn btn-bocconi">
-                            <i class="bi bi-save me-1"></i>@T["admin.email.save_btn", "Save Settings"]
-                        </button>
-                    </div>
-
-                    @* Toggle abilitazione *@
+                    @* ── Enable + Notifications (dentro il form per salvataggio bulk) ── *@
                     <hr class="mt-4 mb-3" />
                     <div class="form-check form-switch">
                         <input asp-for="Enabled" class="form-check-input" type="checkbox" role="switch" id="smtpEnabled" />
@@ -89,12 +81,12 @@
                         <div class="form-text">@T["admin.email.enable_desc", "If disabled, emails are logged but not sent."]</div>
                     </div>
 
-                    @* Notifiche materiali — visibile solo se invio email attivo *@
+                    @* Notifiche materiali — visibile solo se SMTP configurato *@
                     @if (smtpConfigured)
                     {
                         <div id="notifySection" class="@(Model.Enabled ? "" : "d-none")">
                             <hr class="my-3" />
-                            <p class="fw-semibold text-bocconi mb-2">
+                            <p class="fw-semibold text-bocconi mb-3">
                                 <i class="bi bi-file-earmark-text me-1"></i>@T["admin.email.notify_materials_header","Notifiche materiali"]
                             </p>
 
@@ -118,7 +110,7 @@
                                         <div class="row g-2">
                                             @foreach (var role in Model.AvailableRoles)
                                             {
-                                                <div class="col-6 col-md-4">
+                                                <div class="col-6 col-md-3">
                                                     <div class="form-check">
                                                         <input class="form-check-input mat-created-role-check"
                                                                type="checkbox" name="MaterialCreatedRoles"
@@ -153,7 +145,7 @@
                                         <div class="row g-2">
                                             @foreach (var role in Model.AvailableRoles)
                                             {
-                                                <div class="col-6 col-md-4">
+                                                <div class="col-6 col-md-3">
                                                     <div class="form-check">
                                                         <input class="form-check-input mat-updated-role-check"
                                                                type="checkbox" name="MaterialUpdatedRoles"
@@ -188,7 +180,7 @@
                                         <div class="row g-2">
                                             @foreach (var role in Model.AvailableRoles)
                                             {
-                                                <div class="col-6 col-md-4">
+                                                <div class="col-6 col-md-3">
                                                     <div class="form-check">
                                                         <input class="form-check-input mat-deleted-role-check"
                                                                type="checkbox" name="MaterialDeletedRoles"
@@ -203,108 +195,76 @@
                                 </div>
                             </div>
 
-                            @* Notifiche corsi *@
+                            @* ── Notifiche corsi ── *@
                             <hr class="my-3" />
                             <div class="mb-2 form-check form-switch">
                                 <input asp-for="CoursesNotificationsEnabled" class="form-check-input" type="checkbox"
                                        role="switch" id="notifyCourses" />
                                 <label class="form-check-label fw-semibold" for="notifyCourses">
-                                    <i class="bi bi-bell me-1 text-bocconi"></i>@T["admin.email.notify_courses","Courses Notifications"]
+                                    <i class="bi bi-bell me-1 text-bocconi"></i>@T["admin.email.notify_courses","Notifiche corsi"]
                                 </label>
                                 <div class="form-text">@T["admin.email.notify_courses_desc","Abilita le notifiche email relative ai corsi (iscrizioni, quiz)."]</div>
                             </div>
-
                             <div id="courseNotifyItems" class="@(Model.CoursesNotificationsEnabled ? "" : "d-none") ps-3 border-start border-2 ms-1">
                                 <div class="form-check mt-2">
                                     <input asp-for="NotifyStudentOnEnroll" class="form-check-input course-notify-check"
-                                           type="checkbox" id="notifyStudentEnroll"
-                                           data-item="StudentOnEnroll" />
+                                           type="checkbox" id="notifyStudentEnroll" data-item="StudentOnEnroll" />
                                     <label class="form-check-label" for="notifyStudentEnroll">
-                                        @T["admin.email.notify_student_enroll","Send notification to student on course enrollment"]
+                                        @T["admin.email.notify_student_enroll","Notifica allo studente all'iscrizione al corso"]
                                     </label>
                                 </div>
                                 <div class="form-check mt-2">
                                     <input asp-for="NotifyStudentOnQuizCompleted" class="form-check-input course-notify-check"
-                                           type="checkbox" id="notifyStudentQuiz"
-                                           data-item="StudentOnQuizCompleted" />
+                                           type="checkbox" id="notifyStudentQuiz" data-item="StudentOnQuizCompleted" />
                                     <label class="form-check-label" for="notifyStudentQuiz">
-                                        @T["admin.email.notify_student_quiz","Send student notification for quiz completed"]
+                                        @T["admin.email.notify_student_quiz","Notifica allo studente al completamento del quiz"]
                                     </label>
                                 </div>
                                 <div class="form-check mt-2">
                                     <input asp-for="NotifyTeacherOnQuizCompleted" class="form-check-input course-notify-check"
-                                           type="checkbox" id="notifyTeacherQuiz"
-                                           data-item="TeacherOnQuizCompleted" />
+                                           type="checkbox" id="notifyTeacherQuiz" data-item="TeacherOnQuizCompleted" />
                                     <label class="form-check-label" for="notifyTeacherQuiz">
-                                        @T["admin.email.notify_teacher_quiz","Send teacher notification for quiz completed"]
+                                        @T["admin.email.notify_teacher_quiz","Notifica al docente al completamento del quiz"]
                                     </label>
                                 </div>
                                 <div class="form-check mt-2">
                                     <input asp-for="NotifyTeacherOnStudentEnrolled" class="form-check-input course-notify-check"
-                                           type="checkbox" id="notifyTeacherEnroll"
-                                           data-item="TeacherOnStudentEnrolled" />
+                                           type="checkbox" id="notifyTeacherEnroll" data-item="TeacherOnStudentEnrolled" />
                                     <label class="form-check-label" for="notifyTeacherEnroll">
-                                        @T["admin.email.notify_teacher_enroll","Send teacher notification for student enrolled"]
+                                        @T["admin.email.notify_teacher_enroll","Notifica al docente quando uno studente si iscrive"]
                                     </label>
                                 </div>
                             </div>
                         </div>
                     }
                 </form>
-            </div>
-        </div>
-    </div>
 
-    @* ── Colonna destra: test email + note ── *@
-    <div class="col-lg-5">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white fw-semibold">
-                <i class="bi bi-send-check me-2 text-bocconi"></i>@T["admin.email.test_title", "Send Test Email"]
-            </div>
-            <div class="card-body">
-                @if (smtpConfigured)
-                {
-                    <p class="text-muted small mb-3">
-                        @T["admin.email.test_desc", "Verify that the SMTP configuration works by sending a test email."]
-                        @T["admin.email.test_desc2", "The currently saved settings are used."]
-                    </p>
-                    <div class="alert alert-light border small mb-3 py-2">
-                        <i class="bi bi-server me-1 text-bocconi"></i>
-                        <strong>@Model.Host</strong> : @Model.Port &mdash; @Model.FromEmail
-                    </div>
-                    <form asp-action="SendTestEmail" method="post">
-                        @Html.AntiForgeryToken()
-                        <div class="mb-3">
-                            <label asp-for="TestEmailRecipient" class="form-label fw-semibold">@T["admin.email.test_recipient", "Test Recipient Email"]</label>
-                            <input asp-for="TestEmailRecipient" class="form-control" placeholder="admin@example.com" type="email" />
-                            <span asp-validation-for="TestEmailRecipient" class="text-danger small"></span>
-                        </div>
-                        <button type="submit" class="btn btn-outline-bocconi w-100">
-                            <i class="bi bi-envelope-arrow-up me-1"></i>@T["admin.email.test_btn", "Send Test Email"]
-                        </button>
-                    </form>
-                }
-                else
-                {
-                    <div class="text-center py-3 text-muted">
-                        <i class="bi bi-envelope-x display-6 d-block mb-2 opacity-50"></i>
-                        <p class="small mb-0">@T["admin.email.test_not_configured", "Save the SMTP configuration first to enable the test."]</p>
-                    </div>
-                }
-            </div>
-        </div>
+                @* ── Riga azioni: Save + Test Email ── *@
+                <div class="d-flex gap-3 align-items-center mt-4 pt-3 border-top flex-wrap">
+                    <button type="submit" form="smtpMainForm" class="btn btn-bocconi">
+                        <i class="bi bi-save me-1"></i>@T["admin.email.save_btn", "Save Settings"]
+                    </button>
 
-        <div class="card shadow-sm mt-3">
-            <div class="card-header bg-white fw-semibold">
-                <i class="bi bi-info-circle me-2 text-bocconi"></i>@T["admin.email.notes_title", "Configuration Notes"]
-            </div>
-            <div class="card-body small text-muted">
-                <ul class="mb-0 ps-3">
-                    <li class="mb-1"><strong>Gmail:</strong> host <code>smtp.gmail.com</code>, port <code>587</code>, STARTTLS</li>
-                    <li class="mb-1"><strong>Outlook:</strong> host <code>smtp.office365.com</code>, port <code>587</code>, STARTTLS</li>
-                    <li class="mb-1"><strong>SendGrid:</strong> host <code>smtp.sendgrid.net</code>, port <code>587</code></li>
-                    <li>@T["admin.email.notes_override", "Settings saved in the database override those in appsettings.json."]</li>
-                </ul>
+                    @if (smtpConfigured)
+                    {
+                        <div class="vr d-none d-sm-block"></div>
+                        <form asp-action="SendTestEmail" method="post" class="d-flex gap-2 align-items-center flex-wrap">
+                            @Html.AntiForgeryToken()
+                            <input asp-for="TestEmailRecipient" class="form-control form-control-sm"
+                                   placeholder="admin@example.com" type="email" style="min-width:220px;" />
+                            <button type="submit" class="btn btn-sm btn-outline-bocconi text-nowrap">
+                                <i class="bi bi-envelope-arrow-up me-1"></i>@T["admin.email.test_btn", "Send Test Email"]
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <span class="text-muted small">
+                            <i class="bi bi-info-circle me-1"></i>@T["admin.email.test_not_configured", "Salva prima la configurazione SMTP per abilitare il test."]
+                        </span>
+                    }
+                </div>
+
             </div>
         </div>
     </div>
@@ -333,7 +293,7 @@
         function showSaved(near) {
             var el = document.createElement('span');
             el.className = 'text-success small ms-2 auto-saved-hint';
-            el.innerHTML = '<i class="bi bi-check2"></i> Salvato';
+            el.innerHTML = '<i class="bi bi-check2"></i> @T["admin.email.saved","Salvato"]';
             near.parentElement.appendChild(el);
             setTimeout(function () { el.remove(); }, 2000);
         }
@@ -352,17 +312,13 @@
             .catch(function() {});
         }
 
-        // ── Toggle "Enable email sending" — auto-save + show/hide notifiche ─
+        // ── Toggle "Enable email sending" ─────────────────────────────────
         var smtpEnabledCheck = document.getElementById('smtpEnabled');
         var notifySection    = document.getElementById('notifySection');
         if (smtpEnabledCheck && notifySection) {
             smtpEnabledCheck.addEventListener('change', function () {
                 var enabled = this.checked;
-                if (enabled) {
-                    notifySection.classList.remove('d-none');
-                } else {
-                    notifySection.classList.add('d-none');
-                }
+                notifySection.classList.toggle('d-none', !enabled);
                 var lbl = this;
                 ajaxPost('/Admin/ToggleEmailSendingAjax', { value: enabled },
                     function () { showSaved(lbl); });
@@ -376,10 +332,8 @@
             chk.addEventListener('change', function () {
                 var enabled = this.checked;
                 var section = document.getElementById(sectionId);
-                if (enabled) {
-                    section.classList.remove('d-none');
-                } else {
-                    section.classList.add('d-none');
+                section.classList.toggle('d-none', !enabled);
+                if (!enabled) {
                     section.querySelectorAll('.' + roleClass).forEach(function (cb) { cb.checked = false; });
                 }
                 var lbl = this;
@@ -391,53 +345,38 @@
         function bindMatRoles(roleClass, ajaxUrl) {
             document.querySelectorAll('.' + roleClass).forEach(function (cb) {
                 cb.addEventListener('change', function () {
-                    var checked = [];
-                    document.querySelectorAll('.' + roleClass + ':checked').forEach(function (c) {
-                        checked.push(c.value);
-                    });
-                    var lbl = this;
-                    ajaxPost(ajaxUrl, { roles: checked }, function () { showSaved(lbl); });
+                    var roles = Array.from(document.querySelectorAll('.' + roleClass + ':checked'))
+                                     .map(function (c) { return c.value; });
+                    ajaxPost(ajaxUrl, { roles: roles });
                 });
             });
         }
 
-        bindMatToggle('notifyMatCreated', 'notifyCreatedRoles',
-            '/Admin/ToggleNotifyMaterialCreatedAjax', 'mat-created-role-check');
-        bindMatToggle('notifyMatUpdated', 'notifyUpdatedRoles',
-            '/Admin/ToggleNotifyMaterialUpdatedAjax', 'mat-updated-role-check');
-        bindMatToggle('notifyMatDeleted', 'notifyDeletedRoles',
-            '/Admin/ToggleNotifyMaterialDeletedAjax', 'mat-deleted-role-check');
+        bindMatToggle('notifyMatCreated', 'notifyCreatedRoles', '/Admin/ToggleNotifyMatCreatedAjax', 'mat-created-role-check');
+        bindMatToggle('notifyMatUpdated', 'notifyUpdatedRoles', '/Admin/ToggleNotifyMatUpdatedAjax', 'mat-updated-role-check');
+        bindMatToggle('notifyMatDeleted', 'notifyDeletedRoles', '/Admin/ToggleNotifyMatDeletedAjax', 'mat-deleted-role-check');
+        bindMatRoles('mat-created-role-check', '/Admin/SaveMatCreatedRolesAjax');
+        bindMatRoles('mat-updated-role-check', '/Admin/SaveMatUpdatedRolesAjax');
+        bindMatRoles('mat-deleted-role-check', '/Admin/SaveMatDeletedRolesAjax');
 
-        bindMatRoles('mat-created-role-check', '/Admin/SetNotifyCreatedRolesAjax');
-        bindMatRoles('mat-updated-role-check', '/Admin/SetNotifyUpdatedRolesAjax');
-        bindMatRoles('mat-deleted-role-check', '/Admin/SetNotifyDeletedRolesAjax');
-
-        // ── Toggle "Courses Notifications" — auto-save + show/hide items ──
-        var notifyCoursesCheck  = document.getElementById('notifyCourses');
-        var courseNotifyItems   = document.getElementById('courseNotifyItems');
-        if (notifyCoursesCheck && courseNotifyItems) {
-            notifyCoursesCheck.addEventListener('change', function () {
-                var enabled = this.checked;
-                if (enabled) {
-                    courseNotifyItems.classList.remove('d-none');
-                } else {
-                    courseNotifyItems.classList.add('d-none');
-                    courseNotifyItems.querySelectorAll('.course-notify-check').forEach(function (cb) {
-                        cb.checked = false;
-                    });
-                }
+        // ── Notifiche corsi ───────────────────────────────────────────────
+        var notifyCoursesChk = document.getElementById('notifyCourses');
+        var courseItems      = document.getElementById('courseNotifyItems');
+        if (notifyCoursesChk && courseItems) {
+            notifyCoursesChk.addEventListener('change', function () {
+                courseItems.classList.toggle('d-none', !this.checked);
                 var lbl = this;
-                ajaxPost('/Admin/ToggleCoursesNotificationsAjax', { value: enabled },
+                ajaxPost('/Admin/ToggleCourseNotificationsAjax', { value: this.checked },
                     function () { showSaved(lbl); });
             });
         }
 
-        // ── Checkbox singoli item corsi — auto-save al click ──────────────
         document.querySelectorAll('.course-notify-check').forEach(function (cb) {
             cb.addEventListener('change', function () {
-                var item = this.getAttribute('data-item');
+                var item = this.dataset.item;
+                var val  = this.checked;
                 var lbl  = this;
-                ajaxPost('/Admin/ToggleCourseNotifyItemAjax', { item: item, value: this.checked },
+                ajaxPost('/Admin/ToggleCourseNotifyItemAjax', { item: item, value: val },
                     function () { showSaved(lbl); });
             });
         });
