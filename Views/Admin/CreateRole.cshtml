@@ -1,0 +1,215 @@
+@using BocconiLMS.Data
+@model RoleFormViewModel
+@{
+    ViewData["Title"] = T["admin.create_role","Create role"];
+    bool coursesEnabled = ViewBag.CoursesEnabled == true;
+
+    var coursePerms = RolePermissionRepository.AllPermissions.Where(p => p.CoursesOnly).ToList();
+    var menuPerms   = RolePermissionRepository.AllPermissions.Where(p => p.MenuOnly && p.Key != "menu.materials"
+                                                                                     && !p.Key.StartsWith("materials.")).ToList();
+    var matOpPerms  = RolePermissionRepository.AllPermissions
+        .Where(p => p.Key.StartsWith("materials.") && !p.Key.EndsWith(".setstatus")).ToList();
+    bool matMenuChecked = Model.Permissions.Contains("menu.materials");
+    bool anyOpChecked   = matOpPerms.Any(p => Model.Permissions.Contains(p.Key));
+    bool anySetStatus   = Model.Permissions.Contains("materials.create.setstatus")
+                       || Model.Permissions.Contains("materials.edit.setstatus")
+                       || Model.Permissions.Contains("materials.approve.setstatus");
+
+    string MenuIcon(string key) => key switch {
+        "menu.users"        => "bi-people",
+        "menu.translations" => "bi-book-half",
+        _                   => "bi-grid"
+    };
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold text-bocconi mb-0">
+                <i class="bi bi-shield-plus me-2"></i>@T["admin.create_role","Create role"]
+            </h2>
+            <a asp-action="Users" asp-route-tab="ruoli" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>@T["admin.roles_tab","Roles"]
+            </a>
+        </div>
+
+        <form asp-action="CreateRole" method="post">
+            @Html.AntiForgeryToken()
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-danger py-2 mb-3">
+                    @Html.ValidationSummary(false, null, new { @class = "mb-0" })
+                </div>
+            }
+
+            @* ── Nome ruolo ─────────────────────────────────────── *@
+            <div class="card shadow-sm mb-3">
+                <div class="card-body">
+                    <label asp-for="Name" class="form-label fw-semibold">
+                        @T["common.name","Name"] <span class="text-danger">*</span>
+                    </label>
+                    <input asp-for="Name" class="form-control" maxlength="50" autocomplete="off"
+                           placeholder="@T["admin.role_name_placeholder","Role name (e.g. Tutor, Supervisor…)"]" />
+                    <span asp-validation-for="Name" class="text-danger small"></span>
+                    <div class="form-text mt-1">@T["admin.role_hint_simple","The Admin role is reserved."]</div>
+                </div>
+            </div>
+
+            @* ── Permessi Corsi (solo se abilitati) ─────────────── *@
+            @if (coursesEnabled)
+            {
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-white fw-semibold py-3">
+                        <i class="bi bi-book me-2 text-bocconi"></i>@T["admin.courses","Courses"]
+                    </div>
+                    <div class="card-body">
+                        @foreach (var p in coursePerms)
+                        {
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox"
+                                       name="permissions" value="@p.Key"
+                                       id="perm_@p.Key.Replace('.','_')"
+                                       @(Model.Permissions.Contains(p.Key) ? "checked" : "") />
+                                <label class="form-check-label" for="perm_@p.Key.Replace('.','_')">
+                                    @T[p.TranslationKey, p.Key]
+                                </label>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            @* ── Accesso Menu ────────────────────────────────────── *@
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white fw-semibold py-3">
+                    <i class="bi bi-layout-text-sidebar me-2 text-bocconi"></i>@T["perm.menu_access","Menu Access"]
+                </div>
+                <div class="card-body">
+                    <div class="form-text mb-3">@T["perm.menu_access_hint","Allows users with this role to access the following panel sections."]</div>
+
+                    @* ── Materials toggle + sub-opzioni ───────────── *@
+                    <div class="form-check mb-1">
+                        <input class="form-check-input" type="checkbox"
+                               name="permissions" value="menu.materials"
+                               id="perm_menu_materials"
+                               @(matMenuChecked ? "checked" : "")
+                               onchange="toggleMatOps(this.checked)" />
+                        <label class="form-check-label fw-semibold" for="perm_menu_materials">
+                            <i class="bi bi-collection me-1 text-bocconi"></i>@T["perm.menu_materials","Materials — section access"]
+                        </label>
+                    </div>
+
+                    <div id="matOpsGroup"
+                         class="ps-4 border-start border-2 border-bocconi ms-2 mb-3 @(matMenuChecked ? "" : "d-none")">
+                        <div class="form-text mb-2">@T["perm.mat_ops_hint","Allowed operations on materials:"]</div>
+
+                        @foreach (var op in matOpPerms)
+                        {
+                            var opChecked = Model.Permissions.Contains(op.Key);
+                            var opId      = "perm_" + op.Key.Replace('.','_');
+                            <div class="form-check mb-1">
+                                <input class="form-check-input mat-op-check" type="checkbox"
+                                       name="permissions" value="@op.Key"
+                                       id="@opId"
+                                       @(opChecked ? "checked" : "")
+                                       @(matMenuChecked ? "" : "disabled")
+                                       onchange="onMatOpChange()" />
+                                <label class="form-check-label" for="@opId">
+                                    @T[op.TranslationKey, op.Key]
+                                </label>
+                            </div>
+                        }
+
+                        <div id="matSetStatusGroup"
+                             class="mt-2 pt-2 border-top @(matMenuChecked && anyOpChecked ? "" : "d-none")">
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="matSetStatusAll"
+                                       @(anySetStatus ? "checked" : "") />
+                                <label class="form-check-label fw-semibold text-secondary" for="matSetStatusAll">
+                                    <i class="bi bi-arrow-left-right me-1"></i>@T["perm.materials_setstatus_all","Allow status change"]
+                                </label>
+                                <div class="form-text ms-0" style="margin-top:2px;">
+                                    @T["perm.materials_setstatus_all_hint","Bypasses the automatic lock (draft on create, in-review on edit)"]
+                                </div>
+                            </div>
+                            <input type="checkbox" name="permissions" value="materials.create.setstatus"
+                                   id="ss_create" class="d-none" @(anySetStatus ? "checked" : "") />
+                            <input type="checkbox" name="permissions" value="materials.edit.setstatus"
+                                   id="ss_edit" class="d-none" @(anySetStatus ? "checked" : "") />
+                            <input type="checkbox" name="permissions" value="materials.approve.setstatus"
+                                   id="ss_approve" class="d-none" @(anySetStatus ? "checked" : "") />
+                        </div>
+                    </div>
+
+                    @* Altri permessi menu (Utenti, Dictionary…) *@
+                    @foreach (var p in menuPerms)
+                    {
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox"
+                                   name="permissions" value="@p.Key"
+                                   id="perm_@p.Key.Replace('.','_')"
+                                   @(Model.Permissions.Contains(p.Key) ? "checked" : "") />
+                            <label class="form-check-label fw-semibold" for="perm_@p.Key.Replace('.','_')">
+                                <i class="bi @MenuIcon(p.Key) me-1 text-bocconi"></i>@T[p.TranslationKey, p.Key]
+                            </label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-bocconi px-4">
+                    <i class="bi bi-plus me-1"></i>@T["admin.create_role","Create role"]
+                </button>
+                <a asp-action="Users" asp-route-tab="ruoli" class="btn btn-outline-secondary">
+                    @T["common.cancel","Cancel"]
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('matSetStatusAll').addEventListener('change', function () {
+            var state = this.checked;
+            ['ss_create', 'ss_edit', 'ss_approve'].forEach(function (id) {
+                document.getElementById(id).checked = state;
+            });
+        });
+
+        function onMatOpChange() {
+            var anyChecked = Array.from(document.querySelectorAll('.mat-op-check'))
+                                  .some(function (c) { return c.checked; });
+            var grp = document.getElementById('matSetStatusGroup');
+            if (anyChecked) {
+                grp.classList.remove('d-none');
+            } else {
+                grp.classList.add('d-none');
+                document.getElementById('matSetStatusAll').checked = false;
+                ['ss_create', 'ss_edit', 'ss_approve'].forEach(function (id) {
+                    document.getElementById(id).checked = false;
+                });
+            }
+        }
+
+        function toggleMatOps(enabled) {
+            var group  = document.getElementById('matOpsGroup');
+            var checks = group.querySelectorAll('.mat-op-check');
+            if (enabled) {
+                group.classList.remove('d-none');
+                checks.forEach(function (c) { c.disabled = false; });
+                onMatOpChange();
+            } else {
+                group.classList.add('d-none');
+                checks.forEach(function (c) { c.disabled = true; c.checked = false; });
+                document.getElementById('matSetStatusGroup').classList.add('d-none');
+                document.getElementById('matSetStatusAll').checked = false;
+                ['ss_create', 'ss_edit', 'ss_approve'].forEach(function (id) {
+                    document.getElementById(id).checked = false;
+                });
+            }
+        }
+    </script>
+}

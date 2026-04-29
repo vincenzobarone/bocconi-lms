@@ -632,27 +632,43 @@ public class AdminController : Controller
         return View(roles);
     }
 
+    [HttpGet]
+    public async Task<IActionResult> CreateRole()
+    {
+        ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
+        return View(new RoleFormViewModel());
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> CreateRole(string name)
+    public async Task<IActionResult> CreateRole(RoleFormViewModel model, List<string>? permissions)
     {
-        name = (name ?? "").Trim();
-        if (string.IsNullOrEmpty(name))
+        if (!ModelState.IsValid)
         {
-            TempData["Error"] = "Il nome del ruolo è obbligatorio.";
-            return RedirectToAction(nameof(Users), new { tab = "ruoli" });
+            ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
+            model.Permissions = permissions ?? new List<string>();
+            return View(model);
         }
+        var name = model.Name.Trim();
         if (name.Equals("Admin", StringComparison.OrdinalIgnoreCase))
         {
-            TempData["Error"] = "Il ruolo Admin è protetto e non può essere creato manualmente.";
-            return RedirectToAction(nameof(Users), new { tab = "ruoli" });
+            ModelState.AddModelError("Name", "Il ruolo Admin è protetto e non può essere creato manualmente.");
+            ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
+            model.Permissions = permissions ?? new List<string>();
+            return View(model);
         }
         if (await _roleManager.RoleExistsAsync(name))
         {
-            TempData["Error"] = $"Esiste già un ruolo con il nome '{name}'.";
-            return RedirectToAction(nameof(Users), new { tab = "ruoli" });
+            ModelState.AddModelError("Name", $"Esiste già un ruolo con il nome '{name}'.");
+            ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
+            model.Permissions = permissions ?? new List<string>();
+            return View(model);
         }
-        await _roleManager.CreateAsync(new ApplicationRole { Name = name, NormalizedName = name.ToUpperInvariant() });
+        var role = new ApplicationRole { Name = name, NormalizedName = name.ToUpperInvariant() };
+        await _roleManager.CreateAsync(role);
+        var created = await _roleManager.FindByNameAsync(name);
+        if (created != null && permissions?.Count > 0)
+            await _rolePerms.SetRolePermissionsAsync(created.Id, permissions);
         TempData["Success"] = $"Ruolo '{name}' creato con successo.";
         return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }

@@ -177,10 +177,9 @@
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
                 <span class="fw-semibold"><i class="bi bi-shield-lock me-2 text-bocconi"></i>@T["admin.roles_tab","Roles"]</span>
-                <button type="button" class="btn btn-sm btn-bocconi"
-                        data-bs-toggle="modal" data-bs-target="#createRoleModal">
+                <a asp-action="CreateRole" class="btn btn-sm btn-bocconi">
                     <i class="bi bi-plus me-1"></i>@T["admin.create_role","Create role"]
-                </button>
+                </a>
             </div>
             <div class="card-body p-0">
                 <table class="table table-hover align-middle mb-0">
@@ -329,38 +328,6 @@
 </div>
 
 @* ── Modali ──────────────────────────────────────────────────────── *@
-
-@* Modale: Crea nuovo ruolo *@
-<div class="modal fade" id="createRoleModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="bi bi-shield-plus me-2"></i>@T["admin.create_role","Create role"]
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form asp-action="CreateRole" method="post" id="createRoleForm">
-                @Html.AntiForgeryToken()
-                <div class="modal-body">
-                    <label class="form-label fw-semibold">
-                        @T["common.name","Name"] <span class="text-danger">*</span>
-                    </label>
-                    <input type="text" name="name" id="createRoleName" class="form-control"
-                           placeholder="@T["admin.role_name_placeholder","Role name (e.g. Tutor, Supervisor…)"]"
-                           maxlength="50" autocomplete="off" required />
-                    <div class="form-text mt-1">@T["admin.role_hint_simple","The Admin role is reserved."]</div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
-                    <button type="submit" class="btn btn-bocconi">
-                        <i class="bi bi-plus me-1"></i>@T["admin.create_role","Create role"]
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 
 @* Modale: Crea nuova area *@
 <div class="modal fade" id="createAreaModal" tabindex="-1" aria-hidden="true">
@@ -524,14 +491,6 @@
 
         $(document).ready(function () {
             $('#usersTable').DataTable({ language: window.dtLang() });
-
-            // ── Focus campo nome al'apertura modale crea ruolo ────────
-            document.getElementById('createRoleModal').addEventListener('shown.bs.modal', function () {
-                document.getElementById('createRoleName').focus();
-            });
-            document.getElementById('createRoleModal').addEventListener('hidden.bs.modal', function () {
-                document.getElementById('createRoleName').value = '';
-            });
 
             // ── Focus campo nome all'apertura modale crea area ────────
             document.getElementById('createAreaModal').addEventListener('shown.bs.modal', function () {
