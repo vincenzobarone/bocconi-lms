@@ -168,6 +168,21 @@ public class MaterialRepository
         return Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
     }
 
+    public async Task<List<(int Id, string Title, string Status)>> SearchSimilarTitlesAsync(string title, int limit = 6)
+    {
+        var list = new List<(int, string, string)>();
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT id, title, status FROM materials WHERE title LIKE @pat ORDER BY title LIMIT @lim", conn);
+        cmd.Parameters.AddWithValue("@pat", $"%{title}%");
+        cmd.Parameters.AddWithValue("@lim", limit);
+        using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
+            list.Add((r.GetInt32(0), r.GetString(1), r.GetString(2)));
+        return list;
+    }
+
     public async Task<int> CreateAsync(
         string title, string? authorName, int? ownerId, string language,
         int? documentTypeId, string status = "bozza",

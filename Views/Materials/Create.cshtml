@@ -1,14 +1,15 @@
 @model MaterialFormViewModel
 @{
     ViewData["Title"] = T["mat.create_title","New material"];
-    var docTypes = ViewBag.DocumentTypes as List<BocconiLMS.Models.DocumentType> ?? new();
-    var languages = ViewBag.Languages as string[] ?? BocconiLMS.Models.Material.Languages;
-    var owners = ViewBag.AvailableOwners as List<BocconiLMS.Models.User> ?? new();
+    var docTypes        = ViewBag.DocumentTypes as List<BocconiLMS.Models.DocumentType> ?? new();
+    var languages       = ViewBag.Languages as string[] ?? BocconiLMS.Models.Material.Languages;
+    var owners          = ViewBag.AvailableOwners as List<BocconiLMS.Models.User> ?? new();
     var existingAuthors = ViewBag.ExistingAuthors as List<string> ?? new();
-    var currentOwnerName = ViewBag.CurrentUserFullName as string ?? "";
-    var availableAreas = ViewBag.AvailableAreas as List<BocconiLMS.Models.Area> ?? new();
+    var currentOwnerName= ViewBag.CurrentUserFullName as string ?? "";
+    var availableAreas  = ViewBag.AvailableAreas as List<BocconiLMS.Models.Area> ?? new();
     var existingFolders = ViewBag.ExistingFolders as List<BocconiLMS.Models.MaterialFolder> ?? new();
-    bool canSetStatus = ViewBag.CanSetStatus == true;
+    bool canSetStatus   = ViewBag.CanSetStatus == true;
+    bool formLocked     = string.IsNullOrEmpty(Model.Title);
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
@@ -32,6 +33,62 @@
                     <input type="hidden" asp-for="FolderName" id="hidFolderName" />
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" id="valSummary"></div>
 
+                    @* ── SEZIONE FILE (sempre attiva) ─────────────────────── *@
+
+                    @* Stato: nessun file — pulsante grande di caricamento *@
+                    <div id="noFileState" class="@(formLocked ? "" : "d-none")">
+                        <div id="uploadDropZone"
+                             class="text-center py-5 mb-3 border rounded-3 bg-light"
+                             style="border: 2px dashed #ccc !important; cursor: pointer;">
+                            <i class="bi bi-cloud-upload text-bocconi" style="font-size: 3rem;"></i>
+                            <div class="mt-3">
+                                <label for="File" class="btn btn-bocconi btn-lg px-5" style="cursor:pointer">
+                                    <i class="bi bi-upload me-2"></i>@T["mat.upload_document","Carica Documento"]
+                                </label>
+                            </div>
+                            <p class="text-muted small mt-3 mb-1">
+                                @T["mat.upload_hint","Clicca per selezionare un file dal tuo computer"]
+                            </p>
+                        </div>
+                    </div>
+
+                    @* Stato: file selezionato — info file *@
+                    <div id="hasFileState" class="@(formLocked ? "d-none" : "") mb-3">
+                        <div class="d-flex align-items-center gap-3 p-3 border rounded-3 bg-light">
+                            <i id="fileTypeIcon" class="bi bi-file-earmark-text fs-2 text-bocconi flex-shrink-0"></i>
+                            <div class="flex-grow-1" style="min-width:0">
+                                <div class="fw-semibold text-truncate" id="fileNameDisplay"></div>
+                                <div class="text-muted small mt-1">
+                                    <span id="fileSizeDisplay"></span>
+                                    <span id="pageCountDisplay" class="ms-2 fw-semibold text-bocconi"></span>
+                                </div>
+                            </div>
+                            <button type="button" id="removeFileBtn"
+                                    class="btn btn-sm btn-outline-secondary flex-shrink-0"
+                                    title="@T["mat.remove_file","Rimuovi file"]">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>
+                        <div id="convertPdfBox" class="alert alert-warning d-none py-2 mt-2 mb-0">
+                            <div class="form-check mb-0">
+                                <input class="form-check-input" type="checkbox"
+                                       id="ConvertToPdf" name="ConvertToPdf" value="true" />
+                                <label class="form-check-label fw-semibold" for="ConvertToPdf">
+                                    <i class="bi bi-file-earmark-pdf me-1"></i>@T["mat.convert_to_pdf","Convert to PDF before saving"]
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    @* Input file nascosto *@
+                    <input asp-for="File" type="file" class="d-none" id="File"
+                           onchange="matFileChanged(this)" />
+                    <span asp-validation-for="File" class="text-danger small"></span>
+
+                    <hr id="formFieldsSep" class="@(formLocked ? "d-none" : "")" />
+
+                    @* ── CAMPI DEL FORM (bloccati fino al caricamento del file) *@
+
                     <div class="row mb-3 g-2 align-items-start">
                         <div class="col-md-4">
                             <label asp-for="AuthorName" class="form-label fw-semibold">
@@ -40,7 +97,8 @@
                             <input asp-for="AuthorName" class="form-control"
                                    list="authorsList"
                                    placeholder="@T["mat.author_placeholder","Nome autore"]"
-                                   autocomplete="off" />
+                                   autocomplete="off"
+                                   data-lockable />
                             <datalist id="authorsList">
                                 @foreach (var a in existingAuthors)
                                 {
@@ -54,8 +112,16 @@
                                 @T["mat.label_title","Titolo"] <span class="text-danger">*</span>
                             </label>
                             <input asp-for="Title" id="matTitle" class="form-control"
-                                   placeholder="@T["mat.title_placeholder","Titolo univoco del materiale…"]" />
+                                   placeholder="@T["mat.title_placeholder","Titolo univoco del materiale…"]"
+                                   data-lockable />
                             <span asp-validation-for="Title" class="text-danger small"></span>
+                            <div id="similarTitlesWarn" class="d-none mt-2">
+                                <div class="alert alert-warning py-2 mb-0 small">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                    <strong>@T["mat.similar_titles_found","Attenzione: materiali con titolo simile già presenti"]</strong>
+                                    <ul id="similarTitlesList" class="mb-0 mt-1 ps-3"></ul>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -64,7 +130,7 @@
                             <label asp-for="DocumentTypeId" class="form-label fw-semibold">
                                 @T["mat.label_doctype","Document type"] <span class="text-danger">*</span>
                             </label>
-                            <select asp-for="DocumentTypeId" class="form-select">
+                            <select asp-for="DocumentTypeId" class="form-select" data-lockable>
                                 <option value="">@T["mat.select_type","— Select a type —"]</option>
                                 @foreach (var t in docTypes)
                                 {
@@ -77,7 +143,7 @@
                             <label asp-for="Language" class="form-label fw-semibold">
                                 @T["mat.label_language","Language"] <span class="text-danger">*</span>
                             </label>
-                            <select asp-for="Language" id="langSelect" class="form-select">
+                            <select asp-for="Language" id="langSelect" class="form-select" data-lockable>
                                 @foreach (var l in languages)
                                 {
                                     <option value="@l">@l</option>
@@ -91,7 +157,7 @@
                         <label asp-for="Status" class="form-label fw-semibold">@T["mat.label_status","Status"]</label>
                         @if (canSetStatus)
                         {
-                            <select asp-for="Status" id="statusSelect" class="form-select">
+                            <select asp-for="Status" id="statusSelect" class="form-select" data-lockable>
                                 <option value="bozza"        selected="@(Model.Status=="bozza"?"selected":null)">@T["mat.status_bozza","Draft"]</option>
                                 <option value="in_revisione" selected="@(Model.Status=="in_revisione"?"selected":null)">@T["mat.status_in_revisione","In review"]</option>
                                 <option value="verificato"   selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato","Verified"]</option>
@@ -99,12 +165,9 @@
                         }
                         else
                         {
-                            <input type="hidden" id="statusSelect" name="Status" value="bozza" />
+                            <input type="hidden" id="statusSelect" name="Status" value="in_revisione" />
                             <input type="text" class="form-control bg-light" readonly
-                                   value="@T["mat.status_bozza","Draft"]" />
-                            <div class="form-text">
-                                <i class="bi bi-lock me-1"></i>@T["mat.status_locked_create","Lo stato è bloccato su Bozza per il tuo ruolo."]
-                            </div>
+                                   value="@T["mat.status_in_revisione","In review"]" />
                         }
                     </div>
 
@@ -113,7 +176,7 @@
                         <div class="row mb-3 g-2">
                             <div class="col-md-6">
                                 <label asp-for="AreaId" class="form-label fw-semibold">@T["mat.label_area","Area"]</label>
-                                <select asp-for="AreaId" class="form-select">
+                                <select asp-for="AreaId" class="form-select" data-lockable>
                                     <option value="">@T["mat.select_area","— Nessuna area —"]</option>
                                     @foreach (var ar in availableAreas)
                                     {
@@ -124,53 +187,24 @@
                             <div class="col-md-6">
                                 <label asp-for="CatalogationDate" class="form-label fw-semibold">@T["mat.label_cat_date","Data catalogazione"]</label>
                                 <input asp-for="CatalogationDate" type="date" class="form-control"
-                                       value="@(Model.CatalogationDate.HasValue ? Model.CatalogationDate.Value.ToString("yyyy-MM-dd") : "")" />
+                                       value="@(Model.CatalogationDate.HasValue ? Model.CatalogationDate.Value.ToString("yyyy-MM-dd") : "")"
+                                       data-lockable />
                             </div>
                         </div>
                     }
 
-                    <hr />
-                    <h6 class="mb-3">
-                        <i class="bi bi-upload me-1"></i>@T["mat.file_section","File"]
-                    </h6>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">
-                            @T["mat.label_file","File"] <span class="text-danger">*</span>
-                        </label>
-                        <div class="input-group">
-                            <label for="File" class="btn btn-outline-secondary mb-0">
-                                <i class="bi bi-folder2-open me-1"></i>@T["mat.choose_file","Choose file"]
-                            </label>
-                            <span class="form-control text-muted"
-                                  id="fileName_File"
-                                  data-placeholder="@T["mat.no_file_chosen","No file chosen"]">@T["mat.no_file_chosen","No file chosen"]</span>
-                            <input asp-for="File" type="file" class="d-none" id="File"
-                                   onchange="matFileChanged(this)" />
-                        </div>
-                        <span asp-validation-for="File" class="text-danger small"></span>
-                    </div>
-
-                    <div id="convertPdfBox" class="alert alert-warning d-none py-2 mb-3">
-                        <div class="form-check mb-0">
-                            <input class="form-check-input" type="checkbox" id="ConvertToPdf" name="ConvertToPdf" value="true" />
-                            <label class="form-check-label fw-semibold" for="ConvertToPdf">
-                                <i class="bi bi-file-earmark-pdf me-1"></i>@T["mat.convert_to_pdf","Convert to PDF before saving"]
-                            </label>
-                        </div>
-                    </div>
-
                     <div class="mb-3">
                         <label asp-for="Notes" class="form-label fw-semibold">@T["mat.label_notes","Version notes"]</label>
                         <input asp-for="Notes" class="form-control"
-                               placeholder="@T["mat.notes_file_placeholder","File description (optional)"]" />
+                               placeholder="@T["mat.notes_file_placeholder","File description (optional)"]"
+                               data-lockable />
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <a asp-action="Index" class="btn btn-outline-secondary">
                             <i class="bi bi-x me-1"></i>@T["mat.cancel","Cancel"]
                         </a>
-                        <button type="button" id="submitBtn" class="btn btn-bocconi">
+                        <button type="button" id="submitBtn" class="btn btn-bocconi" data-lockable>
                             <i class="bi bi-check-lg me-1"></i>@T["mat.create_btn","Create material"]
                         </button>
                     </div>
@@ -180,7 +214,7 @@
     </div>
 </div>
 
-@* ── Verified-fields modal ──────────────────────────────────────────────── *@
+@* ── Modale Verificato ──────────────────────────────────────────────── *@
 <div class="modal fade" id="verifiedModal" tabindex="-1" data-bs-backdrop="static">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -191,16 +225,13 @@
             </div>
             <div class="modal-body">
                 <p class="text-muted small mb-3">@T["mat.verified_modal_hint","Completa i dati di registrazione prima di salvare come Verificato."]</p>
-
                 <div class="mb-3">
                     <label class="form-label fw-semibold">
                         <i class="bi bi-hash me-1"></i>@T["mat.protocol_number","Numero di protocollo"]
                     </label>
-                    <input type="text" id="modalProtocol" class="form-control" readonly
-                           placeholder="…" />
+                    <input type="text" id="modalProtocol" class="form-control" readonly placeholder="…" />
                     <div class="form-text">@T["mat.protocol_auto","Assegnato automaticamente — sola lettura"]</div>
                 </div>
-
                 <div class="mb-2">
                     <label class="form-label fw-semibold">
                         <i class="bi bi-folder2 me-1"></i>@T["mat.label_folder","Cartella"] <span class="text-danger">*</span>
@@ -226,87 +257,99 @@
     </div>
 </div>
 
-@* Hidden datalist mapping: folder id → name for client-side lookup *@
 <div id="folderMap" data-folders="@System.Text.Json.JsonSerializer.Serialize(existingFolders.Select(f => new { f.Id, f.Name }))"></div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script>
+        // ── Inizializzazione stato form ────────────────────────────────────
+        var FORM_LOCKED_INIT = @(formLocked ? "true" : "false");
+        var OFFICE_EXTS = ['doc','docx','ppt','pptx'];
+        var ZIP_EXTS    = ['docx','pptx','xlsx'];
+        var LANG_PREFIX = {
+            'Italiano':'IT','Inglese':'EN','Francese':'FR','Tedesco':'DE',
+            'Spagnolo':'ES','Russo':'RU','Cinese':'ZH','Arabo':'AR',
+            'Portoghese':'PT','Altro':'XX'
+        };
+        var FILE_ICONS = {
+            'pdf':'bi-file-earmark-pdf text-danger',
+            'doc':'bi-file-earmark-word text-primary',
+            'docx':'bi-file-earmark-word text-primary',
+            'ppt':'bi-file-earmark-slides text-warning',
+            'pptx':'bi-file-earmark-slides text-warning',
+            'xls':'bi-file-earmark-spreadsheet text-success',
+            'xlsx':'bi-file-earmark-spreadsheet text-success',
+            'jpg':'bi-file-earmark-image text-info',
+            'jpeg':'bi-file-earmark-image text-info',
+            'png':'bi-file-earmark-image text-info'
+        };
+
+        // Valida la summary di ModelState
         (function () {
             var summary = document.getElementById('valSummary');
             if (summary && summary.querySelectorAll('li').length > 0)
                 summary.classList.remove('d-none');
         })();
 
-        var OFFICE_EXTS = ['doc','docx','ppt','pptx'];
-        var ZIP_EXTS    = ['docx','pptx','xlsx'];
+        // Blocca / sblocca tutti i campi data-lockable
+        function lockForm() {
+            document.querySelectorAll('[data-lockable]').forEach(function (el) {
+                el.disabled = true;
+            });
+            document.getElementById('formFieldsSep').classList.add('d-none');
+        }
+        function unlockForm() {
+            document.querySelectorAll('[data-lockable]').forEach(function (el) {
+                el.disabled = false;
+            });
+            document.getElementById('formFieldsSep').classList.remove('d-none');
+        }
 
-        // Language → prefix map
-        var LANG_PREFIX = {
-            'Italiano':'IT','Inglese':'EN','Francese':'FR','Tedesco':'DE',
-            'Spagnolo':'ES','Russo':'RU','Cinese':'ZH','Arabo':'AR',
-            'Portoghese':'PT','Altro':'XX'
-        };
+        // Inizializzazione: blocca se form è in stato "vuoto"
+        if (FORM_LOCKED_INIT) lockForm();
 
-        // ── Verified modal logic ───────────────────────────────────────────
+        // ── Modale Verificato ─────────────────────────────────────────────
         var verifiedModal = new bootstrap.Modal(document.getElementById('verifiedModal'));
         var folderMap = [];
         try { folderMap = JSON.parse(document.getElementById('folderMap').dataset.folders); } catch(e){}
 
         function langPrefix() {
-            var lang = document.getElementById('langSelect').value;
-            return LANG_PREFIX[lang] || 'XX';
+            var el = document.getElementById('langSelect');
+            return el ? (LANG_PREFIX[el.value] || 'XX') : 'XX';
         }
-
         function needsModal() {
-            // On create: always show modal when status = verificato
-            return document.getElementById('statusSelect').value === 'verificato';
+            var sel = document.getElementById('statusSelect');
+            return sel ? sel.value === 'verificato' : false;
         }
-
         async function openVerifiedModal() {
-            // Load next protocol
             try {
                 var resp = await fetch('@Url.Action("NextProtocol","Materials")', {headers:{'X-Requested-With':'XMLHttpRequest'}});
                 var data = await resp.json();
                 document.getElementById('modalProtocol').value = data.protocol;
             } catch(e) { document.getElementById('modalProtocol').value = '—'; }
-
-            // Populate datalist with existing folders
             var dl = document.getElementById('folderDatalist');
             dl.innerHTML = '';
             folderMap.forEach(function(f) {
                 var opt = document.createElement('option');
-                opt.value = f.Name;
-                opt.dataset.id = f.Id;
+                opt.value = f.Name; opt.dataset.id = f.Id;
                 dl.appendChild(opt);
             });
-
-            // Pre-fill folder input with language prefix
             var inp = document.getElementById('modalFolderInput');
             var prefix = langPrefix() + ' - ';
-            if (!inp.value || inp.value === inp.dataset.lastPrefix) {
-                inp.value = prefix;
-            }
+            if (!inp.value || inp.value === inp.dataset.lastPrefix) inp.value = prefix;
             inp.dataset.lastPrefix = prefix;
-
             document.getElementById('folderError').classList.add('d-none');
             verifiedModal.show();
-            setTimeout(function() {
-                inp.focus();
-                inp.setSelectionRange(inp.value.length, inp.value.length);
-            }, 300);
+            setTimeout(function() { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }, 300);
         }
 
         document.getElementById('submitBtn').addEventListener('click', async function() {
-            // Run standard HTML5 validation first
             var form = document.getElementById('matForm');
             if (!form.reportValidity || !form.reportValidity()) return;
-
             if (needsModal()) {
                 await openVerifiedModal();
             } else {
-                // Clear verified fields and submit
                 document.getElementById('hidFolderId').value = '';
                 document.getElementById('hidFolderName').value = '';
                 form.submit();
@@ -316,13 +359,10 @@
         document.getElementById('modalConfirmBtn').addEventListener('click', function() {
             var folderInput = document.getElementById('modalFolderInput');
             var folderValue = folderInput.value.trim();
-
             if (!folderValue) {
                 document.getElementById('folderError').classList.remove('d-none');
                 return;
             }
-
-            // Check if it matches an existing folder name → populate FolderId
             var matched = folderMap.find(function(f) {
                 return f.Name.toLowerCase() === folderValue.toLowerCase();
             });
@@ -333,68 +373,160 @@
                 document.getElementById('hidFolderId').value = '';
                 document.getElementById('hidFolderName').value = folderValue;
             }
-
             verifiedModal.hide();
             document.getElementById('matForm').submit();
         });
 
         document.getElementById('modalCancelBtn').addEventListener('click', function() {
-            // Revert status to previous non-verified value
             var sel = document.getElementById('statusSelect');
-            sel.value = 'in_revisione';
+            if (sel) sel.value = 'in_revisione';
             verifiedModal.hide();
         });
 
-        // ── File input handling ───────────────────────────────────────────
+        // ── Rimozione file ─────────────────────────────────────────────────
+        document.getElementById('removeFileBtn').addEventListener('click', function() {
+            var fileInp = document.getElementById('File');
+            fileInp.value = '';
+            document.getElementById('noFileState').classList.remove('d-none');
+            document.getElementById('hasFileState').classList.add('d-none');
+            document.getElementById('convertPdfBox').classList.add('d-none');
+            document.getElementById('ConvertToPdf').checked = false;
+            hideSimilarTitles();
+            lockForm();
+        });
+
+        // ── Titoli simili ─────────────────────────────────────────────────
+        function hideSimilarTitles() {
+            document.getElementById('similarTitlesWarn').classList.add('d-none');
+            document.getElementById('similarTitlesList').innerHTML = '';
+        }
+        function showSimilarTitles(items) {
+            var list = document.getElementById('similarTitlesList');
+            list.innerHTML = '';
+            items.forEach(function(m) {
+                var li = document.createElement('li');
+                var a = document.createElement('a');
+                a.href = '@Url.Action("Details","Materials")?id=' + m.id;
+                a.target = '_blank';
+                a.textContent = m.title;
+                li.appendChild(a);
+                list.appendChild(li);
+            });
+            document.getElementById('similarTitlesWarn').classList.remove('d-none');
+        }
+        var titleCheckTimer = null;
+        async function checkSimilarTitles(title) {
+            if (!title || title.trim().length < 3) { hideSimilarTitles(); return; }
+            try {
+                var url = '@Url.Action("CheckSimilarTitles","Materials")' + '?title=' + encodeURIComponent(title.trim());
+                var resp = await fetch(url, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+                var data = await resp.json();
+                if (data && data.length > 0) showSimilarTitles(data);
+                else hideSimilarTitles();
+            } catch(e) { hideSimilarTitles(); }
+        }
+
+        document.getElementById('matTitle').addEventListener('input', function() {
+            clearTimeout(titleCheckTimer);
+            titleCheckTimer = setTimeout(function() {
+                checkSimilarTitles(document.getElementById('matTitle').value);
+            }, 600);
+        });
+
+        // ── Estrazione metadati da file Office (JSZip) ────────────────────
         function extractOfficeAuthor(file) {
             if (typeof JSZip === 'undefined') return Promise.resolve(null);
-            return JSZip.loadAsync(file).then(function (zip) {
+            return JSZip.loadAsync(file).then(function(zip) {
                 var entry = zip.file('docProps/core.xml');
                 if (!entry) return null;
-                return entry.async('string').then(function (xml) {
+                return entry.async('string').then(function(xml) {
                     var m = xml.match(/<dc:creator[^>]*>([\s\S]*?)<\/dc:creator>/);
                     return (m && m[1].trim()) ? m[1].trim() : null;
                 });
-            }).catch(function () { return null; });
+            }).catch(function() { return null; });
         }
 
+        function extractPageCount(file) {
+            if (typeof JSZip === 'undefined') return Promise.resolve(null);
+            var ext = file.name.split('.').pop().toLowerCase();
+            if (['docx','pptx'].indexOf(ext) === -1) return Promise.resolve(null);
+            return JSZip.loadAsync(file).then(function(zip) {
+                var entry = zip.file('docProps/app.xml');
+                if (!entry) return null;
+                return entry.async('string').then(function(xml) {
+                    var mp = xml.match(/<Pages>(\d+)<\/Pages>/);
+                    if (mp) return { count: parseInt(mp[1]), unit: '@T["mat.pages","pagine"]' };
+                    var ms = xml.match(/<Slides>(\d+)<\/Slides>/);
+                    if (ms) return { count: parseInt(ms[1]), unit: '@T["mat.slides","slide"]' };
+                    return null;
+                });
+            }).catch(function() { return null; });
+        }
+
+        function formatBytes(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / 1048576).toFixed(1) + ' MB';
+        }
+
+        // ── Cambio file ───────────────────────────────────────────────────
         function matFileChanged(inp) {
-            var span     = document.getElementById('fileName_File');
-            var pdfBox   = document.getElementById('convertPdfBox');
-            var titleInp = document.getElementById('matTitle');
-            var authorInp = document.getElementById('AuthorName');
-
-            if (!inp.files || inp.files.length === 0) {
-                if (span) span.textContent = span.dataset.placeholder || '';
-                if (pdfBox) pdfBox.classList.add('d-none');
-                return;
-            }
-
+            if (!inp.files || inp.files.length === 0) return;
             var file = inp.files[0];
-            if (span) span.textContent = file.name;
-
-            var ext       = file.name.split('.').pop().toLowerCase();
+            var ext  = file.name.split('.').pop().toLowerCase();
             var nameNoExt = file.name.replace(/\.[^.]+$/, '');
 
+            // Mostra info file
+            document.getElementById('fileNameDisplay').textContent = file.name;
+            document.getElementById('fileSizeDisplay').textContent = formatBytes(file.size);
+            document.getElementById('pageCountDisplay').textContent = '';
+
+            // Icona tipo file
+            var iconEl = document.getElementById('fileTypeIcon');
+            iconEl.className = 'bi ' + (FILE_ICONS[ext] || 'bi-file-earmark-text text-bocconi') + ' fs-2 flex-shrink-0';
+
+            // Mostra area file info, nascondi upload prompt
+            document.getElementById('noFileState').classList.add('d-none');
+            document.getElementById('hasFileState').classList.remove('d-none');
+
+            // Opzione conversione PDF
+            var pdfBox = document.getElementById('convertPdfBox');
+            var cb = document.getElementById('ConvertToPdf');
+            if (OFFICE_EXTS.indexOf(ext) !== -1) {
+                pdfBox.classList.remove('d-none');
+            } else {
+                pdfBox.classList.add('d-none');
+                cb.checked = false;
+            }
+
+            // Sblocca campi
+            unlockForm();
+
+            // Auto-popola titolo se vuoto
+            var titleInp = document.getElementById('matTitle');
             if (titleInp && titleInp.value.trim() === '') {
                 titleInp.value = nameNoExt;
             }
 
-            if (OFFICE_EXTS.indexOf(ext) !== -1) {
-                if (pdfBox) pdfBox.classList.remove('d-none');
-            } else {
-                if (pdfBox) pdfBox.classList.add('d-none');
-                var cb = document.getElementById('ConvertToPdf');
-                if (cb) cb.checked = false;
-            }
-
+            // Estrai autore da metadati Office
+            var authorInp = document.getElementById('AuthorName');
             if (authorInp && authorInp.value.trim() === '' && ZIP_EXTS.indexOf(ext) !== -1) {
-                extractOfficeAuthor(file).then(function (author) {
-                    if (author && authorInp.value.trim() === '') {
+                extractOfficeAuthor(file).then(function(author) {
+                    if (author && authorInp.value.trim() === '')
                         authorInp.value = author;
-                    }
                 });
             }
+
+            // Estrai numero pagine/slide
+            extractPageCount(file).then(function(result) {
+                if (result) {
+                    document.getElementById('pageCountDisplay').textContent =
+                        result.count + ' ' + result.unit;
+                }
+            });
+
+            // Controlla titoli simili
+            checkSimilarTitles(titleInp ? titleInp.value : '');
         }
     </script>
 }

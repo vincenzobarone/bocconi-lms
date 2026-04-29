@@ -118,6 +118,18 @@ public class MaterialsController : Controller
         return Json(new { protocol = next });
     }
 
+    // ── AJAX: cerca titoli simili ──────────────────────────────────────────
+
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> CheckSimilarTitles(string title)
+    {
+        if (string.IsNullOrWhiteSpace(title) || title.Trim().Length < 3)
+            return Json(Array.Empty<object>());
+        var results = await _materials.SearchSimilarTitlesAsync(title.Trim());
+        return Json(results.Select(m => new { id = m.Id, title = m.Title, status = m.Status }));
+    }
+
     // ── AJAX: list existing folders ────────────────────────────────────────
 
     [Authorize]
