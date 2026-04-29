@@ -239,10 +239,12 @@ public class AdminController : Controller
 
     // ── Area management ───────────────────────────────────────────────────
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateArea(string name)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
         {
             TempData["Error"] = "Nome area non valido.";
@@ -259,10 +261,12 @@ public class AdminController : Controller
         return RedirectToAction("Users", new { tab = "aree" });
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditArea(int id, string name)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
         {
             TempData["Error"] = "Nome area non valido.";
@@ -278,10 +282,12 @@ public class AdminController : Controller
         return RedirectToAction("Users", new { tab = "aree" });
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteArea(int id)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var count = await _areas.CountUsersAsync(id);
         if (count > 0)
         {
@@ -642,23 +648,29 @@ public class AdminController : Controller
 
     // ── ROLE MANAGEMENT ─────────────────────────────────────────────────────
 
+    [AllowAnonymous]
     public async Task<IActionResult> Roles()
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var roles = await _users.GetAllRolesWithCountAsync();
         return View(roles);
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> CreateRole()
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
         return View(new RoleFormViewModel());
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateRole(RoleFormViewModel model, List<string>? permissions)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         if (!ModelState.IsValid)
         {
             ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
@@ -694,9 +706,11 @@ public class AdminController : Controller
         return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> EditRole(int id)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var role = await _roleManager.FindByIdAsync(id.ToString());
         if (role == null) return NotFound();
         if (role.Name!.Equals("Admin", StringComparison.OrdinalIgnoreCase))
@@ -709,10 +723,12 @@ public class AdminController : Controller
         return View(new RoleFormViewModel { Id = role.Id, Name = role.Name!, Permissions = perms });
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditRole(RoleFormViewModel model, List<string>? permissions)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var role = await _roleManager.FindByIdAsync(model.Id.ToString());
         if (role == null) return NotFound();
         if (role.Name!.Equals("Admin", StringComparison.OrdinalIgnoreCase))
@@ -753,10 +769,12 @@ public class AdminController : Controller
         return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteRole(int id)
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var role = await _roleManager.FindByIdAsync(id.ToString());
         if (role == null) return NotFound();
         if (role.Name!.Equals("Admin", StringComparison.OrdinalIgnoreCase))
