@@ -165,7 +165,8 @@ public class CourseController : Controller
             TeacherId   = model.IsAdminView ? model.TeacherId!.Value : CurrentUserId,
             StartDate   = model.StartDate,
             EndDate     = model.EndDate,
-            IsPublished = model.IsPublished
+            IsPublished = model.IsPublished,
+            CreatedBy   = CurrentUserId
         };
         var id = await _courses.CreateAsync(course);
         TempData["Success"] = "Corso creato!";

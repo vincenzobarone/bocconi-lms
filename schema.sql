@@ -32,7 +32,9 @@ CREATE TABLE IF NOT EXISTS courses (
     end_date        DATE,
     is_published    TINYINT(1) NOT NULL DEFAULT 0,
     created_at      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by      INT NULL,
     FOREIGN KEY (teacher_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_teacher (teacher_id),
     INDEX idx_published (is_published)
 ) ENGINE=InnoDB;
@@ -89,7 +91,9 @@ CREATE TABLE IF NOT EXISTS quizzes (
     time_limit_minutes  INT NOT NULL DEFAULT 30,
     passing_score       INT NOT NULL DEFAULT 60,
     created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by          INT NULL,
     FOREIGN KEY (lesson_id) REFERENCES lessons(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_lesson (lesson_id)
 ) ENGINE=InnoDB;
 

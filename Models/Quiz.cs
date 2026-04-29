@@ -11,6 +11,8 @@ public class Quiz
     public int TimeLimitMinutes { get; set; } = 30;
     public int PassingScore { get; set; } = 60;
     public DateTime CreatedAt { get; set; }
+    public int? CreatedBy { get; set; }
+    public string CreatedByName { get; set; } = string.Empty;
     public List<QuizQuestion> Questions { get; set; } = new();
 }
 

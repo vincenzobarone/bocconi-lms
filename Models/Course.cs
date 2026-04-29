@@ -12,6 +12,8 @@ public class Course
     public DateTime? EndDate { get; set; }
     public bool IsPublished { get; set; } = false;
     public DateTime CreatedAt { get; set; }
+    public int? CreatedBy { get; set; }
+    public string CreatedByName { get; set; } = string.Empty;
     public int EnrolledCount { get; set; }
     public int LessonCount { get; set; }
 }

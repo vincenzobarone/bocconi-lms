@@ -18,10 +18,13 @@ public class CourseRepository
             SELECT c.id, c.title, c.description, c.category, c.teacher_id,
                    CONCAT(u.first_name,' ',u.last_name) AS teacher_name,
                    c.start_date, c.end_date, c.is_published, c.created_at,
+                   c.created_by,
+                   CONCAT(cb.first_name,' ',cb.last_name) AS created_by_name,
                    (SELECT COUNT(*) FROM enrollments e WHERE e.course_id=c.id) AS enrolled_count,
                    (SELECT COUNT(*) FROM lessons l WHERE l.course_id=c.id) AS lesson_count
             FROM courses c
-            LEFT JOIN users u ON u.id = c.teacher_id
+            LEFT JOIN users u  ON u.id  = c.teacher_id
+            LEFT JOIN users cb ON cb.id = c.created_by
             {where}
             ORDER BY c.created_at DESC", conn);
         using var reader = await cmd.ExecuteReaderAsync();
@@ -38,10 +41,13 @@ public class CourseRepository
             SELECT c.id, c.title, c.description, c.category, c.teacher_id,
                    CONCAT(u.first_name,' ',u.last_name) AS teacher_name,
                    c.start_date, c.end_date, c.is_published, c.created_at,
+                   c.created_by,
+                   CONCAT(cb.first_name,' ',cb.last_name) AS created_by_name,
                    (SELECT COUNT(*) FROM enrollments e WHERE e.course_id=c.id) AS enrolled_count,
                    (SELECT COUNT(*) FROM lessons l WHERE l.course_id=c.id) AS lesson_count
             FROM courses c
-            LEFT JOIN users u ON u.id = c.teacher_id
+            LEFT JOIN users u  ON u.id  = c.teacher_id
+            LEFT JOIN users cb ON cb.id = c.created_by
             WHERE c.teacher_id = @tid
             ORDER BY c.created_at DESC", conn);
         cmd.Parameters.AddWithValue("@tid", teacherId);
@@ -58,10 +64,13 @@ public class CourseRepository
             SELECT c.id, c.title, c.description, c.category, c.teacher_id,
                    CONCAT(u.first_name,' ',u.last_name) AS teacher_name,
                    c.start_date, c.end_date, c.is_published, c.created_at,
+                   c.created_by,
+                   CONCAT(cb.first_name,' ',cb.last_name) AS created_by_name,
                    (SELECT COUNT(*) FROM enrollments e WHERE e.course_id=c.id) AS enrolled_count,
                    (SELECT COUNT(*) FROM lessons l WHERE l.course_id=c.id) AS lesson_count
             FROM courses c
-            LEFT JOIN users u ON u.id = c.teacher_id
+            LEFT JOIN users u  ON u.id  = c.teacher_id
+            LEFT JOIN users cb ON cb.id = c.created_by
             WHERE c.id = @id LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@id", id);
         using var reader = await cmd.ExecuteReaderAsync();
@@ -73,8 +82,8 @@ public class CourseRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            INSERT INTO courses (title, description, category, teacher_id, start_date, end_date, is_published, created_at)
-            VALUES (@title, @desc, @cat, @tid, @sd, @ed, @pub, NOW());
+            INSERT INTO courses (title, description, category, teacher_id, start_date, end_date, is_published, created_at, created_by)
+            VALUES (@title, @desc, @cat, @tid, @sd, @ed, @pub, NOW(), @createdBy);
             SELECT LAST_INSERT_ID();", conn);
         cmd.Parameters.AddWithValue("@title", course.Title);
         cmd.Parameters.AddWithValue("@desc", course.Description);
@@ -83,6 +92,7 @@ public class CourseRepository
         cmd.Parameters.AddWithValue("@sd", (object?)course.StartDate ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@ed", (object?)course.EndDate ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@pub", course.IsPublished);
+        cmd.Parameters.AddWithValue("@createdBy", (object?)course.CreatedBy ?? DBNull.Value);
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
 
@@ -163,6 +173,8 @@ public class CourseRepository
         EndDate = r.IsDBNull(r.GetOrdinal("end_date")) ? null : r.GetDateTime("end_date"),
         IsPublished = r.GetBoolean("is_published"),
         CreatedAt = r.GetDateTime("created_at"),
+        CreatedBy = r.IsDBNull(r.GetOrdinal("created_by")) ? null : r.GetInt32("created_by"),
+        CreatedByName = r.IsDBNull(r.GetOrdinal("created_by_name")) ? "" : r.GetString("created_by_name"),
         EnrolledCount = r.GetInt32("enrolled_count"),
         LessonCount = r.GetInt32("lesson_count")
     };

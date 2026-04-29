@@ -15,8 +15,12 @@ public class QuizRepository
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             SELECT q.id, q.lesson_id, l.title AS lesson_title, l.course_id, q.title, q.description,
-                   q.time_limit_minutes, q.passing_score, q.created_at
-            FROM quizzes q JOIN lessons l ON l.id=q.lesson_id
+                   q.time_limit_minutes, q.passing_score, q.created_at,
+                   q.created_by,
+                   CONCAT(cb.first_name,' ',cb.last_name) AS created_by_name
+            FROM quizzes q
+            JOIN lessons l ON l.id=q.lesson_id
+            LEFT JOIN users cb ON cb.id = q.created_by
             WHERE q.lesson_id=@lid ORDER BY q.created_at", conn);
         cmd.Parameters.AddWithValue("@lid", lessonId);
         using var reader = await cmd.ExecuteReaderAsync();
@@ -30,8 +34,12 @@ public class QuizRepository
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             SELECT q.id, q.lesson_id, l.title AS lesson_title, l.course_id, q.title, q.description,
-                   q.time_limit_minutes, q.passing_score, q.created_at
-            FROM quizzes q JOIN lessons l ON l.id=q.lesson_id
+                   q.time_limit_minutes, q.passing_score, q.created_at,
+                   q.created_by,
+                   CONCAT(cb.first_name,' ',cb.last_name) AS created_by_name
+            FROM quizzes q
+            JOIN lessons l ON l.id=q.lesson_id
+            LEFT JOIN users cb ON cb.id = q.created_by
             WHERE q.id=@id LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@id", id);
         using var reader = await cmd.ExecuteReaderAsync();
@@ -48,13 +56,14 @@ public class QuizRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            INSERT INTO quizzes (lesson_id, title, description, time_limit_minutes, passing_score, created_at)
-            VALUES (@lid, @title, @desc, @tlm, @ps, NOW()); SELECT LAST_INSERT_ID();", conn);
+            INSERT INTO quizzes (lesson_id, title, description, time_limit_minutes, passing_score, created_at, created_by)
+            VALUES (@lid, @title, @desc, @tlm, @ps, NOW(), @createdBy); SELECT LAST_INSERT_ID();", conn);
         cmd.Parameters.AddWithValue("@lid", quiz.LessonId);
         cmd.Parameters.AddWithValue("@title", quiz.Title);
         cmd.Parameters.AddWithValue("@desc", (object?)quiz.Description ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@tlm", quiz.TimeLimitMinutes);
         cmd.Parameters.AddWithValue("@ps", quiz.PassingScore);
+        cmd.Parameters.AddWithValue("@createdBy", (object?)quiz.CreatedBy ?? DBNull.Value);
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
 
@@ -226,6 +235,8 @@ public class QuizRepository
         Description = r.IsDBNull(r.GetOrdinal("description")) ? null : r.GetString("description"),
         TimeLimitMinutes = r.GetInt32("time_limit_minutes"),
         PassingScore = r.GetInt32("passing_score"),
-        CreatedAt = r.GetDateTime("created_at")
+        CreatedAt = r.GetDateTime("created_at"),
+        CreatedBy = r.IsDBNull(r.GetOrdinal("created_by")) ? null : r.GetInt32("created_by"),
+        CreatedByName = r.IsDBNull(r.GetOrdinal("created_by_name")) ? "" : r.GetString("created_by_name")
     };
 }

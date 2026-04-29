@@ -216,7 +216,8 @@ public class QuizController : Controller
             Title = model.Title,
             Description = model.Description,
             TimeLimitMinutes = model.TimeLimitMinutes,
-            PassingScore = model.PassingScore
+            PassingScore = model.PassingScore,
+            CreatedBy = CurrentUserId
         };
         var quizId = await _quizzes.CreateAsync(quiz);
         for (int i = 0; i < questionTexts.Count; i++)
