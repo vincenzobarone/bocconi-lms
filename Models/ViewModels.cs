@@ -210,8 +210,16 @@ public class EmailSettingsViewModel
     [EmailAddress(ErrorMessage = "Email non valida")]
     public string? TestEmailRecipient { get; set; }
 
-    public bool NotifyMaterialChanged { get; set; }
-    public List<string> MaterialChangedRoles { get; set; } = new();
+    // ── Notifiche materiali (3 gruppi separati) ──────────────────────────
+    public bool NotifyMaterialCreated { get; set; }
+    public List<string> MaterialCreatedRoles { get; set; } = new();
+
+    public bool NotifyMaterialUpdated { get; set; }
+    public List<string> MaterialUpdatedRoles { get; set; } = new();
+
+    public bool NotifyMaterialDeleted { get; set; }
+    public List<string> MaterialDeletedRoles { get; set; } = new();
+
     public List<string> AvailableRoles { get; set; } = new();
 
     public bool CoursesNotificationsEnabled { get; set; }

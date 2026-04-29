@@ -399,7 +399,29 @@ public class AdminController : Controller
     public async Task<IActionResult> EmailSettings()
     {
         var current = await _emailService.GetEffectiveSettingsAsync();
-        var notifyRaw = await _settings.GetAsync("Notifications:MaterialChangedRoles") ?? "";
+
+        // Migration: se le nuove chiavi non sono ancora impostate, eredita dalla vecchia chiave unificata
+        var oldEnabled  = (await _settings.GetAsync("Notifications:MaterialChanged")) == "true";
+        var oldRolesRaw = await _settings.GetAsync("Notifications:MaterialChangedRoles") ?? "";
+
+        var createdEnabledRaw = await _settings.GetAsync("Notifications:MaterialCreated");
+        var createdRolesRaw   = await _settings.GetAsync("Notifications:MaterialCreatedRoles");
+        var updatedEnabledRaw = await _settings.GetAsync("Notifications:MaterialUpdated");
+        var updatedRolesRaw   = await _settings.GetAsync("Notifications:MaterialUpdatedRoles");
+        var deletedEnabledRaw = await _settings.GetAsync("Notifications:MaterialDeleted");
+        var deletedRolesRaw   = await _settings.GetAsync("Notifications:MaterialDeletedRoles");
+
+        // Se le nuove chiavi non esistono ancora, inizializza dai valori vecchi
+        bool createdEnabled = createdEnabledRaw != null ? createdEnabledRaw == "true" : oldEnabled;
+        bool updatedEnabled = updatedEnabledRaw != null ? updatedEnabledRaw == "true" : oldEnabled;
+        bool deletedEnabled = deletedEnabledRaw == "true";
+        var createdRoles = (createdRolesRaw ?? (createdEnabledRaw == null ? oldRolesRaw : ""))
+            .Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+        var updatedRoles = (updatedRolesRaw ?? (updatedEnabledRaw == null ? oldRolesRaw : ""))
+            .Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+        var deletedRoles = (deletedRolesRaw ?? "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries).ToList();
+
         var vm = new EmailSettingsViewModel
         {
             Enabled   = current.Enabled,
@@ -410,8 +432,12 @@ public class AdminController : Controller
             FromEmail = current.FromEmail,
             FromName  = current.FromName,
             UseSsl    = current.UseSsl,
-            NotifyMaterialChanged        = (await _settings.GetAsync("Notifications:MaterialChanged")) == "true",
-            MaterialChangedRoles         = notifyRaw.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+            NotifyMaterialCreated  = createdEnabled,
+            MaterialCreatedRoles   = createdRoles,
+            NotifyMaterialUpdated  = updatedEnabled,
+            MaterialUpdatedRoles   = updatedRoles,
+            NotifyMaterialDeleted  = deletedEnabled,
+            MaterialDeletedRoles   = deletedRoles,
             AvailableRoles               = (await _users.GetAllRolesWithCountAsync()).Select(r => r.Name).ToList(),
             CoursesNotificationsEnabled  = (await _settings.GetAsync("Notifications:CoursesEnabled")) == "true",
             NotifyStudentOnEnroll        = (await _settings.GetAsync("Notifications:StudentOnEnroll")) == "true",
@@ -448,10 +474,18 @@ public class AdminController : Controller
             if (!string.IsNullOrWhiteSpace(model.Password))
                 await _settings.SetAsync("Smtp:Password", model.Password);
 
-            await _settings.SetAsync("Notifications:MaterialChanged",
-                model.NotifyMaterialChanged ? "true" : "false");
-            await _settings.SetAsync("Notifications:MaterialChangedRoles",
-                string.Join(",", model.MaterialChangedRoles ?? new List<string>()));
+            await _settings.SetAsync("Notifications:MaterialCreated",
+                model.NotifyMaterialCreated ? "true" : "false");
+            await _settings.SetAsync("Notifications:MaterialCreatedRoles",
+                string.Join(",", model.MaterialCreatedRoles ?? new List<string>()));
+            await _settings.SetAsync("Notifications:MaterialUpdated",
+                model.NotifyMaterialUpdated ? "true" : "false");
+            await _settings.SetAsync("Notifications:MaterialUpdatedRoles",
+                string.Join(",", model.MaterialUpdatedRoles ?? new List<string>()));
+            await _settings.SetAsync("Notifications:MaterialDeleted",
+                model.NotifyMaterialDeleted ? "true" : "false");
+            await _settings.SetAsync("Notifications:MaterialDeletedRoles",
+                string.Join(",", model.MaterialDeletedRoles ?? new List<string>()));
 
             await _settings.SetAsync("Notifications:CoursesEnabled",
                 model.CoursesNotificationsEnabled ? "true" : "false");
@@ -485,22 +519,54 @@ public class AdminController : Controller
         return Json(new { ok = true });
     }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ToggleNotifyMaterialAjax([FromBody] AjaxToggleRequest req)
+    // ── AJAX: notifiche materiale Create ─────────────────────────────────
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleNotifyMaterialCreatedAjax([FromBody] AjaxToggleRequest req)
     {
-        await _settings.SetAsync("Notifications:MaterialChanged", req.Value ? "true" : "false");
-        if (!req.Value)
-            await _settings.SetAsync("Notifications:MaterialChangedRoles", "");
+        await _settings.SetAsync("Notifications:MaterialCreated", req.Value ? "true" : "false");
+        if (!req.Value) await _settings.SetAsync("Notifications:MaterialCreatedRoles", "");
         return Json(new { ok = true });
     }
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> SetNotifyRolesAjax([FromBody] AjaxRolesRequest req)
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetNotifyCreatedRolesAjax([FromBody] AjaxRolesRequest req)
     {
-        var roles = req.Roles ?? new List<string>();
-        await _settings.SetAsync("Notifications:MaterialChangedRoles", string.Join(",", roles));
+        await _settings.SetAsync("Notifications:MaterialCreatedRoles",
+            string.Join(",", req.Roles ?? new List<string>()));
+        return Json(new { ok = true });
+    }
+
+    // ── AJAX: notifiche materiale Update ─────────────────────────────────
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleNotifyMaterialUpdatedAjax([FromBody] AjaxToggleRequest req)
+    {
+        await _settings.SetAsync("Notifications:MaterialUpdated", req.Value ? "true" : "false");
+        if (!req.Value) await _settings.SetAsync("Notifications:MaterialUpdatedRoles", "");
+        return Json(new { ok = true });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetNotifyUpdatedRolesAjax([FromBody] AjaxRolesRequest req)
+    {
+        await _settings.SetAsync("Notifications:MaterialUpdatedRoles",
+            string.Join(",", req.Roles ?? new List<string>()));
+        return Json(new { ok = true });
+    }
+
+    // ── AJAX: notifiche materiale Delete ─────────────────────────────────
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleNotifyMaterialDeletedAjax([FromBody] AjaxToggleRequest req)
+    {
+        await _settings.SetAsync("Notifications:MaterialDeleted", req.Value ? "true" : "false");
+        if (!req.Value) await _settings.SetAsync("Notifications:MaterialDeletedRoles", "");
+        return Json(new { ok = true });
+    }
+
+    [HttpPost, ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetNotifyDeletedRolesAjax([FromBody] AjaxRolesRequest req)
+    {
+        await _settings.SetAsync("Notifications:MaterialDeletedRoles",
+            string.Join(",", req.Roles ?? new List<string>()));
         return Json(new { ok = true });
     }
 

@@ -171,20 +171,26 @@ public class EmailService
         await SendAsync(toEmail, toName, subject, body);
     }
 
-    public async Task SendMaterialNotificationAsync(string toEmail, string toName, string materialTitle, bool isNew)
+    // eventType: "created" | "updated" | "deleted"
+    public async Task SendMaterialNotificationAsync(string toEmail, string toName, string materialTitle, string eventType)
     {
-        var action  = isNew ? "creato" : "modificato";
+        var (action, accentColor, icon) = eventType switch
+        {
+            "created" => ("creato",    "#2e7d32", "✅"),
+            "deleted" => ("eliminato", "#c62828", "🗑️"),
+            _         => ("modificato","#e65100", "✏️")
+        };
         var subject = $"Didasco – Materiale {action}: {materialTitle}";
         var body = $@"
 <html><body style='font-family: Arial, sans-serif; color: #333;'>
 <div style='max-width:600px; margin:0 auto; padding:24px;'>
-  <h2 style='color:#003366;'>Materiale {action}</h2>
+  <h2 style='color:#003366;'>{icon} Materiale {action}</h2>
   <p>Ciao <strong>{HtmlEncode(toName)}</strong>,</p>
-  <p>Ti informiamo che il seguente materiale è stato <strong>{action}</strong> sulla piattaforma Didasco:</p>
-  <div style='background:#f5f7fa;border-left:4px solid #003366;padding:12px 16px;margin:16px 0;border-radius:4px;'>
+  <p>Ti informiamo che il seguente materiale è stato <strong style='color:{accentColor};'>{action}</strong> sulla piattaforma Didasco:</p>
+  <div style='background:#f5f7fa;border-left:4px solid {accentColor};padding:12px 16px;margin:16px 0;border-radius:4px;'>
     <strong style='font-size:16px;'>{HtmlEncode(materialTitle)}</strong>
   </div>
-  <p>Accedi alla piattaforma per visualizzare il materiale.</p>
+  {(eventType != "deleted" ? "<p>Accedi alla piattaforma per visualizzare il materiale.</p>" : "")}
   <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
   <p style='color:#888;font-size:12px;'>Didasco – notifica automatica</p>
 </div>

@@ -94,22 +94,22 @@
                     {
                         <div id="notifySection" class="@(Model.Enabled ? "" : "d-none")">
                             <hr class="my-3" />
-                            <div class="mb-2 form-check form-switch">
-                                <input asp-for="NotifyMaterialChanged" class="form-check-input" type="checkbox"
-                                       role="switch" id="notifyMaterial" />
-                                <label class="form-check-label fw-semibold" for="notifyMaterial">
-                                    <i class="bi bi-bell me-1 text-bocconi"></i>@T["admin.email.notify_material","Notifica creazione/modifica materiali"]
-                                </label>
-                                <div class="form-text">@T["admin.email.notify_material_desc","Invia un'email ai ruoli selezionati quando un materiale viene creato o modificato."]</div>
-                            </div>
+                            <p class="fw-semibold text-bocconi mb-2">
+                                <i class="bi bi-file-earmark-text me-1"></i>@T["admin.email.notify_materials_header","Notifiche materiali"]
+                            </p>
 
-                            <div id="notifyRolesSection" class="@(Model.NotifyMaterialChanged ? "" : "d-none")">
-                                <label class="form-label fw-semibold mt-2">
-                                    @T["admin.email.notify_roles","Ruoli da notificare"]
-                                    <span class="text-danger">*</span>
+                            @* ── Notifica Creazione ── *@
+                            <div class="mb-2 form-check form-switch">
+                                <input asp-for="NotifyMaterialCreated" class="form-check-input" type="checkbox"
+                                       role="switch" id="notifyMatCreated" />
+                                <label class="form-check-label fw-semibold" for="notifyMatCreated">
+                                    <i class="bi bi-bell me-1 text-success"></i>@T["admin.email.notify_mat_created","Notifica creazione materiale"]
                                 </label>
+                                <div class="form-text">@T["admin.email.notify_mat_created_desc","Invia un'email ai ruoli selezionati quando un materiale viene creato."]</div>
+                            </div>
+                            <div id="notifyCreatedRoles" class="@(Model.NotifyMaterialCreated ? "" : "d-none") ps-3 mb-3">
                                 <div class="border rounded p-3 bg-light">
-                                    @if (Model.AvailableRoles.Count == 0)
+                                    @if (!Model.AvailableRoles.Any())
                                     {
                                         <span class="text-muted small">@T["admin.no_roles","Nessun ruolo disponibile."]</span>
                                     }
@@ -118,16 +118,83 @@
                                         <div class="row g-2">
                                             @foreach (var role in Model.AvailableRoles)
                                             {
-                                                var isChecked = Model.MaterialChangedRoles.Contains(role);
                                                 <div class="col-6 col-md-4">
                                                     <div class="form-check">
-                                                        <input class="form-check-input notify-role-check"
-                                                               type="checkbox"
-                                                               name="MaterialChangedRoles"
-                                                               value="@role"
-                                                               id="role_@role"
-                                                               @(isChecked ? "checked" : "") />
-                                                        <label class="form-check-label" for="role_@role">@role</label>
+                                                        <input class="form-check-input mat-created-role-check"
+                                                               type="checkbox" name="MaterialCreatedRoles"
+                                                               value="@role" id="cr_@role"
+                                                               @(Model.MaterialCreatedRoles.Contains(role) ? "checked" : "") />
+                                                        <label class="form-check-label" for="cr_@role">@role</label>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            @* ── Notifica Modifica ── *@
+                            <div class="mb-2 form-check form-switch">
+                                <input asp-for="NotifyMaterialUpdated" class="form-check-input" type="checkbox"
+                                       role="switch" id="notifyMatUpdated" />
+                                <label class="form-check-label fw-semibold" for="notifyMatUpdated">
+                                    <i class="bi bi-bell me-1 text-warning"></i>@T["admin.email.notify_mat_updated","Notifica modifica materiale"]
+                                </label>
+                                <div class="form-text">@T["admin.email.notify_mat_updated_desc","Invia un'email ai ruoli selezionati quando un materiale viene modificato."]</div>
+                            </div>
+                            <div id="notifyUpdatedRoles" class="@(Model.NotifyMaterialUpdated ? "" : "d-none") ps-3 mb-3">
+                                <div class="border rounded p-3 bg-light">
+                                    @if (!Model.AvailableRoles.Any())
+                                    {
+                                        <span class="text-muted small">@T["admin.no_roles","Nessun ruolo disponibile."]</span>
+                                    }
+                                    else
+                                    {
+                                        <div class="row g-2">
+                                            @foreach (var role in Model.AvailableRoles)
+                                            {
+                                                <div class="col-6 col-md-4">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input mat-updated-role-check"
+                                                               type="checkbox" name="MaterialUpdatedRoles"
+                                                               value="@role" id="up_@role"
+                                                               @(Model.MaterialUpdatedRoles.Contains(role) ? "checked" : "") />
+                                                        <label class="form-check-label" for="up_@role">@role</label>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            @* ── Notifica Eliminazione ── *@
+                            <div class="mb-2 form-check form-switch">
+                                <input asp-for="NotifyMaterialDeleted" class="form-check-input" type="checkbox"
+                                       role="switch" id="notifyMatDeleted" />
+                                <label class="form-check-label fw-semibold" for="notifyMatDeleted">
+                                    <i class="bi bi-bell me-1 text-danger"></i>@T["admin.email.notify_mat_deleted","Notifica eliminazione materiale"]
+                                </label>
+                                <div class="form-text">@T["admin.email.notify_mat_deleted_desc","Invia un'email ai ruoli selezionati quando un materiale viene eliminato."]</div>
+                            </div>
+                            <div id="notifyDeletedRoles" class="@(Model.NotifyMaterialDeleted ? "" : "d-none") ps-3 mb-3">
+                                <div class="border rounded p-3 bg-light">
+                                    @if (!Model.AvailableRoles.Any())
+                                    {
+                                        <span class="text-muted small">@T["admin.no_roles","Nessun ruolo disponibile."]</span>
+                                    }
+                                    else
+                                    {
+                                        <div class="row g-2">
+                                            @foreach (var role in Model.AvailableRoles)
+                                            {
+                                                <div class="col-6 col-md-4">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input mat-deleted-role-check"
+                                                               type="checkbox" name="MaterialDeletedRoles"
+                                                               value="@role" id="del_@role"
+                                                               @(Model.MaterialDeletedRoles.Contains(role) ? "checked" : "") />
+                                                        <label class="form-check-label" for="del_@role">@role</label>
                                                     </div>
                                                 </div>
                                             }
@@ -302,38 +369,48 @@
             });
         }
 
-        // ── Toggle "Notifica materiali" — auto-save + show/hide ruoli ────────
-        var notifyCheck = document.getElementById('notifyMaterial');
-        if (notifyCheck) {
-            notifyCheck.addEventListener('change', function () {
+        // ── Helper generico: toggle notifica materiale ────────────────────
+        function bindMatToggle(checkId, sectionId, ajaxUrl, roleClass) {
+            var chk = document.getElementById(checkId);
+            if (!chk) return;
+            chk.addEventListener('change', function () {
                 var enabled = this.checked;
-                var section = document.getElementById('notifyRolesSection');
+                var section = document.getElementById(sectionId);
                 if (enabled) {
                     section.classList.remove('d-none');
                 } else {
                     section.classList.add('d-none');
-                    section.querySelectorAll('.notify-role-check').forEach(function (cb) {
-                        cb.checked = false;
-                    });
+                    section.querySelectorAll('.' + roleClass).forEach(function (cb) { cb.checked = false; });
                 }
                 var lbl = this;
-                ajaxPost('/Admin/ToggleNotifyMaterialAjax', { value: enabled },
-                    function () { showSaved(lbl); });
+                ajaxPost(ajaxUrl, { value: enabled }, function () { showSaved(lbl); });
             });
         }
 
-        // ── Checkbox ruoli materiali — auto-save al click ─────────────────
-        document.querySelectorAll('.notify-role-check').forEach(function (cb) {
-            cb.addEventListener('change', function () {
-                var checked = [];
-                document.querySelectorAll('.notify-role-check:checked').forEach(function (c) {
-                    checked.push(c.value);
+        // ── Helper generico: save ruoli materiale ─────────────────────────
+        function bindMatRoles(roleClass, ajaxUrl) {
+            document.querySelectorAll('.' + roleClass).forEach(function (cb) {
+                cb.addEventListener('change', function () {
+                    var checked = [];
+                    document.querySelectorAll('.' + roleClass + ':checked').forEach(function (c) {
+                        checked.push(c.value);
+                    });
+                    var lbl = this;
+                    ajaxPost(ajaxUrl, { roles: checked }, function () { showSaved(lbl); });
                 });
-                var lbl = this;
-                ajaxPost('/Admin/SetNotifyRolesAjax', { roles: checked },
-                    function () { showSaved(lbl); });
             });
-        });
+        }
+
+        bindMatToggle('notifyMatCreated', 'notifyCreatedRoles',
+            '/Admin/ToggleNotifyMaterialCreatedAjax', 'mat-created-role-check');
+        bindMatToggle('notifyMatUpdated', 'notifyUpdatedRoles',
+            '/Admin/ToggleNotifyMaterialUpdatedAjax', 'mat-updated-role-check');
+        bindMatToggle('notifyMatDeleted', 'notifyDeletedRoles',
+            '/Admin/ToggleNotifyMaterialDeletedAjax', 'mat-deleted-role-check');
+
+        bindMatRoles('mat-created-role-check', '/Admin/SetNotifyCreatedRolesAjax');
+        bindMatRoles('mat-updated-role-check', '/Admin/SetNotifyUpdatedRolesAjax');
+        bindMatRoles('mat-deleted-role-check', '/Admin/SetNotifyDeletedRolesAjax');
 
         // ── Toggle "Courses Notifications" — auto-save + show/hide items ──
         var notifyCoursesCheck  = document.getElementById('notifyCourses');

@@ -51,21 +51,36 @@ public class MaterialsController : Controller
     private int CurrentUserId() =>
         int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-    private void FireMaterialNotification(string materialTitle, bool isNew)
+    // eventType: "created" | "updated" | "deleted"
+    private void FireMaterialNotification(string materialTitle, string eventType)
     {
         _ = Task.Run(async () =>
         {
             try
             {
-                if ((await _settings.GetAsync("Notifications:MaterialChanged")) != "true") return;
-                var raw   = await _settings.GetAsync("Notifications:MaterialChangedRoles") ?? "";
+                var settingKey = eventType switch
+                {
+                    "created" => "Notifications:MaterialCreated",
+                    "updated" => "Notifications:MaterialUpdated",
+                    "deleted" => "Notifications:MaterialDeleted",
+                    _         => "Notifications:MaterialCreated"
+                };
+                var rolesKey = eventType switch
+                {
+                    "created" => "Notifications:MaterialCreatedRoles",
+                    "updated" => "Notifications:MaterialUpdatedRoles",
+                    "deleted" => "Notifications:MaterialDeletedRoles",
+                    _         => "Notifications:MaterialCreatedRoles"
+                };
+                if ((await _settings.GetAsync(settingKey)) != "true") return;
+                var raw   = await _settings.GetAsync(rolesKey) ?? "";
                 var roles = raw.Split(',', StringSplitOptions.RemoveEmptyEntries);
                 if (roles.Length == 0) return;
 
                 var recipients = await _users.GetDistinctRecipientsByRoleNamesAsync(roles);
                 foreach (var (email, fullName) in recipients)
                 {
-                    try { await _emailService.SendMaterialNotificationAsync(email, fullName, materialTitle, isNew); }
+                    try { await _emailService.SendMaterialNotificationAsync(email, fullName, materialTitle, eventType); }
                     catch { /* singolo destinatario fallito: ignora e continua */ }
                 }
             }
@@ -310,7 +325,7 @@ public class MaterialsController : Controller
             }
         }
 
-        FireMaterialNotification(vm.Title, isNew: true);
+        FireMaterialNotification(vm.Title, "created");
         TempData["Success"] = $"Materiale «{vm.Title}» creato con successo.";
         return RedirectToAction(nameof(Index));
     }
@@ -415,13 +430,13 @@ public class MaterialsController : Controller
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SaveVersionAsync fallita in Edit per materialId={Id} file={File}", id, vm.File.FileName);
-                FireMaterialNotification(vm.Title, isNew: false);
+                FireMaterialNotification(vm.Title, "updated");
                 TempData["Warning"] = $"Materiale aggiornato, ma il file non è stato salvato: {ex.Message}";
                 return RedirectToAction(nameof(Index));
             }
         }
 
-        FireMaterialNotification(vm.Title, isNew: false);
+        FireMaterialNotification(vm.Title, "updated");
         TempData["Success"] = "Materiale aggiornato.";
         return RedirectToAction(nameof(Index));
     }
@@ -618,8 +633,10 @@ public class MaterialsController : Controller
         var dirPath = Path.Combine(_env.WebRootPath, "uploads", "mat_" + id);
         if (Directory.Exists(dirPath)) Directory.Delete(dirPath, true);
 
+        var deletedTitle = material.Title;
         await _materials.DeleteAsync(id);
-        TempData["Success"] = $"Materiale «{material.Title}» eliminato.";
+        FireMaterialNotification(deletedTitle, "deleted");
+        TempData["Success"] = $"Materiale «{deletedTitle}» eliminato.";
         return RedirectToAction(nameof(Index));
     }
 
