@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using MySqlConnector;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
@@ -9,27 +10,39 @@ namespace BocconiLMS.Controllers;
 
 public class HomeController : Controller
 {
-    private readonly CourseRepository _courses;
-    private readonly FeatureFlagService _features;
+    private readonly CourseRepository     _courses;
+    private readonly MaterialRepository   _materials;
+    private readonly EnrollmentRepository _enrollments;
+    private readonly UserRepository       _users;
+    private readonly FeatureFlagService   _features;
+    private readonly DbHelper             _db;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public HomeController(CourseRepository courses, FeatureFlagService features)
+    public HomeController(
+        CourseRepository courses,
+        MaterialRepository materials,
+        EnrollmentRepository enrollments,
+        UserRepository users,
+        FeatureFlagService features,
+        DbHelper db,
+        UserManager<ApplicationUser> userManager)
     {
-        _courses = courses;
-        _features = features;
+        _courses     = courses;
+        _materials   = materials;
+        _enrollments = enrollments;
+        _users       = users;
+        _features    = features;
+        _db          = db;
+        _userManager = userManager;
     }
 
     public async Task<IActionResult> Index()
     {
+        if (User.Identity?.IsAuthenticated == true)
+            return RedirectToAction("Dashboard");
+
         var coursesEnabled   = await _features.IsCoursesEnabledAsync();
         var materialsEnabled = await _features.IsMaterialsEnabledAsync();
-
-        if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
-        {
-            if (!coursesEnabled && materialsEnabled)
-                return RedirectToAction("Index", "Materials");
-            if (!coursesEnabled && !materialsEnabled)
-                return RedirectToAction("NoModules", "Home");
-        }
 
         try
         {
@@ -53,37 +66,103 @@ public class HomeController : Controller
     [Authorize]
     public async Task<IActionResult> Dashboard()
     {
-        if (User.IsInRole("Admin"))
-            return RedirectToAction("PlatformFeatures", "Admin");
-
-        var coursesEnabled   = await _features.IsCoursesEnabledAsync();
         var materialsEnabled = await _features.IsMaterialsEnabledAsync();
+        var coursesEnabled   = await _features.IsCoursesEnabledAsync();
 
-        if (!coursesEnabled && materialsEnabled)
-            return RedirectToAction("Index", "Materials");
+        var hasAnyRole = User.Claims.Any(c =>
+            c.Type == System.Security.Claims.ClaimTypes.Role &&
+            !string.IsNullOrWhiteSpace(c.Value));
 
-        if (!coursesEnabled && !materialsEnabled)
-            return RedirectToAction("NoModules", "Home");
+        var vm = new DashboardViewModel
+        {
+            IsAdmin          = User.IsInRole("Admin"),
+            IsTeacher        = User.IsInRole("Teacher"),
+            IsStudent        = User.IsInRole("Student"),
+            IsPending        = !hasAnyRole,
+            MaterialsEnabled = materialsEnabled,
+            CoursesEnabled   = coursesEnabled,
+        };
 
-        if (User.IsInRole("Teacher"))
-            return RedirectToAction("Dashboard", "Course");
+        if (vm.IsAdmin)
+        {
+            vm.AdminStats = await _users.GetStatsAsync();
+            return View(vm);
+        }
 
-        if (User.IsInRole("Student"))
-            return RedirectToAction("Dashboard", "Student");
+        if (vm.IsPending)
+            return View(vm);
 
-        return RedirectToAction("Index", "Materials");
+        // stats materiali (tutti gli utenti autenticati con un ruolo)
+        if (materialsEnabled)
+        {
+            (vm.TotalMaterials, vm.RecentMaterials) = await GetMaterialCountsAsync();
+        }
+
+        if (coursesEnabled)
+        {
+            var appUser = await _userManager.GetUserAsync(User);
+            if (appUser != null)
+            {
+                var userId = appUser.Id;
+
+                if (vm.IsTeacher)
+                {
+                    var myCourses = await _courses.GetByTeacherAsync(userId);
+                    vm.TeacherCourseCount  = myCourses.Count;
+                    vm.TeacherStudentCount = await GetTeacherStudentCountAsync(userId);
+                }
+                else if (vm.IsStudent)
+                {
+                    var enrollments = await _enrollments.GetByUserAsync(userId);
+                    vm.StudentEnrolledCount    = enrollments.Count;
+                    vm.StudentCompletedLessons = enrollments.Sum(e => e.CompletedLessons);
+                }
+            }
+        }
+
+        return View(vm);
     }
 
     [Authorize]
     public IActionResult NoModules()
     {
         if (User.IsInRole("Admin"))
-            return RedirectToAction("PlatformFeatures", "Admin");
+            return RedirectToAction("Dashboard");
         return View();
     }
 
     public IActionResult Error()
     {
         return View();
+    }
+
+    // ── helpers privati ───────────────────────────────────────────────────────
+
+    private async Task<(int total, int recent)> GetMaterialCountsAsync()
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            SELECT COUNT(*) AS total,
+                   SUM(CASE WHEN created_at >= NOW() - INTERVAL 30 DAY THEN 1 ELSE 0 END) AS recent
+            FROM materials", conn);
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (!await reader.ReadAsync()) return (0, 0);
+        return (reader.IsDBNull(0) ? 0 : reader.GetInt32(0),
+                reader.IsDBNull(1) ? 0 : reader.GetInt32(1));
+    }
+
+    private async Task<int> GetTeacherStudentCountAsync(int teacherId)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            SELECT COUNT(DISTINCT e.user_id)
+            FROM enrollments e
+            JOIN courses c ON e.course_id = c.id
+            WHERE c.teacher_id = @tid", conn);
+        cmd.Parameters.AddWithValue("@tid", teacherId);
+        var result = await cmd.ExecuteScalarAsync();
+        return result is long l ? (int)l : result is int i ? i : 0;
     }
 }

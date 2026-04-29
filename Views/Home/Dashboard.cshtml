@@ -1,0 +1,288 @@
+@model DashboardViewModel
+@{
+    ViewData["Title"] = T["dashboard.title", "Dashboard"];
+}
+
+<div class="mb-4 d-flex align-items-center justify-content-between">
+    <h2 class="fw-bold text-bocconi mb-0">
+        <i class="bi bi-house-door-fill me-2"></i>@T["dashboard.title", "Dashboard"]
+    </h2>
+    @if (!Model.IsPending && !Model.IsAdmin)
+    {
+        <div class="text-muted small">
+            <i class="bi bi-calendar3 me-1"></i>@DateTime.Now.ToString("dddd d MMMM yyyy", new System.Globalization.CultureInfo("it-IT"))
+        </div>
+    }
+</div>
+
+@* ── Utente in attesa di ruolo ────────────────────────────────────────────── *@
+@if (Model.IsPending)
+{
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-warning shadow-sm">
+                <div class="card-body text-center p-5">
+                    <i class="bi bi-hourglass-split display-3 text-warning mb-3 d-block"></i>
+                    <h4 class="fw-bold">@T["dashboard.pending.title", "Account in attesa"]</h4>
+                    <p class="text-muted mb-0">
+                        @T["dashboard.pending.desc", "Il tuo account è stato registrato. Un amministratore ti assegnerà presto un ruolo per accedere alle funzionalità della piattaforma."]
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@* ── Admin ────────────────────────────────────────────────────────────────── *@
+@if (Model.IsAdmin)
+{
+    @* Shortcut cards *@
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-sliders display-4 text-bocconi mb-3 d-block"></i>
+                    <h5 class="fw-bold">@T["admin.platform_settings", "Platform Settings"]</h5>
+                    <p class="text-muted">@T["admin.platform_settings_desc", "Configura moduli e funzionalità della piattaforma"]</p>
+                    <a asp-controller="Admin" asp-action="PlatformFeatures" class="btn btn-bocconi">
+                        @T["admin.configure", "Configura"]
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-envelope-at display-4 text-bocconi mb-3 d-block"></i>
+                    <h5 class="fw-bold">@T["admin.email_settings", "Email Settings"]</h5>
+                    <p class="text-muted">@T["admin.email_settings_desc", "Configura il server SMTP e le notifiche email"]</p>
+                    <a asp-controller="Admin" asp-action="EmailSettings" class="btn btn-bocconi">
+                        @T["admin.configure_email", "Configura email"]
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Statistiche piattaforma *@
+    @if (Model.AdminStats != null)
+    {
+        <h5 class="text-muted fw-semibold mb-3">
+            <i class="bi bi-bar-chart-fill me-2"></i>@T["dashboard.admin.stats", "Panoramica piattaforma"]
+        </h5>
+        <div class="row g-3">
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 bg-light shadow-sm h-100">
+                    <div class="card-body py-3">
+                        <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.TotalCourses</div>
+                        <small class="text-muted">@T["dashboard.admin.courses", "Corsi totali"]</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 bg-light shadow-sm h-100">
+                    <div class="card-body py-3">
+                        <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.ActiveStudents</div>
+                        <small class="text-muted">@T["dashboard.admin.students", "Studenti attivi"]</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 bg-light shadow-sm h-100">
+                    <div class="card-body py-3">
+                        <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.ActiveTeachers</div>
+                        <small class="text-muted">@T["dashboard.admin.teachers", "Docenti attivi"]</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 bg-light shadow-sm h-100">
+                    <div class="card-body py-3">
+                        <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.TotalEnrollments</div>
+                        <small class="text-muted">@T["dashboard.admin.enrollments", "Iscrizioni totali"]</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@* ── Docente ──────────────────────────────────────────────────────────────── *@
+@if (Model.IsTeacher && !Model.IsAdmin)
+{
+    <div class="row g-3 mb-4">
+        @if (Model.CoursesEnabled)
+        {
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 shadow-sm h-100">
+                    <div class="card-body py-4">
+                        <i class="bi bi-book-fill fs-2 text-bocconi mb-2 d-block"></i>
+                        <div class="display-6 fw-bold">@Model.TeacherCourseCount</div>
+                        <small class="text-muted">@T["dashboard.teacher.courses", "I miei corsi"]</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 shadow-sm h-100">
+                    <div class="card-body py-4">
+                        <i class="bi bi-people-fill fs-2 text-bocconi mb-2 d-block"></i>
+                        <div class="display-6 fw-bold">@Model.TeacherStudentCount</div>
+                        <small class="text-muted">@T["dashboard.teacher.students", "Studenti iscritti"]</small>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (Model.MaterialsEnabled)
+        {
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 shadow-sm h-100">
+                    <div class="card-body py-4">
+                        <i class="bi bi-folder2-open fs-2 text-bocconi mb-2 d-block"></i>
+                        <div class="display-6 fw-bold">@Model.TotalMaterials</div>
+                        <small class="text-muted">@T["dashboard.materials.total", "Materiali totali"]</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 shadow-sm h-100">
+                    <div class="card-body py-4">
+                        <i class="bi bi-clock-history fs-2 text-success mb-2 d-block"></i>
+                        <div class="display-6 fw-bold text-success">@Model.RecentMaterials</div>
+                        <small class="text-muted">@T["dashboard.materials.recent", "Ultimi 30 giorni"]</small>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        @if (Model.CoursesEnabled)
+        {
+            <a asp-controller="Course" asp-action="Dashboard" class="btn btn-bocconi">
+                <i class="bi bi-book me-1"></i>@T["nav.courses", "Corsi"]
+            </a>
+        }
+        @if (Model.MaterialsEnabled)
+        {
+            <a asp-controller="Materials" asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-folder2 me-1"></i>@T["nav.materials", "Materiali"]
+            </a>
+        }
+    </div>
+}
+
+@* ── Studente ─────────────────────────────────────────────────────────────── *@
+@if (Model.IsStudent && !Model.IsAdmin)
+{
+    <div class="row g-3 mb-4">
+        @if (Model.CoursesEnabled)
+        {
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 shadow-sm h-100">
+                    <div class="card-body py-4">
+                        <i class="bi bi-collection-play-fill fs-2 text-bocconi mb-2 d-block"></i>
+                        <div class="display-6 fw-bold">@Model.StudentEnrolledCount</div>
+                        <small class="text-muted">@T["dashboard.student.enrolled", "Corsi iscritti"]</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 shadow-sm h-100">
+                    <div class="card-body py-4">
+                        <i class="bi bi-patch-check-fill fs-2 text-success mb-2 d-block"></i>
+                        <div class="display-6 fw-bold text-success">@Model.StudentCompletedLessons</div>
+                        <small class="text-muted">@T["dashboard.student.completed", "Lezioni completate"]</small>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (Model.MaterialsEnabled)
+        {
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 shadow-sm h-100">
+                    <div class="card-body py-4">
+                        <i class="bi bi-folder2-open fs-2 text-bocconi mb-2 d-block"></i>
+                        <div class="display-6 fw-bold">@Model.TotalMaterials</div>
+                        <small class="text-muted">@T["dashboard.materials.total", "Materiali disponibili"]</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="card text-center border-0 shadow-sm h-100">
+                    <div class="card-body py-4">
+                        <i class="bi bi-clock-history fs-2 text-info mb-2 d-block"></i>
+                        <div class="display-6 fw-bold text-info">@Model.RecentMaterials</div>
+                        <small class="text-muted">@T["dashboard.materials.recent", "Ultimi 30 giorni"]</small>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        @if (Model.CoursesEnabled)
+        {
+            <a asp-controller="Student" asp-action="Dashboard" class="btn btn-bocconi">
+                <i class="bi bi-collection-play me-1"></i>@T["nav.my_courses", "I miei corsi"]
+            </a>
+        }
+        @if (Model.MaterialsEnabled)
+        {
+            <a asp-controller="Materials" asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-folder2 me-1"></i>@T["nav.materials", "Materiali"]
+            </a>
+        }
+    </div>
+}
+
+@* ── Ruolo personalizzato (non Admin, Teacher, Student) ────────────────────── *@
+@if (!Model.IsAdmin && !Model.IsTeacher && !Model.IsStudent && !Model.IsPending)
+{
+    <div class="row g-3 mb-4">
+        @if (Model.MaterialsEnabled)
+        {
+            <div class="col-6 col-md-4">
+                <div class="card text-center border-0 shadow-sm h-100">
+                    <div class="card-body py-4">
+                        <i class="bi bi-folder2-open fs-2 text-bocconi mb-2 d-block"></i>
+                        <div class="display-6 fw-bold">@Model.TotalMaterials</div>
+                        <small class="text-muted">@T["dashboard.materials.total", "Materiali totali"]</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="card text-center border-0 shadow-sm h-100">
+                    <div class="card-body py-4">
+                        <i class="bi bi-clock-history fs-2 text-success mb-2 d-block"></i>
+                        <div class="display-6 fw-bold text-success">@Model.RecentMaterials</div>
+                        <small class="text-muted">@T["dashboard.materials.recent", "Aggiunti negli ultimi 30 giorni"]</small>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (!Model.MaterialsEnabled && !Model.CoursesEnabled)
+        {
+            <div class="col-12">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle me-2"></i>
+                    @T["dashboard.no_modules", "Nessun modulo attivo. Contatta l'amministratore."]
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        @if (Model.MaterialsEnabled)
+        {
+            <a asp-controller="Materials" asp-action="Index" class="btn btn-bocconi">
+                <i class="bi bi-folder2 me-1"></i>@T["nav.materials", "Materiali"]
+            </a>
+        }
+        @if (Model.CoursesEnabled)
+        {
+            <a asp-controller="Course" asp-action="Dashboard" class="btn btn-outline-secondary">
+                <i class="bi bi-book me-1"></i>@T["nav.courses", "Corsi"]
+            </a>
+        }
+    </div>
+}

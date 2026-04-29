@@ -65,19 +65,7 @@ public class AccountController : Controller
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);
 
-        var roles = await _userManager.GetRolesAsync(user);
-        var role = roles.FirstOrDefault();
-
-        if (string.IsNullOrEmpty(role))
-            return RedirectToAction("PendingRole");
-
-        return role switch
-        {
-            "Admin"   => RedirectToAction("Index", "Admin"),
-            "Teacher" => RedirectToAction("Dashboard", "Course"),
-            "Student" => RedirectToAction("Dashboard", "Student"),
-            _         => RedirectToAction("Index", "Materials")
-        };
+        return RedirectToAction("Dashboard", "Home");
     }
 
     [HttpPost]

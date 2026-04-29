@@ -7,6 +7,27 @@ public class ResetLandingPostModel
     public string Token { get; set; } = string.Empty;
 }
 
+public class DashboardViewModel
+{
+    public bool IsAdmin { get; set; }
+    public bool IsTeacher { get; set; }
+    public bool IsStudent { get; set; }
+    public bool IsPending { get; set; }
+    public bool MaterialsEnabled { get; set; }
+    public bool CoursesEnabled { get; set; }
+    // Materiali
+    public int TotalMaterials { get; set; }
+    public int RecentMaterials { get; set; }
+    // Teacher
+    public int TeacherCourseCount { get; set; }
+    public int TeacherStudentCount { get; set; }
+    // Student
+    public int StudentEnrolledCount { get; set; }
+    public int StudentCompletedLessons { get; set; }
+    // Admin
+    public DashboardStats? AdminStats { get; set; }
+}
+
 public class AjaxToggleRequest
 {
     public bool Value { get; set; }
