@@ -1,11 +1,20 @@
 @model DashboardViewModel
 @{
-    ViewData["Title"] = T["dashboard.title", "Dashboard"];
+    ViewData["Title"] = Model.IsAdmin
+        ? T["dashboard.admin.title", "Dashboard Admin"]
+        : T["dashboard.title", "Dashboard"];
 }
 
 <div class="mb-4 d-flex align-items-center justify-content-between">
     <h2 class="fw-bold text-bocconi mb-0">
-        <i class="bi bi-house-door-fill me-2"></i>@T["dashboard.title", "Dashboard"]
+        @if (Model.IsAdmin)
+        {
+            <i class="bi bi-shield-lock-fill me-2"></i>@T["dashboard.admin.title", "Dashboard Admin"]
+        }
+        else
+        {
+            <i class="bi bi-house-door-fill me-2"></i>@T["dashboard.title", "Dashboard"]
+        }
     </h2>
     @if (!Model.IsPending && !Model.IsAdmin)
     {
@@ -224,12 +233,6 @@
         {
             <a asp-controller="Student" asp-action="Dashboard" class="btn btn-bocconi">
                 <i class="bi bi-collection-play me-1"></i>@T["nav.my_courses", "I miei corsi"]
-            </a>
-        }
-        @if (Model.MaterialsEnabled)
-        {
-            <a asp-controller="Materials" asp-action="Index" class="btn btn-outline-secondary">
-                <i class="bi bi-folder2 me-1"></i>@T["nav.materials", "Materiali"]
             </a>
         }
     </div>
