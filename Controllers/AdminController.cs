@@ -138,6 +138,12 @@ public class AdminController : Controller
         if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var user = await _users.GetByIdAsync(id);
         if (user == null) return NotFound();
+        var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        if (user.Id == currentUserId || user.Role == "Admin")
+        {
+            TempData["Error"] = "Non puoi modificare questo utente.";
+            return RedirectToAction(nameof(Users));
+        }
         ViewBag.AvailableRoles  = await _users.GetNonAdminRoleNamesAsync();
         ViewBag.AllAreas        = await _areas.GetAllAsync();
         ViewBag.UserAreaIds     = await _areas.GetUserAreaIdsAsync(id);
@@ -152,6 +158,12 @@ public class AdminController : Controller
         if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var user = await _users.GetByIdAsync(model.Id);
         if (user == null) return NotFound();
+        var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
+        if (user.Id == currentUserId || user.Role == "Admin")
+        {
+            TempData["Error"] = "Non puoi modificare questo utente.";
+            return RedirectToAction(nameof(Users));
+        }
         user.FirstName = model.FirstName;
         user.LastName = model.LastName;
 

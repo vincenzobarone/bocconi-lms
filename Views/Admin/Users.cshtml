@@ -116,10 +116,13 @@
                                 <td class="text-muted small">@u.CreatedAt.ToString("dd/MM/yyyy")</td>
                                 <td>
                                     <div class="d-flex gap-1">
-                                        <a asp-action="EditUser" asp-route-id="@u.Id"
-                                           class="btn btn-sm btn-outline-secondary" title="@T["common.edit","Edit"]">
-                                            <i class="bi bi-pencil"></i>
-                                        </a>
+                                        @if (u.Id != currentUserId && u.Role != "Admin")
+                                        {
+                                            <a asp-action="EditUser" asp-route-id="@u.Id"
+                                               class="btn btn-sm btn-outline-secondary" title="@T["common.edit","Edit"]">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                        }
 
                                         @if (coursesEnabled && (u.Role == "Teacher" || u.Role == "Student"))
                                         {
