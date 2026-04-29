@@ -796,15 +796,18 @@ public class AdminController : Controller
 
     // ── Document Types ────────────────────────────────────────────────────
 
+    [AllowAnonymous]
     public IActionResult DocumentTypes()
     {
         return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateDocumentType(DocumentTypeFormViewModel vm)
     {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         if (!ModelState.IsValid)
         {
             TempData["Error"] = "Nome non valido.";
@@ -820,18 +823,22 @@ public class AdminController : Controller
         return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
     }
 
+    [AllowAnonymous]
     [HttpGet]
     public async Task<IActionResult> EditDocumentType(int id)
     {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         var t = await _docTypes.GetByIdAsync(id);
         if (t == null) return NotFound();
         return View(new DocumentTypeFormViewModel { Id = t.Id, Name = t.Name });
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> EditDocumentType(int id, DocumentTypeFormViewModel vm)
     {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         if (!ModelState.IsValid) return View(vm);
         if (await _docTypes.NameExistsAsync(vm.Name, id))
         {
@@ -843,10 +850,12 @@ public class AdminController : Controller
         return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
     }
 
+    [AllowAnonymous]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteDocumentType(int id)
     {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         var count = await _docTypes.CountMaterialsAsync(id);
         if (count > 0)
         {
