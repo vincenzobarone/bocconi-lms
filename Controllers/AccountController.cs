@@ -73,7 +73,7 @@ public class AccountController : Controller
 
         return role switch
         {
-            "Admin"   => RedirectToAction("PlatformFeatures", "Admin"),
+            "Admin"   => RedirectToAction("Index", "Admin"),
             "Teacher" => RedirectToAction("Dashboard", "Course"),
             _         => RedirectToAction("Dashboard", "Student")
         };
