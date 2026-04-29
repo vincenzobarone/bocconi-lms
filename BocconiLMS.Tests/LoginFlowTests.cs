@@ -70,14 +70,7 @@ public class LoginFlowTests : IAsyncLifetime
         Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
         var location = response.Headers.Location?.ToString() ?? "";
 
-        var expectedPath = role switch
-        {
-            "Admin" => "/Admin",
-            "Teacher" => "/Course/Dashboard",
-            _ => "/Student/Dashboard"
-        };
-
-        Assert.Contains(expectedPath, location, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("/Home/Dashboard", location, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
@@ -128,10 +121,10 @@ public class LoginFlowTests : IAsyncLifetime
     }
 
     [Theory]
-    [InlineData("Student", "/Student/Dashboard")]
-    [InlineData("Teacher", "/Course/Dashboard")]
-    [InlineData("Admin", "/Admin")]
-    public async Task Logout_WhenLoggedIn_RedirectsToHome(string role, string dashboardPath)
+    [InlineData("Student")]
+    [InlineData("Teacher")]
+    [InlineData("Admin")]
+    public async Task Logout_WhenLoggedIn_RedirectsToHome(string role)
     {
         var client = _factory.CreateClientWithCookies();
         var email = role switch
@@ -142,7 +135,7 @@ public class LoginFlowTests : IAsyncLifetime
         };
         await LoginAsync(client, email, Password);
 
-        var dashPage = await client.GetAsync(dashboardPath);
+        var dashPage = await client.GetAsync("/Home/Dashboard");
         var html = await dashPage.Content.ReadAsStringAsync();
         var token = CsrfHelper.Extract(html);
 
