@@ -260,7 +260,7 @@ else
         });
 
         // ── Bulk selection logic ──────────────────────────────────────────
-        (function () {
+        if (document.getElementById('bulkForm')) (function () {
             var selected = new Set();
 
             function refreshCheckboxes() {
