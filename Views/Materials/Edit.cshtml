@@ -8,7 +8,7 @@
     var existingAuthors = ViewBag.ExistingAuthors as List<string> ?? new();
     var availableAreas = ViewBag.AvailableAreas as List<BocconiLMS.Models.Area> ?? new();
     var existingFolders = ViewBag.ExistingFolders as List<BocconiLMS.Models.MaterialFolder> ?? new();
-    bool canSetStatus = ViewBag.CanSetStatus is bool css ? css : true;
+    bool canSetStatus = ViewBag.CanSetStatus == true;
 
     bool hasProtocol = material?.ProtocolNumber != null;
     bool hasFolder   = material?.FolderId != null;

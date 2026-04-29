@@ -252,6 +252,7 @@ public class MaterialsController : Controller
         if (!ModelState.IsValid)
         {
             ViewBag.CurrentUserFullName = CurrentUserFullName();
+            ViewBag.CanSetStatus = await CanSetStatusAsync("create");
             await PopulateDropdownsAsync();
             return View(vm);
         }
@@ -260,6 +261,7 @@ public class MaterialsController : Controller
         {
             ModelState.AddModelError(nameof(vm.Title), "Esiste già un materiale con questo titolo.");
             ViewBag.CurrentUserFullName = CurrentUserFullName();
+            ViewBag.CanSetStatus = await CanSetStatusAsync("create");
             await PopulateDropdownsAsync();
             return View(vm);
         }
@@ -361,6 +363,7 @@ public class MaterialsController : Controller
             ModelState.AddModelError(nameof(vm.Title), "Esiste già un materiale con questo titolo.");
             var mat = await _materials.GetByIdAsync(id);
             ViewBag.Material = mat;
+            ViewBag.CanSetStatus = await CanSetStatusAsync("edit");
             await PopulateDropdownsAsync();
             return View(vm);
         }
