@@ -41,14 +41,6 @@ public class DbTestHelper : IAsyncDisposable
         cmd.Parameters.AddWithValue("@role", role);
         await cmd.ExecuteNonQueryAsync();
         var userId = await GetLastInsertIdAsync(conn);
-
-        using var roleCmd = new MySqlCommand(@"
-            INSERT INTO user_roles (user_id, role_id)
-            SELECT @uid, id FROM roles WHERE name = @role", conn);
-        roleCmd.Parameters.AddWithValue("@uid", userId);
-        roleCmd.Parameters.AddWithValue("@role", role);
-        await roleCmd.ExecuteNonQueryAsync();
-
         _cleanups.Add(("users", $"id = {userId}"));
         return userId;
     }

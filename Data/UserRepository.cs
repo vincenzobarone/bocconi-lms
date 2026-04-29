@@ -195,7 +195,7 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(
-            "SELECT COUNT(*) FROM user_roles WHERE role_id = @id", conn);
+            "SELECT COUNT(*) FROM users WHERE role = (SELECT name FROM roles WHERE id = @id)", conn);
         cmd.Parameters.AddWithValue("@id", roleId);
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
@@ -226,14 +226,7 @@ public class UserRepository
             SELECT DISTINCT u.email, u.first_name, u.last_name
             FROM users u
             WHERE u.is_active = 1
-              AND (
-                u.role IN ({inList})
-                OR EXISTS (
-                    SELECT 1 FROM user_roles ur
-                    JOIN roles ro ON ro.id = ur.role_id
-                    WHERE ur.user_id = u.id AND ro.name IN ({inList})
-                )
-              )
+              AND u.role IN ({inList})
             ORDER BY u.last_name, u.first_name";
 
         using var conn = _db.GetConnection();

@@ -180,14 +180,6 @@ CREATE TABLE IF NOT EXISTS roles (
     UNIQUE KEY uk_normalized (normalized_name)
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS user_roles (
-    user_id         INT NOT NULL,
-    role_id         INT NOT NULL,
-    PRIMARY KEY (user_id, role_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
 INSERT IGNORE INTO roles (name, normalized_name) VALUES
     ('Admin',   'ADMIN');
 

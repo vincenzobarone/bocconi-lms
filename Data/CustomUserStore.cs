@@ -152,57 +152,23 @@ public class CustomUserStore :
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
-        using var findRole = new MySqlCommand("SELECT id FROM roles WHERE normalized_name=@rn LIMIT 1", conn);
-        findRole.Parameters.AddWithValue("@rn", roleName.ToUpperInvariant());
-        var roleIdObj = await findRole.ExecuteScalarAsync(ct);
-        if (roleIdObj == null) return;
-        var roleId = Convert.ToInt32(roleIdObj);
-        using var cmd = new MySqlCommand(
-            "INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (@uid, @rid)", conn);
-        cmd.Parameters.AddWithValue("@uid", user.Id);
-        cmd.Parameters.AddWithValue("@rid", roleId);
-        await cmd.ExecuteNonQueryAsync(ct);
-
-        await SyncRoleEnumAsync(user.Id, roleName, conn, ct);
-    }
-
-    public async Task RemoveFromRoleAsync(ApplicationUser user, string roleName, CancellationToken ct)
-    {
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync(ct);
-        using var findRole = new MySqlCommand("SELECT id FROM roles WHERE normalized_name=@rn LIMIT 1", conn);
-        findRole.Parameters.AddWithValue("@rn", roleName.ToUpperInvariant());
-        var roleIdObj = await findRole.ExecuteScalarAsync(ct);
-        if (roleIdObj == null) return;
-        var roleId = Convert.ToInt32(roleIdObj);
-        using var cmd = new MySqlCommand(
-            "DELETE FROM user_roles WHERE user_id=@uid AND role_id=@rid", conn);
-        cmd.Parameters.AddWithValue("@uid", user.Id);
-        cmd.Parameters.AddWithValue("@rid", roleId);
+        using var cmd = new MySqlCommand("UPDATE users SET role=@role WHERE id=@id", conn);
+        cmd.Parameters.AddWithValue("@role", roleName);
+        cmd.Parameters.AddWithValue("@id", user.Id);
         await cmd.ExecuteNonQueryAsync(ct);
     }
+
+    public Task RemoveFromRoleAsync(ApplicationUser user, string roleName, CancellationToken ct)
+        => Task.CompletedTask;
 
     public async Task<IList<string>> GetRolesAsync(ApplicationUser user, CancellationToken ct)
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
-        using var cmd = new MySqlCommand(@"
-            SELECT r.name FROM user_roles ur
-            JOIN roles r ON r.id=ur.role_id
-            WHERE ur.user_id=@uid", conn);
-        cmd.Parameters.AddWithValue("@uid", user.Id);
-        var roles = new List<string>();
-        using var reader = await cmd.ExecuteReaderAsync(ct);
-        while (reader.Read()) roles.Add(reader.GetString(0));
-        if (roles.Count == 0)
-        {
-            await reader.CloseAsync();
-            using var fallback = new MySqlCommand("SELECT role FROM users WHERE id=@id LIMIT 1", conn);
-            fallback.Parameters.AddWithValue("@id", user.Id);
-            var r = await fallback.ExecuteScalarAsync(ct);
-            if (r is string role && !string.IsNullOrEmpty(role)) roles.Add(role);
-        }
-        return roles;
+        using var cmd = new MySqlCommand("SELECT role FROM users WHERE id=@id LIMIT 1", conn);
+        cmd.Parameters.AddWithValue("@id", user.Id);
+        var role = await cmd.ExecuteScalarAsync(ct) as string;
+        return string.IsNullOrEmpty(role) ? [] : [role];
     }
 
     public async Task<bool> IsInRoleAsync(ApplicationUser user, string roleName, CancellationToken ct)
@@ -216,27 +182,13 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(@"
-            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.role, u.is_active, u.created_at
-            FROM users u
-            JOIN user_roles ur ON ur.user_id=u.id
-            JOIN roles r ON r.id=ur.role_id
-            WHERE r.normalized_name=@rn", conn);
-        cmd.Parameters.AddWithValue("@rn", roleName.ToUpperInvariant());
+            SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at
+            FROM users WHERE role=@role AND is_active=1", conn);
+        cmd.Parameters.AddWithValue("@role", roleName);
         var list = new List<ApplicationUser>();
         using var reader = await cmd.ExecuteReaderAsync(ct);
         while (reader.Read()) list.Add(MapUser(reader));
         return list;
-    }
-
-    private static async Task SyncRoleEnumAsync(int userId, string roleName, MySqlConnection conn, CancellationToken ct)
-    {
-        var validRoles = new[] { "Student", "Teacher", "Admin" };
-        var normalized = validRoles.FirstOrDefault(r => r.Equals(roleName, StringComparison.OrdinalIgnoreCase));
-        if (normalized == null) return;
-        using var cmd = new MySqlCommand("UPDATE users SET role=@role WHERE id=@id", conn);
-        cmd.Parameters.AddWithValue("@role", normalized);
-        cmd.Parameters.AddWithValue("@id", userId);
-        await cmd.ExecuteNonQueryAsync(ct);
     }
 
     private static ApplicationUser MapUser(MySqlDataReader r) => new()
