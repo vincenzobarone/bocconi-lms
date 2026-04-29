@@ -210,14 +210,12 @@ else
                                            title="@T["common.edit","Edit"]">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <form asp-action="Delete" asp-route-id="@m.Id" method="post" class="d-inline">
-                                            @Html.AntiForgeryToken()
-                                            <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                    data-confirm="@T["common.delete","Delete"] «@m.Title»?"
-                                                    title="@T["common.delete","Delete"]">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </form>
+                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                data-confirm="@T["common.delete","Delete"] «@m.Title»?"
+                                                data-delete-url="@Url.Action("Delete", "Materials", new { id = m.Id })"
+                                                title="@T["common.delete","Delete"]">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
                                     }
                                 </div>
                             </td>

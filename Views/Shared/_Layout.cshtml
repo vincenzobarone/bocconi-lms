@@ -222,21 +222,33 @@ window.dtLang = function() { return window.currentLang === 'it' ? window.dtIT : 
         </div>
     </div>
 </div>
+<form id="globalDeleteForm" method="post" style="display:none;">
+    @Html.AntiForgeryToken()
+</form>
 <script>
 (function() {
     var pendingForm = null;
+    var pendingDeleteUrl = null;
     document.addEventListener('click', function(e) {
         var btn = e.target.closest('[data-confirm]');
         if (!btn) return;
         e.preventDefault();
         e.stopImmediatePropagation();
-        pendingForm = btn.closest('form');
+        pendingDeleteUrl = btn.dataset.deleteUrl || null;
+        pendingForm = pendingDeleteUrl ? null : btn.closest('form');
         document.getElementById('confirmModalBody').textContent = btn.dataset.confirm;
         bootstrap.Modal.getOrCreateInstance(document.getElementById('confirmModal')).show();
     });
     document.getElementById('confirmModalOk').addEventListener('click', function() {
         bootstrap.Modal.getInstance(document.getElementById('confirmModal')).hide();
-        if (pendingForm) { pendingForm.submit(); pendingForm = null; }
+        if (pendingDeleteUrl) {
+            var f = document.getElementById('globalDeleteForm');
+            if (f) { f.action = pendingDeleteUrl; f.submit(); }
+            pendingDeleteUrl = null;
+        } else if (pendingForm) {
+            pendingForm.submit();
+            pendingForm = null;
+        }
     });
 })();
 function bocconiFileInput(inp, spanId) {
