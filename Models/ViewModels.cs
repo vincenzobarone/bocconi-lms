@@ -7,6 +7,16 @@ public class ResetLandingPostModel
     public string Token { get; set; } = string.Empty;
 }
 
+public class AjaxToggleRequest
+{
+    public bool Value { get; set; }
+}
+
+public class AjaxRolesRequest
+{
+    public List<string> Roles { get; set; } = new();
+}
+
 public class LoginViewModel
 {
     [Required(ErrorMessage = "Email obbligatoria")]

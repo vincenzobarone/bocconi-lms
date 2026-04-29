@@ -213,25 +213,56 @@
             }
         });
 
-        // ── Mostra/nasconde sezione notifiche al toggle "Enable email sending" ─
+        // ── Helper AJAX auto-save ─────────────────────────────────────────
+        var aftToken = document.querySelector('input[name="__RequestVerificationToken"]');
+        function getAft() { return aftToken ? aftToken.value : ''; }
+
+        function showSaved(near) {
+            var el = document.createElement('span');
+            el.className = 'text-success small ms-2 auto-saved-hint';
+            el.innerHTML = '<i class="bi bi-check2"></i> Salvato';
+            near.parentElement.appendChild(el);
+            setTimeout(function () { el.remove(); }, 2000);
+        }
+
+        function ajaxPost(url, body, onOk) {
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': getAft()
+                },
+                body: JSON.stringify(body)
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(d) { if (d.ok && onOk) onOk(); })
+            .catch(function() {});
+        }
+
+        // ── Toggle "Enable email sending" — auto-save + show/hide notifiche ─
         var smtpEnabledCheck = document.getElementById('smtpEnabled');
         var notifySection    = document.getElementById('notifySection');
         if (smtpEnabledCheck && notifySection) {
             smtpEnabledCheck.addEventListener('change', function () {
-                if (this.checked) {
+                var enabled = this.checked;
+                if (enabled) {
                     notifySection.classList.remove('d-none');
                 } else {
                     notifySection.classList.add('d-none');
                 }
+                var lbl = this;
+                ajaxPost('/Admin/ToggleEmailSendingAjax', { value: enabled },
+                    function () { showSaved(lbl); });
             });
         }
 
-        // ── Mostra/nasconde selezione ruoli al toggle notifica ────────────
+        // ── Toggle "Notifica materiali" — auto-save + show/hide ruoli ────────
         var notifyCheck = document.getElementById('notifyMaterial');
         if (notifyCheck) {
             notifyCheck.addEventListener('change', function () {
+                var enabled = this.checked;
                 var section = document.getElementById('notifyRolesSection');
-                if (this.checked) {
+                if (enabled) {
                     section.classList.remove('d-none');
                 } else {
                     section.classList.add('d-none');
@@ -239,7 +270,23 @@
                         cb.checked = false;
                     });
                 }
+                var lbl = this;
+                ajaxPost('/Admin/ToggleNotifyMaterialAjax', { value: enabled },
+                    function () { showSaved(lbl); });
             });
         }
+
+        // ── Checkbox ruoli — auto-save al click ───────────────────────────
+        document.querySelectorAll('.notify-role-check').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                var checked = [];
+                document.querySelectorAll('.notify-role-check:checked').forEach(function (c) {
+                    checked.push(c.value);
+                });
+                var lbl = this;
+                ajaxPost('/Admin/SetNotifyRolesAjax', { roles: checked },
+                    function () { showSaved(lbl); });
+            });
+        });
     </script>
 }

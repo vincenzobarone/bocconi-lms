@@ -441,6 +441,34 @@ public class AdminController : Controller
         return RedirectToAction("EmailSettings");
     }
 
+    // ── Toggle email/notify — endpoint AJAX (risposta JSON) ─────────────
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleEmailSendingAjax([FromBody] AjaxToggleRequest req)
+    {
+        await _settings.SetAsync("Smtp:Enabled", req.Value ? "true" : "false");
+        return Json(new { ok = true });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleNotifyMaterialAjax([FromBody] AjaxToggleRequest req)
+    {
+        await _settings.SetAsync("Notifications:MaterialChanged", req.Value ? "true" : "false");
+        if (!req.Value)
+            await _settings.SetAsync("Notifications:MaterialChangedRoles", "");
+        return Json(new { ok = true });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SetNotifyRolesAjax([FromBody] AjaxRolesRequest req)
+    {
+        var roles = req.Roles ?? new List<string>();
+        await _settings.SetAsync("Notifications:MaterialChangedRoles", string.Join(",", roles));
+        return Json(new { ok = true });
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> SendTestEmail(EmailSettingsViewModel model)
