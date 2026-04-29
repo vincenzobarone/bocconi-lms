@@ -57,7 +57,6 @@
                             <th>Email</th>
                             <th>@T["common.role", "Role"]</th>
                             <th>@T["common.status", "Status"]</th>
-                            <th>@T["common.registered", "Registered"]</th>
                             <th>@T["common.actions", "Actions"]</th>
                         </tr>
                     </thead>
@@ -111,13 +110,6 @@
                                                 title="@T["users.click_to_toggle","Click to toggle status"]">
                                             @(u.IsActive ? T["common.active","Active"] : T["common.inactive","Inactive"])
                                         </button>
-                                    }
-                                </td>
-                                <td class="text-muted small">
-                                    @u.CreatedAt.ToString("dd/MM/yyyy")
-                                    @if (!string.IsNullOrEmpty(u.CreatedByName))
-                                    {
-                                        <div class="text-muted" style="font-size:.75rem;">@u.CreatedByName</div>
                                     }
                                 </td>
                                 <td>
@@ -196,7 +188,6 @@
                         <tr>
                             <th class="ps-3">@T["common.name","Name"]</th>
                             <th class="text-center" style="width:130px">@T["admin.users_tab","Users"]</th>
-                            <th style="width:160px">@T["common.registered","Registered"]</th>
                             <th style="width:110px"></th>
                         </tr>
                     </thead>
@@ -219,16 +210,6 @@
                                     else
                                     {
                                         <span class="text-muted small">0</span>
-                                    }
-                                </td>
-                                <td class="text-muted small">
-                                    @if (r.CreatedAt.HasValue)
-                                    {
-                                        @r.CreatedAt.Value.ToString("dd/MM/yyyy")
-                                        @if (!string.IsNullOrEmpty(r.CreatedByName))
-                                        {
-                                            <div style="font-size:.75rem;">@r.CreatedByName</div>
-                                        }
                                     }
                                 </td>
                                 <td class="pe-3">
@@ -296,7 +277,6 @@
                             <tr>
                                 <th class="ps-3">@T["common.name","Name"]</th>
                                 <th class="text-center" style="width:130px">@T["admin.users_tab","Users"]</th>
-                                <th style="width:160px">@T["common.registered","Registered"]</th>
                                 <th style="width:110px"></th>
                             </tr>
                         </thead>
@@ -313,16 +293,6 @@
                                         else
                                         {
                                             <span class="text-muted small">0</span>
-                                        }
-                                    </td>
-                                    <td class="text-muted small">
-                                        @if (a.CreatedAt.HasValue)
-                                        {
-                                            @a.CreatedAt.Value.ToString("dd/MM/yyyy")
-                                            @if (!string.IsNullOrEmpty(a.CreatedByName))
-                                            {
-                                                <div style="font-size:.75rem;">@a.CreatedByName</div>
-                                            }
                                         }
                                     </td>
                                     <td class="pe-3 text-end">
