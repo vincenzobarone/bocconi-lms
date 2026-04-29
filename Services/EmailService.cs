@@ -192,6 +192,27 @@ public class EmailService
         await SendAsync(toEmail, toName, subject, body);
     }
 
+    public async Task SendRegistrationWelcomeAsync(string toEmail, string toName)
+    {
+        var subject = "Bocconi LMS – Benvenuto nella piattaforma";
+        var body = $@"
+<html><body style='font-family: Arial, sans-serif; color: #333;'>
+<div style='max-width:600px; margin:0 auto; padding:24px;'>
+  <div style='background:#003366;padding:24px 24px 16px;border-radius:8px 8px 0 0;text-align:center;'>
+    <h2 style='color:#fff;margin:0;'>Benvenuto su Bocconi LMS</h2>
+  </div>
+  <div style='border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;padding:24px;'>
+    <p>Ciao <strong>{HtmlEncode(toName)}</strong>,</p>
+    <p>Il tuo account sulla piattaforma <strong>Bocconi LMS</strong> è stato creato con successo.</p>
+    <p>Puoi ora accedere con le credenziali che hai scelto durante la registrazione.</p>
+    <hr style='border:none;border-top:1px solid #ddd;margin:20px 0;'/>
+    <p style='color:#888;font-size:12px;'>Bocconi LMS – notifica automatica. Non rispondere a questa email.</p>
+  </div>
+</div>
+</body></html>";
+        await SendAsync(toEmail, toName, subject, body);
+    }
+
     public async Task SendTestEmailAsync(string toEmail, SmtpSettings? overrideSettings = null)
     {
         var settings = overrideSettings ?? await GetEffectiveSettingsAsync();

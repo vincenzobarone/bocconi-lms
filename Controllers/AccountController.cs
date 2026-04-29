@@ -140,7 +140,7 @@ public class AccountController : Controller
             await cmd.ExecuteNonQueryAsync();
 
             var resetLink = Url.Action(
-                "ResetPassword", "Account",
+                "ResetLanding", "Account",
                 new { token },
                 Request.Scheme)!;
 
@@ -318,8 +318,47 @@ public class AccountController : Controller
 
         await _userManager.AddToRoleAsync(user, "Student");
 
+        // Fire-and-forget: benvenuto via email (non blocca la registrazione)
+        _ = Task.Run(async () =>
+        {
+            try { await _emailService.SendRegistrationWelcomeAsync(user.Email!, $"{user.FirstName} {user.LastName}"); }
+            catch { /* ignora errori email */ }
+        });
+
         TempData["RegisterSuccess"] = true;
         return RedirectToAction("Login");
+    }
+
+    // ── Reset Landing — pagina intermedia anti-bot ───────────────────────
+    // I bot antispam eseguono solo GET sui link; questa pagina mostra solo
+    // un pulsante che richiede un POST deliberato dall'utente.
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetLanding(string? token)
+    {
+        if (string.IsNullOrEmpty(token))
+            return RedirectToAction("Login");
+
+        var valid = await IsTokenValidAsync(token);
+        if (!valid)
+        {
+            ViewBag.InvalidToken = true;
+            return View();
+        }
+
+        ViewBag.Token = token;
+        return View();
+    }
+
+    [HttpPost]
+    [AllowAnonymous]
+    [ValidateAntiForgeryToken]
+    public IActionResult ResetLanding(ResetLandingPostModel model)
+    {
+        if (string.IsNullOrEmpty(model.Token))
+            return RedirectToAction("Login");
+
+        return RedirectToAction("ResetPassword", new { token = model.Token });
     }
 
     private async Task<bool> IsTokenValidAsync(string token)

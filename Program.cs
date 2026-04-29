@@ -881,7 +881,27 @@ try
         ('en','home.no_modules_desc','The platform has no enabled modules at the moment. Please contact the administrator.'),
         ('it','home.no_modules_desc','La piattaforma non ha moduli abilitati al momento. Contatta l\'amministratore.'),
         ('es','home.no_modules_desc','La plataforma no tiene módulos habilitados en este momento. Contacta al administrador.'),
-        ('de','home.no_modules_desc','Die Plattform hat derzeit keine aktivierten Module. Bitte wenden Sie sich an den Administrator.');", conn);
+        ('de','home.no_modules_desc','Die Plattform hat derzeit keine aktivierten Module. Bitte wenden Sie sich an den Administrator.'),
+        ('en','auth.reset_landing_title','Reset password'),
+        ('it','auth.reset_landing_title','Reimposta password'),
+        ('es','auth.reset_landing_title','Restablecer contraseña'),
+        ('de','auth.reset_landing_title','Passwort zurücksetzen'),
+        ('en','auth.reset_landing_heading','Reset link confirmed'),
+        ('it','auth.reset_landing_heading','Link di reset confermato'),
+        ('es','auth.reset_landing_heading','Enlace de restablecimiento confirmado'),
+        ('de','auth.reset_landing_heading','Reset-Link bestätigt'),
+        ('en','auth.reset_landing_desc','Click the button to choose a new password. The link is valid for 1 hour.'),
+        ('it','auth.reset_landing_desc','Clicca il pulsante per scegliere una nuova password. Il link è valido per 1 ora.'),
+        ('es','auth.reset_landing_desc','Haz clic en el botón para elegir una nueva contraseña. El enlace es válido por 1 hora.'),
+        ('de','auth.reset_landing_desc','Klicken Sie auf die Schaltfläche, um ein neues Passwort zu wählen. Der Link ist 1 Stunde gültig.'),
+        ('en','auth.reset_landing_btn','Proceed to reset'),
+        ('it','auth.reset_landing_btn','Procedi al reset'),
+        ('es','auth.reset_landing_btn','Proceder al restablecimiento'),
+        ('de','auth.reset_landing_btn','Zum Zurücksetzen fortfahren'),
+        ('en','auth.cancel_go_login','Cancel and go to login'),
+        ('it','auth.cancel_go_login','Annulla e torna al login'),
+        ('es','auth.cancel_go_login','Cancelar y volver al inicio de sesión'),
+        ('de','auth.cancel_go_login','Abbrechen und zum Login zurückkehren');", conn);
     await ins.ExecuteNonQueryAsync();
     foreach (var lang in new[] { "es", "de" })
     {

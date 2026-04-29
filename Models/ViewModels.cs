@@ -2,6 +2,11 @@ using System.ComponentModel.DataAnnotations;
 
 namespace BocconiLMS.Models;
 
+public class ResetLandingPostModel
+{
+    public string Token { get; set; } = string.Empty;
+}
+
 public class LoginViewModel
 {
     [Required(ErrorMessage = "Email obbligatoria")]
