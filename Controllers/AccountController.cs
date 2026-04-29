@@ -75,7 +75,8 @@ public class AccountController : Controller
         {
             "Admin"   => RedirectToAction("Index", "Admin"),
             "Teacher" => RedirectToAction("Dashboard", "Course"),
-            _         => RedirectToAction("Dashboard", "Student")
+            "Student" => RedirectToAction("Dashboard", "Student"),
+            _         => RedirectToAction("Index", "Materials")
         };
     }
 

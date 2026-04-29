@@ -68,7 +68,10 @@ public class HomeController : Controller
         if (User.IsInRole("Teacher"))
             return RedirectToAction("Dashboard", "Course");
 
-        return RedirectToAction("Dashboard", "Student");
+        if (User.IsInRole("Student"))
+            return RedirectToAction("Dashboard", "Student");
+
+        return RedirectToAction("Index", "Materials");
     }
 
     [Authorize]
