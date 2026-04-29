@@ -1603,6 +1603,34 @@ catch { }
     }
 }
 
+// ── Backfill created_by NULL → admin user id ────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var findAdmin = new MySqlConnector.MySqlCommand(
+        "SELECT id FROM users WHERE role = 'Admin' ORDER BY id ASC LIMIT 1", conn);
+    var adminIdObj = await findAdmin.ExecuteScalarAsync();
+    if (adminIdObj != null && adminIdObj != DBNull.Value)
+    {
+        var adminId = Convert.ToInt32(adminIdObj);
+        foreach (var sql in new[]
+        {
+            $"UPDATE users SET created_by = {adminId} WHERE created_by IS NULL",
+            $"UPDATE roles SET created_by = {adminId} WHERE created_by IS NULL",
+            $"UPDATE areas SET created_by = {adminId} WHERE created_by IS NULL"
+        })
+        {
+            using var c2 = dbHelper.GetConnection();
+            await c2.OpenAsync();
+            using var upd = new MySqlConnector.MySqlCommand(sql, c2);
+            await upd.ExecuteNonQueryAsync();
+        }
+    }
+}
+catch { }
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
