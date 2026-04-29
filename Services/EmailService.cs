@@ -13,7 +13,7 @@ public class SmtpSettings
     public string Username { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
     public string FromEmail { get; set; } = string.Empty;
-    public string FromName { get; set; } = "Bocconi LMS";
+    public string FromName { get; set; } = "Didasco";
     public bool UseSsl { get; set; } = false;
     public bool Enabled { get; set; } = false;
 }
@@ -74,7 +74,7 @@ public class EmailService
   <p>Il corso è tenuto da <strong>{HtmlEncode(teacherName)}</strong>.</p>
   <p>Accedi alla piattaforma per iniziare a seguire le lezioni.</p>
   <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
-  <p style='color:#888;font-size:12px;'>Bocconi LMS – notifica automatica</p>
+  <p style='color:#888;font-size:12px;'>Didasco – notifica automatica</p>
 </div>
 </body></html>";
         await SendAsync(toEmail, toName, subject, body);
@@ -106,7 +106,7 @@ public class EmailService
     </tr>
   </table>
   <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
-  <p style='color:#888;font-size:12px;'>Bocconi LMS – notifica automatica</p>
+  <p style='color:#888;font-size:12px;'>Didasco – notifica automatica</p>
 </div>
 </body></html>";
         await SendAsync(teacherEmail, teacherName, subject, body);
@@ -126,7 +126,7 @@ public class EmailService
   </div>
   <p>Accedi alla piattaforma per visualizzare la lezione e continuare il tuo percorso formativo.</p>
   <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
-  <p style='color:#888;font-size:12px;'>Bocconi LMS – notifica automatica</p>
+  <p style='color:#888;font-size:12px;'>Didasco – notifica automatica</p>
 </div>
 </body></html>";
         await SendAsync(toEmail, toName, subject, body);
@@ -144,7 +144,7 @@ public class EmailService
   <p>Hai ancora <strong>{incompleteLessons} {lessonWord}</strong> da completare nel corso <strong>{HtmlEncode(courseTitle)}</strong>.</p>
   <p>Accedi alla piattaforma per continuare il tuo percorso formativo.</p>
   <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
-  <p style='color:#888;font-size:12px;'>Bocconi LMS – notifica automatica. Rispondi a questa email per disiscriverti dai promemoria.</p>
+  <p style='color:#888;font-size:12px;'>Didasco – notifica automatica. Rispondi a questa email per disiscriverti dai promemoria.</p>
 </div>
 </body></html>";
         await SendAsync(toEmail, toName, subject, body);
@@ -152,7 +152,7 @@ public class EmailService
 
     public async Task SendPasswordResetEmailAsync(string toEmail, string toName, string resetLink)
     {
-        var subject = "Bocconi LMS – Reimposta la tua password";
+        var subject = "Didasco – Reimposta la tua password";
         var body = $@"
 <html><body style='font-family: Arial, sans-serif; color: #333;'>
 <div style='max-width:600px; margin:0 auto; padding:24px;'>
@@ -165,7 +165,7 @@ public class EmailService
   </div>
   <p style='color:#666;font-size:13px;'>Se non hai richiesto il reset della password, ignora questa email. Il link scadrà automaticamente.</p>
   <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
-  <p style='color:#888;font-size:12px;'>Bocconi LMS – notifica automatica</p>
+  <p style='color:#888;font-size:12px;'>Didasco – notifica automatica</p>
 </div>
 </body></html>";
         await SendAsync(toEmail, toName, subject, body);
@@ -174,19 +174,19 @@ public class EmailService
     public async Task SendMaterialNotificationAsync(string toEmail, string toName, string materialTitle, bool isNew)
     {
         var action  = isNew ? "creato" : "modificato";
-        var subject = $"Bocconi LMS – Materiale {action}: {materialTitle}";
+        var subject = $"Didasco – Materiale {action}: {materialTitle}";
         var body = $@"
 <html><body style='font-family: Arial, sans-serif; color: #333;'>
 <div style='max-width:600px; margin:0 auto; padding:24px;'>
   <h2 style='color:#003366;'>Materiale {action}</h2>
   <p>Ciao <strong>{HtmlEncode(toName)}</strong>,</p>
-  <p>Ti informiamo che il seguente materiale è stato <strong>{action}</strong> sulla piattaforma Bocconi LMS:</p>
+  <p>Ti informiamo che il seguente materiale è stato <strong>{action}</strong> sulla piattaforma Didasco:</p>
   <div style='background:#f5f7fa;border-left:4px solid #003366;padding:12px 16px;margin:16px 0;border-radius:4px;'>
     <strong style='font-size:16px;'>{HtmlEncode(materialTitle)}</strong>
   </div>
   <p>Accedi alla piattaforma per visualizzare il materiale.</p>
   <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
-  <p style='color:#888;font-size:12px;'>Bocconi LMS – notifica automatica</p>
+  <p style='color:#888;font-size:12px;'>Didasco – notifica automatica</p>
 </div>
 </body></html>";
         await SendAsync(toEmail, toName, subject, body);
@@ -194,19 +194,19 @@ public class EmailService
 
     public async Task SendRegistrationWelcomeAsync(string toEmail, string toName)
     {
-        var subject = "Bocconi LMS – Benvenuto nella piattaforma";
+        var subject = "Didasco – Benvenuto nella piattaforma";
         var body = $@"
 <html><body style='font-family: Arial, sans-serif; color: #333;'>
 <div style='max-width:600px; margin:0 auto; padding:24px;'>
   <div style='background:#003366;padding:24px 24px 16px;border-radius:8px 8px 0 0;text-align:center;'>
-    <h2 style='color:#fff;margin:0;'>Benvenuto su Bocconi LMS</h2>
+    <h2 style='color:#fff;margin:0;'>Benvenuto su Didasco</h2>
   </div>
   <div style='border:1px solid #ddd;border-top:none;border-radius:0 0 8px 8px;padding:24px;'>
     <p>Ciao <strong>{HtmlEncode(toName)}</strong>,</p>
-    <p>Il tuo account sulla piattaforma <strong>Bocconi LMS</strong> è stato creato con successo.</p>
+    <p>Il tuo account sulla piattaforma <strong>Didasco</strong> è stato creato con successo.</p>
     <p>Puoi ora accedere con le credenziali che hai scelto durante la registrazione.</p>
     <hr style='border:none;border-top:1px solid #ddd;margin:20px 0;'/>
-    <p style='color:#888;font-size:12px;'>Bocconi LMS – notifica automatica. Non rispondere a questa email.</p>
+    <p style='color:#888;font-size:12px;'>Didasco – notifica automatica. Non rispondere a questa email.</p>
   </div>
 </div>
 </body></html>";
@@ -216,17 +216,17 @@ public class EmailService
     public async Task SendTestEmailAsync(string toEmail, SmtpSettings? overrideSettings = null)
     {
         var settings = overrideSettings ?? await GetEffectiveSettingsAsync();
-        var subject = "Bocconi LMS – Email di test";
+        var subject = "Didasco – Email di test";
         var body = $@"
 <html><body style='font-family: Arial, sans-serif; color: #333;'>
 <div style='max-width:600px; margin:0 auto; padding:24px;'>
   <h2 style='color:#003366;'>Email di test</h2>
-  <p>Questa è un'email di prova inviata dalla piattaforma <strong>Bocconi LMS</strong>.</p>
+  <p>Questa è un'email di prova inviata dalla piattaforma <strong>Didasco</strong>.</p>
   <p>La configurazione SMTP funziona correttamente.</p>
   <p><strong>Host:</strong> {HtmlEncode(settings.Host)}:{settings.Port}<br/>
      <strong>From:</strong> {HtmlEncode(settings.FromName)} &lt;{HtmlEncode(settings.FromEmail)}&gt;</p>
   <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
-  <p style='color:#888;font-size:12px;'>Bocconi LMS – test invio email</p>
+  <p style='color:#888;font-size:12px;'>Didasco – test invio email</p>
 </div>
 </body></html>";
         await SendWithSettingsAsync(settings, toEmail, toEmail, subject, body, skipEnabledCheck: true);

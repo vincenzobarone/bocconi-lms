@@ -943,6 +943,17 @@ try
         ('es','nav.change_password','Cambiar contraseña'),
         ('de','nav.change_password','Passwort ändern');", conn);
     await ins.ExecuteNonQueryAsync();
+
+    // ── UPDATE home.tagline (INSERT IGNORE non sovrascrive valori esistenti) ──
+    using (var upd = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
+            ('en','home.tagline','Teaching materials and courses platform for Bocconi University'),
+            ('it','home.tagline','Piattaforma di gestione materiali didattici e corsi di Università Bocconi'),
+            ('es','home.tagline','Plataforma de gestión de materiales didácticos y cursos para la Universidad Bocconi'),
+            ('de','home.tagline','Plattform für Lehrmaterialien und Kurse der Universität Bocconi')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn))
+    { await upd.ExecuteNonQueryAsync(); }
+
     foreach (var lang in new[] { "es", "de" })
     {
         using var copy = new MySqlConnector.MySqlCommand(@"
