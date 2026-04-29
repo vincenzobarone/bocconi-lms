@@ -353,8 +353,29 @@
             setTimeout(function() { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }, 300);
         }
 
+        // ── Helpers validazione client-side ──────────────────────────────
+        function setFieldError(inputEl, spanEl, message) {
+            if (inputEl) inputEl.classList.add('is-invalid');
+            if (spanEl)  { spanEl.textContent = message; spanEl.style.display = 'block'; }
+        }
+        function clearFieldError(inputEl, spanEl) {
+            if (inputEl) inputEl.classList.remove('is-invalid');
+            if (spanEl)  { spanEl.textContent = ''; spanEl.style.display = ''; }
+        }
+
+        var titleInp  = document.getElementById('matTitle');
+        var titleSpan = document.querySelector('span[data-valmsg-for="Title"]');
+        var dtSelect  = document.querySelector('select[name="DocumentTypeId"]');
+        var dtSpan    = document.querySelector('span[data-valmsg-for="DocumentTypeId"]');
+
+        // Pulisce errore live mentre l'utente corregge
+        if (titleInp) titleInp.addEventListener('input', function() { clearFieldError(titleInp, titleSpan); });
+        if (dtSelect) dtSelect.addEventListener('change', function() { clearFieldError(dtSelect, dtSpan); });
+
         document.getElementById('submitBtn').addEventListener('click', async function() {
-            // Se non è stato selezionato un file, mostra un avviso nell'area upload
+            var hasError = false;
+
+            // 1. Verifica file
             var fileInp = document.getElementById('File');
             if (!fileInp.files || fileInp.files.length === 0) {
                 var dropZone = document.getElementById('uploadDropZone');
@@ -368,17 +389,38 @@
                     warn.innerHTML = '<i class="bi bi-exclamation-circle me-1"></i>@T["mat.file_required_warn","Seleziona prima un file da caricare."]';
                     dropZone.appendChild(warn);
                 }
-                dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                return;
+                hasError = true;
             }
-            var form = document.getElementById('matForm');
-            if (!form.reportValidity || !form.reportValidity()) return;
+
+            // 2. Verifica Titolo
+            if (!titleInp || !titleInp.value.trim()) {
+                setFieldError(titleInp, titleSpan, '@T["mat.title_required","Il titolo è obbligatorio"]');
+                hasError = true;
+            } else {
+                clearFieldError(titleInp, titleSpan);
+            }
+
+            // 3. Verifica Tipo Documento
+            if (!dtSelect || !dtSelect.value) {
+                setFieldError(dtSelect, dtSpan, '@T["mat.doctype_required","Il tipo documento è obbligatorio"]');
+                hasError = true;
+            } else {
+                clearFieldError(dtSelect, dtSpan);
+            }
+
+            if (hasError) {
+                // Scrolla al primo campo in errore
+                var firstErr = document.querySelector('.is-invalid') || document.getElementById('noFileUploadWarn');
+                if (firstErr) firstErr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                return; // blocca il submit — file preservato
+            }
+
             if (needsModal()) {
                 await openVerifiedModal();
             } else {
                 document.getElementById('hidFolderId').value = '';
                 document.getElementById('hidFolderName').value = '';
-                form.submit();
+                document.getElementById('matForm').submit();
             }
         });
 
