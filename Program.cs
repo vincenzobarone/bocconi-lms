@@ -1641,6 +1641,90 @@ try
 }
 catch { }
 
+// ── Seed dashboard.* translation keys ────────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('it','dashboard.title','Dashboard'),
+        ('en','dashboard.title','Dashboard'),
+        ('es','dashboard.title','Panel de control'),
+        ('de','dashboard.title','Dashboard'),
+        ('it','dashboard.admin.title','Dashboard Admin'),
+        ('en','dashboard.admin.title','Admin Dashboard'),
+        ('es','dashboard.admin.title','Panel de administración'),
+        ('de','dashboard.admin.title','Admin-Dashboard'),
+        ('it','dashboard.admin.stats','Panoramica piattaforma'),
+        ('en','dashboard.admin.stats','Platform overview'),
+        ('es','dashboard.admin.stats','Resumen de la plataforma'),
+        ('de','dashboard.admin.stats','Plattformübersicht'),
+        ('it','dashboard.admin.courses','Corsi totali'),
+        ('en','dashboard.admin.courses','Total courses'),
+        ('es','dashboard.admin.courses','Cursos totales'),
+        ('de','dashboard.admin.courses','Kurse gesamt'),
+        ('it','dashboard.admin.students','Studenti attivi'),
+        ('en','dashboard.admin.students','Active students'),
+        ('es','dashboard.admin.students','Estudiantes activos'),
+        ('de','dashboard.admin.students','Aktive Studenten'),
+        ('it','dashboard.admin.teachers','Docenti attivi'),
+        ('en','dashboard.admin.teachers','Active teachers'),
+        ('es','dashboard.admin.teachers','Docentes activos'),
+        ('de','dashboard.admin.teachers','Aktive Lehrkräfte'),
+        ('it','dashboard.admin.enrollments','Iscrizioni totali'),
+        ('en','dashboard.admin.enrollments','Total enrollments'),
+        ('es','dashboard.admin.enrollments','Inscripciones totales'),
+        ('de','dashboard.admin.enrollments','Einschreibungen gesamt'),
+        ('it','dashboard.admin.materials','Materiali totali'),
+        ('en','dashboard.admin.materials','Total materials'),
+        ('es','dashboard.admin.materials','Materiales totales'),
+        ('de','dashboard.admin.materials','Materialien gesamt'),
+        ('it','dashboard.admin.users','Utenti totali'),
+        ('en','dashboard.admin.users','Total users'),
+        ('es','dashboard.admin.users','Usuarios totales'),
+        ('de','dashboard.admin.users','Benutzer gesamt'),
+        ('it','dashboard.materials.total','Materiali totali'),
+        ('en','dashboard.materials.total','Total materials'),
+        ('es','dashboard.materials.total','Materiales totales'),
+        ('de','dashboard.materials.total','Materialien gesamt'),
+        ('it','dashboard.materials.recent','Aggiunti negli ultimi 30 giorni'),
+        ('en','dashboard.materials.recent','Added in the last 30 days'),
+        ('es','dashboard.materials.recent','Añadidos en los últimos 30 días'),
+        ('de','dashboard.materials.recent','In den letzten 30 Tagen hinzugefügt'),
+        ('it','dashboard.teacher.courses','I miei corsi'),
+        ('en','dashboard.teacher.courses','My courses'),
+        ('es','dashboard.teacher.courses','Mis cursos'),
+        ('de','dashboard.teacher.courses','Meine Kurse'),
+        ('it','dashboard.teacher.students','Studenti iscritti'),
+        ('en','dashboard.teacher.students','Enrolled students'),
+        ('es','dashboard.teacher.students','Estudiantes inscritos'),
+        ('de','dashboard.teacher.students','Eingeschriebene Studenten'),
+        ('it','dashboard.student.enrolled','Corsi iscritti'),
+        ('en','dashboard.student.enrolled','Enrolled courses'),
+        ('es','dashboard.student.enrolled','Cursos inscritos'),
+        ('de','dashboard.student.enrolled','Eingeschriebene Kurse'),
+        ('it','dashboard.student.completed','Lezioni completate'),
+        ('en','dashboard.student.completed','Completed lessons'),
+        ('es','dashboard.student.completed','Lecciones completadas'),
+        ('de','dashboard.student.completed','Abgeschlossene Lektionen'),
+        ('it','dashboard.pending.title','Account in attesa'),
+        ('en','dashboard.pending.title','Account pending'),
+        ('es','dashboard.pending.title','Cuenta pendiente'),
+        ('de','dashboard.pending.title','Konto ausstehend'),
+        ('it','dashboard.pending.desc','Il tuo account è stato registrato. Un amministratore ti assegnerà presto un ruolo per accedere alle funzionalità della piattaforma.'),
+        ('en','dashboard.pending.desc','Your account has been registered. An administrator will soon assign you a role to access the platform features.'),
+        ('es','dashboard.pending.desc','Tu cuenta ha sido registrada. Un administrador te asignará pronto un rol para acceder a las funcionalidades de la plataforma.'),
+        ('de','dashboard.pending.desc','Dein Konto wurde registriert. Ein Administrator wird dir bald eine Rolle zuweisen, um auf die Plattformfunktionen zugreifen zu können.'),
+        ('it','dashboard.no_modules','Nessun modulo attivo. Contatta l''amministratore.'),
+        ('en','dashboard.no_modules','No active modules. Please contact your administrator.'),
+        ('es','dashboard.no_modules','No hay módulos activos. Por favor, contacta con el administrador.'),
+        ('de','dashboard.no_modules','Keine aktiven Module. Bitte wende dich an den Administrator.');", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
