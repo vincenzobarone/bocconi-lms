@@ -35,7 +35,18 @@
                         }
                         else
                         {
-                            <select asp-for="Role" class="form-select">
+                            @if (string.IsNullOrEmpty(Model.Role))
+                            {
+                                <div class="alert alert-warning py-2 px-3 mb-2 small">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                    @T["admin.no_role_warning","Questo utente non ha ancora un ruolo assegnato. Seleziona un ruolo e salva."]
+                                </div>
+                            }
+                            <select asp-for="Role" class="form-select @(string.IsNullOrEmpty(Model.Role) ? "border-warning" : "")">
+                                @if (string.IsNullOrEmpty(Model.Role))
+                                {
+                                    <option value="" selected>— @T["admin.select_role","Seleziona un ruolo"] —</option>
+                                }
                                 @foreach (var r in (ViewBag.AvailableRoles as List<string> ?? new List<string>()))
                                 {
                                     <option value="@r" selected="@(Model.Role == r ? "selected" : null)">@r</option>

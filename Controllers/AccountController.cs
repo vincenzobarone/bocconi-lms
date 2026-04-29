@@ -66,13 +66,16 @@ public class AccountController : Controller
             return Redirect(returnUrl);
 
         var roles = await _userManager.GetRolesAsync(user);
-        var role = roles.FirstOrDefault() ?? "Student";
+        var role = roles.FirstOrDefault();
+
+        if (string.IsNullOrEmpty(role))
+            return RedirectToAction("PendingRole");
 
         return role switch
         {
-            "Admin" => RedirectToAction("PlatformFeatures", "Admin"),
+            "Admin"   => RedirectToAction("PlatformFeatures", "Admin"),
             "Teacher" => RedirectToAction("Dashboard", "Course"),
-            _ => RedirectToAction("Dashboard", "Student")
+            _         => RedirectToAction("Dashboard", "Student")
         };
     }
 
@@ -316,7 +319,7 @@ public class AccountController : Controller
             return View(model);
         }
 
-        await _userManager.AddToRoleAsync(user, "Student");
+        // Nessun ruolo assegnato automaticamente — lo assegna l'amministratore
 
         // Fire-and-forget: benvenuto via email (non blocca la registrazione)
         _ = Task.Run(async () =>
@@ -328,6 +331,10 @@ public class AccountController : Controller
         TempData["RegisterSuccess"] = true;
         return RedirectToAction("Login");
     }
+
+    // ── Pending Role — utente registrato senza ruolo ─────────────────────
+    [HttpGet]
+    public IActionResult PendingRole() => View();
 
     // ── Reset Landing — pagina intermedia anti-bot ───────────────────────
     // I bot antispam eseguono solo GET sui link; questa pagina mostra solo

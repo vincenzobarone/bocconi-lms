@@ -72,10 +72,20 @@
                                         var roleClass = u.Role switch {
                                             "Admin"   => "bg-danger",
                                             "Teacher" => "bg-primary",
-                                            _         => "bg-secondary"
+                                            { Length: > 0 } => "bg-secondary",
+                                            _         => "bg-warning text-dark"
                                         };
+                                        var roleLabel = string.IsNullOrEmpty(u.Role)
+                                            ? T["admin.no_role","Nessun ruolo"]
+                                            : u.Role;
                                     }
-                                    <span class="badge @roleClass">@u.Role</span>
+                                    <span class="badge @roleClass">
+                                        @if (string.IsNullOrEmpty(u.Role))
+                                        {
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                        }
+                                        @roleLabel
+                                    </span>
                                 </td>
                                 <td>
                                     @if (u.IsActive)

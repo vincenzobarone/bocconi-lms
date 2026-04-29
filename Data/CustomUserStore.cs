@@ -19,7 +19,7 @@ public class CustomUserStore :
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(@"
             INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, created_at)
-            VALUES (@email, @hash, @fn, @ln, 'Student', 1, NOW());
+            VALUES (@email, @hash, @fn, @ln, '', 1, NOW());
             SELECT LAST_INSERT_ID();", conn);
         cmd.Parameters.AddWithValue("@email", user.Email);
         cmd.Parameters.AddWithValue("@hash", user.PasswordHash ?? "");
