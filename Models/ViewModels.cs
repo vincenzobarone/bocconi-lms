@@ -38,6 +38,12 @@ public class AjaxRolesRequest
     public List<string> Roles { get; set; } = new();
 }
 
+public class AjaxCourseNotifyRequest
+{
+    public string Item { get; set; } = string.Empty;
+    public bool Value { get; set; }
+}
+
 public class LoginViewModel
 {
     [Required(ErrorMessage = "Email obbligatoria")]
@@ -207,6 +213,12 @@ public class EmailSettingsViewModel
     public bool NotifyMaterialChanged { get; set; }
     public List<string> MaterialChangedRoles { get; set; } = new();
     public List<string> AvailableRoles { get; set; } = new();
+
+    public bool CoursesNotificationsEnabled { get; set; }
+    public bool NotifyStudentOnEnroll { get; set; }
+    public bool NotifyStudentOnQuizCompleted { get; set; }
+    public bool NotifyTeacherOnQuizCompleted { get; set; }
+    public bool NotifyTeacherOnStudentEnrolled { get; set; }
 }
 
 

@@ -192,6 +192,57 @@ public class EmailService
         await SendAsync(toEmail, toName, subject, body);
     }
 
+    public async Task SendQuizResultToStudentAsync(
+        string studentEmail, string studentName,
+        string quizTitle, string courseTitle,
+        int score, bool passed)
+    {
+        var result = passed ? "SUPERATO ✓" : "NON SUPERATO ✗";
+        var color  = passed ? "#2e7d32" : "#c62828";
+        var subject = $"Risultato quiz: {quizTitle}";
+        var body = $@"
+<html><body style='font-family: Arial, sans-serif; color: #333;'>
+<div style='max-width:600px; margin:0 auto; padding:24px;'>
+  <h2 style='color:#003366;'>Il tuo risultato del quiz</h2>
+  <p>Ciao <strong>{HtmlEncode(studentName)}</strong>,</p>
+  <p>Hai completato il quiz <strong>{HtmlEncode(quizTitle)}</strong> nel corso <strong>{HtmlEncode(courseTitle)}</strong>.</p>
+  <table style='border-collapse:collapse;margin:16px 0;'>
+    <tr>
+      <td style='padding:8px 16px 8px 0;color:#555;'>Punteggio:</td>
+      <td style='padding:8px 0;'><strong>{score}%</strong></td>
+    </tr>
+    <tr>
+      <td style='padding:8px 16px 8px 0;color:#555;'>Esito:</td>
+      <td style='padding:8px 0;'><strong style='color:{color};'>{result}</strong></td>
+    </tr>
+  </table>
+  <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
+  <p style='color:#888;font-size:12px;'>Didasco – notifica automatica</p>
+</div>
+</body></html>";
+        await SendAsync(studentEmail, studentName, subject, body);
+    }
+
+    public async Task SendTeacherEnrollmentNotificationAsync(
+        string teacherEmail, string teacherName,
+        string studentName, string studentEmail,
+        string courseTitle)
+    {
+        var subject = $"Nuovo studente iscritto: {courseTitle}";
+        var body = $@"
+<html><body style='font-family: Arial, sans-serif; color: #333;'>
+<div style='max-width:600px; margin:0 auto; padding:24px;'>
+  <h2 style='color:#003366;'>Nuova iscrizione al tuo corso</h2>
+  <p>Ciao <strong>{HtmlEncode(teacherName)}</strong>,</p>
+  <p>Lo studente <strong>{HtmlEncode(studentName)}</strong> ({HtmlEncode(studentEmail)}) si è iscritto al tuo corso <strong>{HtmlEncode(courseTitle)}</strong>.</p>
+  <p>Accedi alla piattaforma per visualizzare l'elenco degli studenti iscritti.</p>
+  <hr style='border:none;border-top:1px solid #ddd;margin:24px 0;'/>
+  <p style='color:#888;font-size:12px;'>Didasco – notifica automatica</p>
+</div>
+</body></html>";
+        await SendAsync(teacherEmail, teacherName, subject, body);
+    }
+
     public async Task SendRegistrationWelcomeAsync(string toEmail, string toName)
     {
         var subject = "Didasco – Benvenuto nella piattaforma";

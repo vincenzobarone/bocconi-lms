@@ -15,6 +15,7 @@ public class CourseController : Controller
     private readonly EnrollmentRepository _enrollments;
     private readonly UserRepository _users;
     private readonly EmailService _email;
+    private readonly SettingsRepository _settings;
     private readonly ILogger<CourseController> _logger;
 
     public CourseController(
@@ -23,6 +24,7 @@ public class CourseController : Controller
         EnrollmentRepository enrollments,
         UserRepository users,
         EmailService email,
+        SettingsRepository settings,
         ILogger<CourseController> logger)
     {
         _courses = courses;
@@ -30,6 +32,7 @@ public class CourseController : Controller
         _enrollments = enrollments;
         _users = users;
         _email = email;
+        _settings = settings;
         _logger = logger;
     }
 
@@ -100,19 +103,13 @@ public class CourseController : Controller
             if (student != null)
             {
                 int capturedStudentId = CurrentUserId;
-                int capturedCourseId = id;
-                _ = _email.SendWelcomeEmailAsync(
-                        student.Email, student.FullName,
-                        course.Title, course.TeacherName)
+                int capturedCourseId  = id;
+                _ = SendEnrollmentNotificationsAsync(student, course, capturedStudentId, capturedCourseId)
                     .ContinueWith(t =>
                     {
                         if (t.IsFaulted)
                             _logger.LogError(t.Exception,
-                                "Failed to send welcome email to student {StudentId} for course {CourseId}.",
-                                capturedStudentId, capturedCourseId);
-                        else
-                            _logger.LogInformation(
-                                "Welcome email sent to student {StudentId} for course {CourseId}.",
+                                "Failed to send enrollment notifications for student {StudentId}, course {CourseId}.",
                                 capturedStudentId, capturedCourseId);
                     }, TaskScheduler.Default);
             }
@@ -263,5 +260,39 @@ public class CourseController : Controller
         var students = await _enrollments.GetByCourseAsync(id);
         ViewBag.Course = course;
         return View(students);
+    }
+
+    private async Task SendEnrollmentNotificationsAsync(
+        User student, Course course,
+        int studentId, int courseId)
+    {
+        if ((await _settings.GetAsync("Notifications:CoursesEnabled")) != "true") return;
+
+        var notifyStudent = (await _settings.GetAsync("Notifications:StudentOnEnroll")) == "true";
+        var notifyTeacher = (await _settings.GetAsync("Notifications:TeacherOnStudentEnrolled")) == "true";
+
+        if (notifyStudent)
+        {
+            await _email.SendWelcomeEmailAsync(
+                student.Email, student.FullName,
+                course.Title, course.TeacherName);
+            _logger.LogInformation(
+                "Welcome email sent to student {StudentId} for course {CourseId}.", studentId, courseId);
+        }
+
+        if (notifyTeacher)
+        {
+            var teacher = await _users.GetByIdAsync(course.TeacherId);
+            if (teacher != null)
+            {
+                await _email.SendTeacherEnrollmentNotificationAsync(
+                    teacher.Email, teacher.FullName,
+                    student.FullName, student.Email,
+                    course.Title);
+                _logger.LogInformation(
+                    "Enrollment notification sent to teacher {TeacherId} for student {StudentId}, course {CourseId}.",
+                    teacher.Id, studentId, courseId);
+            }
+        }
     }
 }

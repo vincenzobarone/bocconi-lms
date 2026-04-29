@@ -388,11 +388,14 @@ public class AdminController : Controller
             FromEmail = current.FromEmail,
             FromName  = current.FromName,
             UseSsl    = current.UseSsl,
-            NotifyMaterialChanged = (await _settings.GetAsync("Notifications:MaterialChanged")) == "true",
-            MaterialChangedRoles  = notifyRaw.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
-            AvailableRoles        = (await _users.GetAllRolesWithCountAsync())
-                                        .Select(r => r.Name)
-                                        .ToList(),
+            NotifyMaterialChanged        = (await _settings.GetAsync("Notifications:MaterialChanged")) == "true",
+            MaterialChangedRoles         = notifyRaw.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList(),
+            AvailableRoles               = (await _users.GetAllRolesWithCountAsync()).Select(r => r.Name).ToList(),
+            CoursesNotificationsEnabled  = (await _settings.GetAsync("Notifications:CoursesEnabled")) == "true",
+            NotifyStudentOnEnroll        = (await _settings.GetAsync("Notifications:StudentOnEnroll")) == "true",
+            NotifyStudentOnQuizCompleted = (await _settings.GetAsync("Notifications:StudentOnQuizCompleted")) == "true",
+            NotifyTeacherOnQuizCompleted = (await _settings.GetAsync("Notifications:TeacherOnQuizCompleted")) == "true",
+            NotifyTeacherOnStudentEnrolled = (await _settings.GetAsync("Notifications:TeacherOnStudentEnrolled")) == "true",
         };
         return View(vm);
     }
@@ -427,6 +430,17 @@ public class AdminController : Controller
                 model.NotifyMaterialChanged ? "true" : "false");
             await _settings.SetAsync("Notifications:MaterialChangedRoles",
                 string.Join(",", model.MaterialChangedRoles ?? new List<string>()));
+
+            await _settings.SetAsync("Notifications:CoursesEnabled",
+                model.CoursesNotificationsEnabled ? "true" : "false");
+            await _settings.SetAsync("Notifications:StudentOnEnroll",
+                model.NotifyStudentOnEnroll ? "true" : "false");
+            await _settings.SetAsync("Notifications:StudentOnQuizCompleted",
+                model.NotifyStudentOnQuizCompleted ? "true" : "false");
+            await _settings.SetAsync("Notifications:TeacherOnQuizCompleted",
+                model.NotifyTeacherOnQuizCompleted ? "true" : "false");
+            await _settings.SetAsync("Notifications:TeacherOnStudentEnrolled",
+                model.NotifyTeacherOnStudentEnrolled ? "true" : "false");
 
             TempData["Success"] = _translationService.T("admin.email.saved", "Impostazioni email salvate con successo.");
         }
@@ -465,6 +479,38 @@ public class AdminController : Controller
     {
         var roles = req.Roles ?? new List<string>();
         await _settings.SetAsync("Notifications:MaterialChangedRoles", string.Join(",", roles));
+        return Json(new { ok = true });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleCoursesNotificationsAjax([FromBody] AjaxToggleRequest req)
+    {
+        await _settings.SetAsync("Notifications:CoursesEnabled", req.Value ? "true" : "false");
+        if (!req.Value)
+        {
+            await _settings.SetAsync("Notifications:StudentOnEnroll", "false");
+            await _settings.SetAsync("Notifications:StudentOnQuizCompleted", "false");
+            await _settings.SetAsync("Notifications:TeacherOnQuizCompleted", "false");
+            await _settings.SetAsync("Notifications:TeacherOnStudentEnrolled", "false");
+        }
+        return Json(new { ok = true });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleCourseNotifyItemAjax([FromBody] AjaxCourseNotifyRequest req)
+    {
+        var key = req.Item switch
+        {
+            "StudentOnEnroll"          => "Notifications:StudentOnEnroll",
+            "StudentOnQuizCompleted"   => "Notifications:StudentOnQuizCompleted",
+            "TeacherOnQuizCompleted"   => "Notifications:TeacherOnQuizCompleted",
+            "TeacherOnStudentEnrolled" => "Notifications:TeacherOnStudentEnrolled",
+            _ => null
+        };
+        if (key == null) return Json(new { ok = false });
+        await _settings.SetAsync(key, req.Value ? "true" : "false");
         return Json(new { ok = true });
     }
 

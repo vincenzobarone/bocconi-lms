@@ -16,6 +16,7 @@ public class QuizController : Controller
     private readonly EnrollmentRepository _enrollments;
     private readonly UserRepository _users;
     private readonly EmailService _email;
+    private readonly SettingsRepository _settings;
     private readonly ILogger<QuizController> _logger;
 
     public QuizController(
@@ -25,6 +26,7 @@ public class QuizController : Controller
         EnrollmentRepository enrollments,
         UserRepository users,
         EmailService email,
+        SettingsRepository settings,
         ILogger<QuizController> logger)
     {
         _quizzes = quizzes;
@@ -33,6 +35,7 @@ public class QuizController : Controller
         _enrollments = enrollments;
         _users = users;
         _email = email;
+        _settings = settings;
         _logger = logger;
     }
 
@@ -93,7 +96,7 @@ public class QuizController : Controller
 
         int capturedQuizId = id;
         int capturedAttemptId = attempt.Id;
-        _ = NotifyTeacherOfQuizResultAsync(capturedQuizId, attempt)
+        _ = NotifyQuizCompletedAsync(capturedQuizId, attempt)
             .ContinueWith(t =>
             {
                 if (t.IsFaulted)
@@ -105,53 +108,57 @@ public class QuizController : Controller
         return RedirectToAction("Result", new { attemptId = attempt.Id });
     }
 
-    private async Task NotifyTeacherOfQuizResultAsync(int quizId, QuizAttempt attempt)
+    private async Task NotifyQuizCompletedAsync(int quizId, QuizAttempt attempt)
     {
         try
         {
+            if ((await _settings.GetAsync("Notifications:CoursesEnabled")) != "true") return;
+
+            var notifyTeacher  = (await _settings.GetAsync("Notifications:TeacherOnQuizCompleted")) == "true";
+            var notifyStudent  = (await _settings.GetAsync("Notifications:StudentOnQuizCompleted")) == "true";
+            if (!notifyTeacher && !notifyStudent) return;
+
             var (quiz, lesson, courseId) = await GetQuizContextAsync(quizId);
-            if (quiz == null || courseId == 0)
-            {
-                _logger.LogWarning("Quiz notification skipped: quiz {QuizId} or course not found.", quizId);
-                return;
-            }
+            if (quiz == null || courseId == 0) return;
 
             var course = await _courses.GetByIdAsync(courseId);
-            if (course == null)
-            {
-                _logger.LogWarning("Quiz notification skipped: course {CourseId} not found for quiz {QuizId}.", courseId, quizId);
-                return;
-            }
-
-            var teacher = await _users.GetByIdAsync(course.TeacherId);
-            if (teacher == null)
-            {
-                _logger.LogWarning("Quiz notification skipped: teacher {TeacherId} not found for course {CourseId}.", course.TeacherId, courseId);
-                return;
-            }
+            if (course == null) return;
 
             var student = await _users.GetByIdAsync(attempt.UserId);
-            if (student == null)
+            if (student == null) return;
+
+            if (notifyTeacher)
             {
-                _logger.LogWarning("Quiz notification skipped: student {UserId} not found for attempt {AttemptId}.", attempt.UserId, attempt.Id);
-                return;
+                var teacher = await _users.GetByIdAsync(course.TeacherId);
+                if (teacher != null)
+                {
+                    await _email.SendQuizResultToTeacherAsync(
+                        teacher.Email, teacher.FullName,
+                        student.FullName, student.Email,
+                        attempt.QuizTitle, course.Title,
+                        attempt.Score, attempt.Passed);
+                    _logger.LogInformation(
+                        "Quiz result notification sent: student {StudentId} scored {Score}% ({Passed}) on quiz {QuizId}, notified teacher {TeacherId}.",
+                        attempt.UserId, attempt.Score, attempt.Passed ? "passed" : "failed", quizId, teacher.Id);
+                }
             }
 
-            await _email.SendQuizResultToTeacherAsync(
-                teacher.Email, teacher.FullName,
-                student.FullName, student.Email,
-                attempt.QuizTitle, course.Title,
-                attempt.Score, attempt.Passed);
-
-            _logger.LogInformation(
-                "Quiz result notification sent: student {StudentId} scored {Score}% ({Passed}) on quiz {QuizId}, notified teacher {TeacherId}.",
-                attempt.UserId, attempt.Score, attempt.Passed ? "passed" : "failed", quizId, teacher.Id);
+            if (notifyStudent)
+            {
+                await _email.SendQuizResultToStudentAsync(
+                    student.Email, student.FullName,
+                    attempt.QuizTitle, course.Title,
+                    attempt.Score, attempt.Passed);
+                _logger.LogInformation(
+                    "Quiz result notification sent to student {StudentId} for quiz {QuizId}.",
+                    attempt.UserId, quizId);
+            }
         }
         catch (Exception ex)
         {
             _logger.LogError(ex,
-                "Failed to send quiz result notification. QuizId={QuizId}, AttemptId={AttemptId}, StudentId={StudentId}.",
-                quizId, attempt.Id, attempt.UserId);
+                "Failed to send quiz notifications. QuizId={QuizId}, AttemptId={AttemptId}.",
+                quizId, attempt.Id);
         }
     }
 

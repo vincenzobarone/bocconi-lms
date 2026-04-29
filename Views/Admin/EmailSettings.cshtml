@@ -135,6 +135,52 @@
                                     }
                                 </div>
                             </div>
+
+                            @* Notifiche corsi *@
+                            <hr class="my-3" />
+                            <div class="mb-2 form-check form-switch">
+                                <input asp-for="CoursesNotificationsEnabled" class="form-check-input" type="checkbox"
+                                       role="switch" id="notifyCourses" />
+                                <label class="form-check-label fw-semibold" for="notifyCourses">
+                                    <i class="bi bi-bell me-1 text-bocconi"></i>@T["admin.email.notify_courses","Courses Notifications"]
+                                </label>
+                                <div class="form-text">@T["admin.email.notify_courses_desc","Abilita le notifiche email relative ai corsi (iscrizioni, quiz)."]</div>
+                            </div>
+
+                            <div id="courseNotifyItems" class="@(Model.CoursesNotificationsEnabled ? "" : "d-none") ps-3 border-start border-2 ms-1">
+                                <div class="form-check mt-2">
+                                    <input asp-for="NotifyStudentOnEnroll" class="form-check-input course-notify-check"
+                                           type="checkbox" id="notifyStudentEnroll"
+                                           data-item="StudentOnEnroll" />
+                                    <label class="form-check-label" for="notifyStudentEnroll">
+                                        @T["admin.email.notify_student_enroll","Send notification to student on course enrollment"]
+                                    </label>
+                                </div>
+                                <div class="form-check mt-2">
+                                    <input asp-for="NotifyStudentOnQuizCompleted" class="form-check-input course-notify-check"
+                                           type="checkbox" id="notifyStudentQuiz"
+                                           data-item="StudentOnQuizCompleted" />
+                                    <label class="form-check-label" for="notifyStudentQuiz">
+                                        @T["admin.email.notify_student_quiz","Send student notification for quiz completed"]
+                                    </label>
+                                </div>
+                                <div class="form-check mt-2">
+                                    <input asp-for="NotifyTeacherOnQuizCompleted" class="form-check-input course-notify-check"
+                                           type="checkbox" id="notifyTeacherQuiz"
+                                           data-item="TeacherOnQuizCompleted" />
+                                    <label class="form-check-label" for="notifyTeacherQuiz">
+                                        @T["admin.email.notify_teacher_quiz","Send teacher notification for quiz completed"]
+                                    </label>
+                                </div>
+                                <div class="form-check mt-2">
+                                    <input asp-for="NotifyTeacherOnStudentEnrolled" class="form-check-input course-notify-check"
+                                           type="checkbox" id="notifyTeacherEnroll"
+                                           data-item="TeacherOnStudentEnrolled" />
+                                    <label class="form-check-label" for="notifyTeacherEnroll">
+                                        @T["admin.email.notify_teacher_enroll","Send teacher notification for student enrolled"]
+                                    </label>
+                                </div>
+                            </div>
                         </div>
                     }
                 </form>
@@ -276,7 +322,7 @@
             });
         }
 
-        // ── Checkbox ruoli — auto-save al click ───────────────────────────
+        // ── Checkbox ruoli materiali — auto-save al click ─────────────────
         document.querySelectorAll('.notify-role-check').forEach(function (cb) {
             cb.addEventListener('change', function () {
                 var checked = [];
@@ -285,6 +331,36 @@
                 });
                 var lbl = this;
                 ajaxPost('/Admin/SetNotifyRolesAjax', { roles: checked },
+                    function () { showSaved(lbl); });
+            });
+        });
+
+        // ── Toggle "Courses Notifications" — auto-save + show/hide items ──
+        var notifyCoursesCheck  = document.getElementById('notifyCourses');
+        var courseNotifyItems   = document.getElementById('courseNotifyItems');
+        if (notifyCoursesCheck && courseNotifyItems) {
+            notifyCoursesCheck.addEventListener('change', function () {
+                var enabled = this.checked;
+                if (enabled) {
+                    courseNotifyItems.classList.remove('d-none');
+                } else {
+                    courseNotifyItems.classList.add('d-none');
+                    courseNotifyItems.querySelectorAll('.course-notify-check').forEach(function (cb) {
+                        cb.checked = false;
+                    });
+                }
+                var lbl = this;
+                ajaxPost('/Admin/ToggleCoursesNotificationsAjax', { value: enabled },
+                    function () { showSaved(lbl); });
+            });
+        }
+
+        // ── Checkbox singoli item corsi — auto-save al click ──────────────
+        document.querySelectorAll('.course-notify-check').forEach(function (cb) {
+            cb.addEventListener('change', function () {
+                var item = this.getAttribute('data-item');
+                var lbl  = this;
+                ajaxPost('/Admin/ToggleCourseNotifyItemAjax', { item: item, value: this.checked },
                     function () { showSaved(lbl); });
             });
         });
