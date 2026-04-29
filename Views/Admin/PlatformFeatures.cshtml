@@ -3,9 +3,59 @@
     ViewData["Title"] = T["admin.platform_settings","Platform Settings"];
     bool coursesEnabled   = ViewBag.CoursesEnabled == true;
     bool materialsEnabled = ViewBag.MaterialsEnabled != false;
-    var enabledLangs  = ViewBag.EnabledLanguages as List<string> ?? new List<string> { "en" };
-    var missing       = ViewBag.MissingCounts as Dictionary<string, int> ?? new();
-    var allOtherLangs = TranslationService.AllLanguages.Where(l => l.Code != "en").ToList();
+    var enabledLangs      = ViewBag.EnabledLanguages as List<string> ?? new List<string> { "en" };
+    var missing           = ViewBag.MissingCounts as Dictionary<string, int> ?? new();
+    var allOtherLangs     = TranslationService.AllLanguages.Where(l => l.Code != "en").ToList();
+    var currentTz         = ViewBag.PlatformTimezone as string ?? "Europe/Rome";
+
+    var timezones = new (string Group, (string Id, string Label)[] Zones)[]
+    {
+        ("Europa", new[]
+        {
+            ("Europe/Rome",      "🇮🇹 Roma (IT)"),
+            ("Europe/London",    "🇬🇧 Londra (UK)"),
+            ("Europe/Paris",     "🇫🇷 Parigi (FR)"),
+            ("Europe/Berlin",    "🇩🇪 Berlino (DE)"),
+            ("Europe/Madrid",    "🇪🇸 Madrid (ES)"),
+            ("Europe/Zurich",    "🇨🇭 Zurigo (CH)"),
+            ("Europe/Amsterdam", "🇳🇱 Amsterdam (NL)"),
+            ("Europe/Lisbon",    "🇵🇹 Lisbona (PT)"),
+            ("Europe/Warsaw",    "🇵🇱 Varsavia (PL)"),
+            ("Europe/Moscow",    "🇷🇺 Mosca (RU)"),
+        }),
+        ("Americas", new[]
+        {
+            ("America/New_York",    "🇺🇸 New York (ET)"),
+            ("America/Chicago",     "🇺🇸 Chicago (CT)"),
+            ("America/Denver",      "🇺🇸 Denver (MT)"),
+            ("America/Los_Angeles", "🇺🇸 Los Angeles (PT)"),
+            ("America/Toronto",     "🇨🇦 Toronto (ET)"),
+            ("America/Sao_Paulo",   "🇧🇷 São Paulo"),
+            ("America/Buenos_Aires","🇦🇷 Buenos Aires"),
+            ("America/Mexico_City", "🇲🇽 Mexico City"),
+        }),
+        ("Asia / Pacifico", new[]
+        {
+            ("Asia/Dubai",    "🇦🇪 Dubai (GST)"),
+            ("Asia/Kolkata",  "🇮🇳 Mumbai/Kolkata (IST)"),
+            ("Asia/Bangkok",  "🇹🇭 Bangkok (ICT)"),
+            ("Asia/Shanghai", "🇨🇳 Shanghai (CST)"),
+            ("Asia/Tokyo",    "🇯🇵 Tokyo (JST)"),
+            ("Asia/Seoul",    "🇰🇷 Seoul (KST)"),
+            ("Australia/Sydney","🇦🇺 Sydney (AEDT)"),
+            ("Pacific/Auckland","🇳🇿 Auckland (NZDT)"),
+        }),
+        ("Africa", new[]
+        {
+            ("Africa/Cairo",  "🇪🇬 Cairo (EET)"),
+            ("Africa/Lagos",  "🇳🇬 Lagos (WAT)"),
+            ("Africa/Nairobi","🇰🇪 Nairobi (EAT)"),
+        }),
+        ("UTC", new[]
+        {
+            ("UTC", "🌐 UTC"),
+        }),
+    };
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -51,6 +101,43 @@
             <button type="submit" class="btn btn-bocconi btn-sm ms-auto">
                 <i class="bi bi-save me-1"></i>@T["admin.lang.save","Save language settings"]
             </button>
+        </form>
+    </div>
+</div>
+
+@* ── Timezone ──────────────────────────────────────────────────────── *@
+<div class="card mb-4 border-0 shadow-sm">
+    <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-clock-history me-2 text-bocconi"></i>@T["admin.timezone.title","Fuso orario piattaforma"]
+    </div>
+    <div class="card-body">
+        <p class="text-muted small mb-3">@T["admin.timezone.desc","Il fuso orario usato per l'orologio nella dashboard di tutti gli utenti. Se il browser dell'utente è in un fuso diverso, viene mostrata anche l'ora locale."]</p>
+        <form asp-action="SaveTimezone" asp-route-area="" method="post" class="d-flex align-items-center gap-3 flex-wrap">
+            @Html.AntiForgeryToken()
+            <select name="timezone" class="form-select" style="max-width:320px;">
+                @foreach (var group in timezones)
+                {
+                    <optgroup label="@group.Group">
+                        @foreach (var tz in group.Zones)
+                        {
+                            if (currentTz == tz.Id)
+                            {
+                                <option value="@tz.Id" selected>@tz.Label</option>
+                            }
+                            else
+                            {
+                                <option value="@tz.Id">@tz.Label</option>
+                            }
+                        }
+                    </optgroup>
+                }
+            </select>
+            <button type="submit" class="btn btn-bocconi btn-sm">
+                <i class="bi bi-save me-1"></i>@T["admin.timezone.save","Salva fuso orario"]
+            </button>
+            <span class="text-muted small">
+                <i class="bi bi-info-circle me-1"></i>@T["admin.timezone.current","Attuale:"] <strong>@currentTz</strong>
+            </span>
         </form>
     </div>
 </div>

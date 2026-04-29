@@ -1766,6 +1766,39 @@ try
 }
 catch { }
 
+// ── Seed admin.timezone.* + dashboard.local_time keys ────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
+        ('it','admin.timezone.title','Fuso orario piattaforma'),
+        ('en','admin.timezone.title','Platform timezone'),
+        ('es','admin.timezone.title','Zona horaria de la plataforma'),
+        ('de','admin.timezone.title','Plattform-Zeitzone'),
+        ('it','admin.timezone.desc','Il fuso orario usato per l''orologio nella dashboard di tutti gli utenti. Se il browser è in un fuso diverso, viene mostrata anche l''ora locale.'),
+        ('en','admin.timezone.desc','The timezone used for the clock on all users'' dashboards. If the browser is in a different timezone, the local time is also shown.'),
+        ('es','admin.timezone.desc','La zona horaria usada para el reloj en el panel de todos los usuarios. Si el navegador tiene una zona diferente, también se muestra la hora local.'),
+        ('de','admin.timezone.desc','Die Zeitzone für die Uhr auf dem Dashboard aller Benutzer. Wenn der Browser eine andere Zeitzone hat, wird auch die lokale Zeit angezeigt.'),
+        ('it','admin.timezone.save','Salva fuso orario'),
+        ('en','admin.timezone.save','Save timezone'),
+        ('es','admin.timezone.save','Guardar zona horaria'),
+        ('de','admin.timezone.save','Zeitzone speichern'),
+        ('it','admin.timezone.current','Attuale:'),
+        ('en','admin.timezone.current','Current:'),
+        ('es','admin.timezone.current','Actual:'),
+        ('de','admin.timezone.current','Aktuell:'),
+        ('it','dashboard.local_time','Ora locale del browser'),
+        ('en','dashboard.local_time','Browser local time'),
+        ('es','dashboard.local_time','Hora local del navegador'),
+        ('de','dashboard.local_time','Lokale Browserzeit')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Seed dashboard.* translation keys ────────────────────────────────────
 try
 {

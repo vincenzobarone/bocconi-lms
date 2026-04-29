@@ -21,10 +21,14 @@
         var langCode = T.CurrentLanguage;
         var cultureTag = langCode == "en" ? "en-GB" : langCode == "es" ? "es-ES" : langCode == "de" ? "de-DE" : "it-IT";
         var cult = new System.Globalization.CultureInfo(cultureTag);
-        <div class="text-muted small d-flex align-items-center gap-3">
+        <div class="text-muted small d-flex align-items-center gap-3 flex-wrap">
             <span><i class="bi bi-calendar3 me-1"></i>@DateTime.Now.ToString("dddd d MMMM yyyy", cult)</span>
-            <span class="vr"></span>
-            <span><i class="bi bi-clock me-1"></i><span id="adminLiveClock">@DateTime.Now.ToString("HH:mm:ss")</span></span>
+            <span class="vr d-none d-sm-block"></span>
+            <span>
+                <i class="bi bi-clock me-1"></i><span id="liveClock">--:--:--</span>
+                <span class="badge bg-light text-secondary border ms-1 fw-normal d-none" id="localTimeBadge"
+                      title="@T["dashboard.local_time","Ora locale del browser"]"></span>
+            </span>
         </div>
     }
 </div>
@@ -292,15 +296,34 @@
 @section Scripts {
     <script>
         (function () {
-            var clockEl = document.getElementById('adminLiveClock');
+            var clockEl  = document.getElementById('liveClock');
+            var badgeEl  = document.getElementById('localTimeBadge');
             if (!clockEl) return;
+
+            var platformTz = @Json.Serialize(Model.PlatformTimezone);
+            var browserTz  = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+            var fmtPlatform = new Intl.DateTimeFormat(undefined, {
+                timeZone: platformTz,
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+            });
+            var fmtBrowser = new Intl.DateTimeFormat(undefined, {
+                timeZone: browserTz,
+                hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false
+            });
+
             function tick() {
                 var now = new Date();
-                var hh = String(now.getHours()).padStart(2, '0');
-                var mm = String(now.getMinutes()).padStart(2, '0');
-                var ss = String(now.getSeconds()).padStart(2, '0');
-                clockEl.textContent = hh + ':' + mm + ':' + ss;
+                clockEl.textContent = fmtPlatform.format(now);
+
+                if (badgeEl && platformTz !== browserTz) {
+                    badgeEl.textContent = '📍 ' + fmtBrowser.format(now);
+                    badgeEl.title = browserTz;
+                    badgeEl.classList.remove('d-none');
+                }
             }
+
+            tick();
             setInterval(tick, 1000);
         })();
     </script>

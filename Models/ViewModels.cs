@@ -26,6 +26,8 @@ public class DashboardViewModel
     public int StudentCompletedLessons { get; set; }
     // Admin
     public DashboardStats? AdminStats { get; set; }
+    // Platform
+    public string PlatformTimezone { get; set; } = "Europe/Rome";
 }
 
 public class AjaxToggleRequest

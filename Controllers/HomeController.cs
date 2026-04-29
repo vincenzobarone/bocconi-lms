@@ -16,6 +16,7 @@ public class HomeController : Controller
     private readonly UserRepository       _users;
     private readonly FeatureFlagService   _features;
     private readonly DbHelper             _db;
+    private readonly SettingsRepository   _settings;
     private readonly UserManager<ApplicationUser> _userManager;
 
     public HomeController(
@@ -25,6 +26,7 @@ public class HomeController : Controller
         UserRepository users,
         FeatureFlagService features,
         DbHelper db,
+        SettingsRepository settings,
         UserManager<ApplicationUser> userManager)
     {
         _courses     = courses;
@@ -33,6 +35,7 @@ public class HomeController : Controller
         _users       = users;
         _features    = features;
         _db          = db;
+        _settings    = settings;
         _userManager = userManager;
     }
 
@@ -73,14 +76,17 @@ public class HomeController : Controller
             c.Type == System.Security.Claims.ClaimTypes.Role &&
             !string.IsNullOrWhiteSpace(c.Value));
 
+        var timezone = await _settings.GetAsync("Platform:Timezone") ?? "Europe/Rome";
+
         var vm = new DashboardViewModel
         {
-            IsAdmin          = User.IsInRole("Admin"),
-            IsTeacher        = User.IsInRole("Teacher"),
-            IsStudent        = User.IsInRole("Student"),
-            IsPending        = !hasAnyRole,
-            MaterialsEnabled = materialsEnabled,
-            CoursesEnabled   = coursesEnabled,
+            IsAdmin           = User.IsInRole("Admin"),
+            IsTeacher         = User.IsInRole("Teacher"),
+            IsStudent         = User.IsInRole("Student"),
+            IsPending         = !hasAnyRole,
+            MaterialsEnabled  = materialsEnabled,
+            CoursesEnabled    = coursesEnabled,
+            PlatformTimezone  = timezone,
         };
 
         if (vm.IsAdmin)

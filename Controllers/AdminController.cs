@@ -942,7 +942,19 @@ public class AdminController : Controller
         ViewBag.MaterialsEnabled  = await _features.IsMaterialsEnabledAsync();
         ViewBag.EnabledLanguages  = await _settings.GetEnabledLanguagesAsync();
         ViewBag.MissingCounts     = await _translations.GetMissingCountsAsync();
+        ViewBag.PlatformTimezone  = await _settings.GetAsync("Platform:Timezone") ?? "Europe/Rome";
         return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Route("Admin/PlatformFeatures/SaveTimezone")]
+    public async Task<IActionResult> SaveTimezone(string timezone)
+    {
+        if (!string.IsNullOrWhiteSpace(timezone))
+            await _settings.SetAsync("Platform:Timezone", timezone.Trim());
+        TempData["Success"] = "Fuso orario aggiornato.";
+        return RedirectToAction(nameof(PlatformFeatures));
     }
 
     [HttpPost]
