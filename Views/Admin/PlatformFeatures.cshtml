@@ -1,6 +1,7 @@
 @{
     ViewData["Title"] = T["admin.platform_settings","Platform Settings"];
-    bool coursesEnabled = ViewBag.CoursesEnabled == true;
+    bool coursesEnabled   = ViewBag.CoursesEnabled == true;
+    bool materialsEnabled = ViewBag.MaterialsEnabled != false;
 }
 
 <div class="mb-4">
@@ -9,11 +10,38 @@
     </h2>
 </div>
 
-
-
-@* ─── Modulo Corsi ──────────────────────────────────────────────── *@
 <div class="row g-4 mb-4">
+    @* ─── Colonna moduli ─────────────────────────────────────────────── *@
     <div class="col-md-8">
+
+        @* Modulo Materiali *@
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-bocconi-light fw-semibold">
+                <i class="bi bi-collection me-2"></i>@T["admin.materials_module","Materials Module"]
+            </div>
+            <div class="card-body">
+                <p class="mb-1">
+                    @T["admin.materials_module_on_prefix","When the materials module is"]
+                    <strong>@T["admin.module_active","active"]</strong>:
+                </p>
+                <ul class="mb-3 small">
+                    <li>@T["admin.materials_feature_nav","The Materials link appears in the navigation bar"]</li>
+                    <li>@T["admin.materials_feature_library","Users can browse, search and download materials"]</li>
+                    <li>@T["admin.materials_feature_teacher","Teachers and admins can upload and manage materials"]</li>
+                </ul>
+                <div class="alert alert-info small py-2 mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    @T["admin.materials_module_info","Changes take effect immediately. Existing material data is not deleted."]
+                </div>
+
+                <form id="materialsToggleForm" method="post" asp-action="ToggleMaterials">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="materialsEnabledInput" name="materialsEnabled" value="@(materialsEnabled ? "true" : "false")" />
+                </form>
+            </div>
+        </div>
+
+        @* Modulo Corsi *@
         <div class="card shadow-sm">
             <div class="card-header bg-bocconi-light fw-semibold">
                 <i class="bi bi-book me-2"></i>@T["admin.courses_module","Courses & Enrolments Module"]
@@ -40,6 +68,8 @@
             </div>
         </div>
     </div>
+
+    @* ─── Riepilogo moduli ───────────────────────────────────────────── *@
     <div class="col-md-4">
         <div class="card shadow-sm border-0 bg-light">
             <div class="card-body">
@@ -49,7 +79,14 @@
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                         <span><i class="bi bi-collection me-2 text-bocconi"></i>@T["nav.materials","Materials"]</span>
-                        <span class="badge bg-success">@T["admin.always_active","Always active"]</span>
+                        <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
+                            <input class="form-check-input mt-0" type="checkbox" role="switch"
+                                   id="materialsToggle" style="width:2.5em;height:1.3em;cursor:pointer;"
+                                   @(materialsEnabled ? "checked" : "") />
+                            <span class="small fw-semibold @(materialsEnabled ? "text-success" : "text-secondary")">
+                                @(materialsEnabled ? T["admin.module_active","Active"] : T["admin.module_disabled","Disabled"])
+                            </span>
+                        </div>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0">
                         <span><i class="bi bi-book me-2 text-bocconi"></i>@T["admin.courses_label","Courses"]</span>
@@ -58,14 +95,7 @@
                                    id="coursesToggle" style="width:2.5em;height:1.3em;cursor:pointer;"
                                    @(coursesEnabled ? "checked" : "") />
                             <span class="small fw-semibold @(coursesEnabled ? "text-success" : "text-secondary")">
-                                @if (coursesEnabled)
-                                {
-                                    @T["admin.module_active","Active"]
-                                }
-                                else
-                                {
-                                    @T["admin.module_disabled","Disabled"]
-                                }
+                                @(coursesEnabled ? T["admin.module_active","Active"] : T["admin.module_disabled","Disabled"])
                             </span>
                         </div>
                     </li>
@@ -77,6 +107,10 @@
 
 @section Scripts {
     <script>
+        document.getElementById('materialsToggle').addEventListener('change', function () {
+            document.getElementById('materialsEnabledInput').value = this.checked ? 'true' : 'false';
+            document.getElementById('materialsToggleForm').submit();
+        });
         document.getElementById('coursesToggle').addEventListener('change', function () {
             document.getElementById('coursesEnabledInput').value = this.checked ? 'true' : 'false';
             document.getElementById('coursesToggleForm').submit();

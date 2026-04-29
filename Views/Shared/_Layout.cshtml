@@ -2,10 +2,11 @@
 @inject BocconiLMS.Services.FeatureFlagService _features
 @inject BocconiLMS.Data.RolePermissionRepository _menuPerms
 @{
-    var coursesEnabled = await _features.IsCoursesEnabledAsync();
+    var coursesEnabled   = await _features.IsCoursesEnabledAsync();
+    var materialsEnabled = await _features.IsMaterialsEnabledAsync();
     var _menuRoleName = User.FindFirst(System.Security.Claims.ClaimTypes.Role)?.Value ?? "";
     var canSeeMaterials = User.Identity?.IsAuthenticated == true
-        && (User.IsInRole("Admin") || await _menuPerms.HasMenuPermissionAsync(_menuRoleName, "menu.materials"));
+        && (User.IsInRole("Admin") || (materialsEnabled && await _menuPerms.HasMenuPermissionAsync(_menuRoleName, "menu.materials")));
     var canSeeUsers = User.Identity?.IsAuthenticated == true
         && (User.IsInRole("Admin") || await _menuPerms.HasMenuPermissionAsync(_menuRoleName, "menu.users"));
     var canSeeTranslations = User.Identity?.IsAuthenticated == true

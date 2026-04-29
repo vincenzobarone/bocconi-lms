@@ -20,6 +20,7 @@ public class MaterialsController : Controller
     private readonly RolePermissionRepository _rolePerms;
     private readonly SettingsRepository _settings;
     private readonly EmailService _emailService;
+    private readonly FeatureFlagService _features;
 
     public MaterialsController(
         MaterialRepository materials,
@@ -30,7 +31,8 @@ public class MaterialsController : Controller
         AreaRepository areas,
         RolePermissionRepository rolePerms,
         SettingsRepository settings,
-        EmailService emailService)
+        EmailService emailService,
+        FeatureFlagService features)
     {
         _materials    = materials;
         _docTypes     = docTypes;
@@ -41,6 +43,7 @@ public class MaterialsController : Controller
         _rolePerms    = rolePerms;
         _settings     = settings;
         _emailService = emailService;
+        _features     = features;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -162,6 +165,9 @@ public class MaterialsController : Controller
         string? folderName = null,
         int? folderId = null)
     {
+        if (!User.IsInRole("Admin") && !await _features.IsMaterialsEnabledAsync())
+            return RedirectToAction("NoModules", "Home");
+
         var materials = await _materials.GetAllAsync(q, lang, typeId, catYear, modYear, folderName, folderId);
         var vm = new MaterialsIndexViewModel
         {

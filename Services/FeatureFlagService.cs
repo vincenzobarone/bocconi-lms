@@ -9,7 +9,8 @@ public class FeatureFlagService
     private readonly IMemoryCache _cache;
     private static readonly TimeSpan _cacheTtl = TimeSpan.FromMinutes(5);
 
-    public const string CoursesModuleKey = "Features:CoursesModule";
+    public const string CoursesModuleKey  = "Features:CoursesModule";
+    public const string MaterialsModuleKey = "Features:MaterialsModule";
 
     public FeatureFlagService(SettingsRepository settings, IMemoryCache cache)
     {
@@ -18,14 +19,21 @@ public class FeatureFlagService
     }
 
     public async Task<bool> IsCoursesEnabledAsync()
-    {
-        return await GetBoolAsync(CoursesModuleKey, defaultValue: false);
-    }
+        => await GetBoolAsync(CoursesModuleKey, defaultValue: false);
 
     public async Task SetCoursesEnabledAsync(bool enabled)
     {
         await _settings.SetAsync(CoursesModuleKey, enabled ? "true" : "false");
         _cache.Remove(CoursesModuleKey);
+    }
+
+    public async Task<bool> IsMaterialsEnabledAsync()
+        => await GetBoolAsync(MaterialsModuleKey, defaultValue: true);
+
+    public async Task SetMaterialsEnabledAsync(bool enabled)
+    {
+        await _settings.SetAsync(MaterialsModuleKey, enabled ? "true" : "false");
+        _cache.Remove(MaterialsModuleKey);
     }
 
     private async Task<bool> GetBoolAsync(string key, bool defaultValue)

@@ -20,20 +20,29 @@ public class HomeController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var coursesEnabled = await _features.IsCoursesEnabledAsync();
-        if (!coursesEnabled && User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
-            return RedirectToAction("Index", "Materials");
+        var coursesEnabled   = await _features.IsCoursesEnabledAsync();
+        var materialsEnabled = await _features.IsMaterialsEnabledAsync();
+
+        if (User.Identity?.IsAuthenticated == true && !User.IsInRole("Admin"))
+        {
+            if (!coursesEnabled && materialsEnabled)
+                return RedirectToAction("Index", "Materials");
+            if (!coursesEnabled && !materialsEnabled)
+                return RedirectToAction("NoModules", "Home");
+        }
 
         try
         {
             var courses = await _courses.GetAllAsync(publishedOnly: true);
-            ViewBag.CoursesEnabled = coursesEnabled;
+            ViewBag.CoursesEnabled   = coursesEnabled;
+            ViewBag.MaterialsEnabled = materialsEnabled;
             return View(courses.Take(6).ToList());
         }
         catch (MySqlException)
         {
             ViewBag.DbError = true;
-            ViewBag.CoursesEnabled = coursesEnabled;
+            ViewBag.CoursesEnabled   = coursesEnabled;
+            ViewBag.MaterialsEnabled = materialsEnabled;
             return View(new List<Course>());
         }
     }
@@ -44,18 +53,30 @@ public class HomeController : Controller
     [Authorize]
     public async Task<IActionResult> Dashboard()
     {
-        var coursesEnabled = await _features.IsCoursesEnabledAsync();
-
         if (User.IsInRole("Admin"))
             return RedirectToAction("PlatformFeatures", "Admin");
 
-        if (!coursesEnabled)
+        var coursesEnabled   = await _features.IsCoursesEnabledAsync();
+        var materialsEnabled = await _features.IsMaterialsEnabledAsync();
+
+        if (!coursesEnabled && materialsEnabled)
             return RedirectToAction("Index", "Materials");
+
+        if (!coursesEnabled && !materialsEnabled)
+            return RedirectToAction("NoModules", "Home");
 
         if (User.IsInRole("Teacher"))
             return RedirectToAction("Dashboard", "Course");
 
         return RedirectToAction("Dashboard", "Student");
+    }
+
+    [Authorize]
+    public IActionResult NoModules()
+    {
+        if (User.IsInRole("Admin"))
+            return RedirectToAction("PlatformFeatures", "Admin");
+        return View();
     }
 
     public IActionResult Error()

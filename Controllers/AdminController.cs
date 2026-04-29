@@ -733,7 +733,8 @@ public class AdminController : Controller
 
     public async Task<IActionResult> PlatformFeatures()
     {
-        ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
+        ViewBag.CoursesEnabled    = await _features.IsCoursesEnabledAsync();
+        ViewBag.MaterialsEnabled  = await _features.IsMaterialsEnabledAsync();
         return View();
     }
 
@@ -744,7 +745,19 @@ public class AdminController : Controller
         await _features.SetCoursesEnabledAsync(coursesEnabled);
         TempData["Success"] = coursesEnabled
             ? "Modulo Corsi abilitato."
-            : "Modulo Corsi disabilitato. Gli studenti e i docenti accederanno direttamente alla libreria Materiali.";
+            : "Modulo Corsi disabilitato.";
+        return RedirectToAction(nameof(PlatformFeatures));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [Route("Admin/PlatformFeatures/ToggleMaterials")]
+    public async Task<IActionResult> ToggleMaterials(bool materialsEnabled)
+    {
+        await _features.SetMaterialsEnabledAsync(materialsEnabled);
+        TempData["Success"] = materialsEnabled
+            ? "Modulo Materiali abilitato."
+            : "Modulo Materiali disabilitato.";
         return RedirectToAction(nameof(PlatformFeatures));
     }
 
