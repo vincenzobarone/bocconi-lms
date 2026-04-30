@@ -2227,6 +2227,79 @@ try
 }
 catch { }
 
+// ── Seed messaggi TempData Materials (tradotti) ───────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        ('en','mat.msg_created','Material \u00ab{0}\u00bb created successfully.'),
+        ('it','mat.msg_created','Materiale \u00ab{0}\u00bb creato con successo.'),
+        ('es','mat.msg_created','Material \u00ab{0}\u00bb creado con \u00e9xito.'),
+        ('de','mat.msg_created','Material \u00ab{0}\u00bb erfolgreich erstellt.'),
+        ('en','mat.msg_created_no_file','Material created, but the file could not be saved:'),
+        ('it','mat.msg_created_no_file','Materiale creato, ma il file non \u00e8 stato salvato:'),
+        ('es','mat.msg_created_no_file','Material creado, pero el archivo no se pudo guardar:'),
+        ('de','mat.msg_created_no_file','Material erstellt, aber die Datei konnte nicht gespeichert werden:'),
+        ('en','mat.msg_updated','Material updated.'),
+        ('it','mat.msg_updated','Materiale aggiornato.'),
+        ('es','mat.msg_updated','Material actualizado.'),
+        ('de','mat.msg_updated','Material aktualisiert.'),
+        ('en','mat.msg_updated_no_file','Material updated, but the file could not be saved:'),
+        ('it','mat.msg_updated_no_file','Materiale aggiornato, ma il file non \u00e8 stato salvato:'),
+        ('es','mat.msg_updated_no_file','Material actualizado, pero el archivo no se pudo guardar:'),
+        ('de','mat.msg_updated_no_file','Material aktualisiert, aber die Datei konnte nicht gespeichert werden:'),
+        ('en','mat.msg_select_file','Please select a file to upload.'),
+        ('it','mat.msg_select_file','Seleziona un file da caricare.'),
+        ('es','mat.msg_select_file','Por favor selecciona un archivo para subir.'),
+        ('de','mat.msg_select_file','Bitte w\u00e4hle eine Datei zum Hochladen aus.'),
+        ('en','mat.msg_file_save_error','Error saving the file:'),
+        ('it','mat.msg_file_save_error','Errore nel salvataggio del file:'),
+        ('es','mat.msg_file_save_error','Error al guardar el archivo:'),
+        ('de','mat.msg_file_save_error','Fehler beim Speichern der Datei:'),
+        ('en','mat.msg_version_uploaded','New version uploaded.'),
+        ('it','mat.msg_version_uploaded','Nuova versione caricata.'),
+        ('es','mat.msg_version_uploaded','Nueva versi\u00f3n cargada.'),
+        ('de','mat.msg_version_uploaded','Neue Version hochgeladen.'),
+        ('en','mat.msg_version_restored','Version restored.'),
+        ('it','mat.msg_version_restored','Versione ripristinata.'),
+        ('es','mat.msg_version_restored','Versi\u00f3n restaurada.'),
+        ('de','mat.msg_version_restored','Version wiederhergestellt.'),
+        ('en','mat.msg_version_last','Cannot delete the only version of the material. Delete the material to remove it entirely.'),
+        ('it','mat.msg_version_last','Non \u00e8 possibile eliminare l\u2019unica versione del materiale. Elimina il materiale per rimuoverlo completamente.'),
+        ('es','mat.msg_version_last','No se puede eliminar la \u00fanica versi\u00f3n del material. Elimina el material para borrarlo completamente.'),
+        ('de','mat.msg_version_last','Die einzige Version des Materials kann nicht gel\u00f6scht werden. L\u00f6sche das Material, um es vollst\u00e4ndig zu entfernen.'),
+        ('en','mat.msg_version_deleted','Version v{0} deleted.'),
+        ('it','mat.msg_version_deleted','Versione v{0} eliminata.'),
+        ('es','mat.msg_version_deleted','Versi\u00f3n v{0} eliminada.'),
+        ('de','mat.msg_version_deleted','Version v{0} gel\u00f6scht.'),
+        ('en','mat.msg_select_at_least_one','Please select at least one material.'),
+        ('it','mat.msg_select_at_least_one','Seleziona almeno un materiale.'),
+        ('es','mat.msg_select_at_least_one','Selecciona al menos un material.'),
+        ('de','mat.msg_select_at_least_one','Bitte mindestens ein Material ausw\u00e4hlen.'),
+        ('en','mat.msg_no_files_available','No files available for the selected materials.'),
+        ('it','mat.msg_no_files_available','Nessun file disponibile per i materiali selezionati.'),
+        ('es','mat.msg_no_files_available','No hay archivos disponibles para los materiales seleccionados.'),
+        ('de','mat.msg_no_files_available','Keine Dateien f\u00fcr die ausgew\u00e4hlten Materialien verf\u00fcgbar.'),
+        ('en','mat.msg_deleted','Material \u00ab{0}\u00bb deleted.'),
+        ('it','mat.msg_deleted','Materiale \u00ab{0}\u00bb eliminato.'),
+        ('es','mat.msg_deleted','Material \u00ab{0}\u00bb eliminado.'),
+        ('de','mat.msg_deleted','Material \u00ab{0}\u00bb gel\u00f6scht.'),
+        ('en','mat.msg_linked_lesson','Material linked to lesson.'),
+        ('it','mat.msg_linked_lesson','Materiale collegato alla lezione.'),
+        ('es','mat.msg_linked_lesson','Material vinculado a la lecci\u00f3n.'),
+        ('de','mat.msg_linked_lesson','Material mit Lektion verkn\u00fcpft.'),
+        ('en','mat.msg_unlinked_lesson','Material removed from lesson.'),
+        ('it','mat.msg_unlinked_lesson','Materiale rimosso dalla lezione.'),
+        ('es','mat.msg_unlinked_lesson','Material eliminado de la lecci\u00f3n.'),
+        ('de','mat.msg_unlinked_lesson','Material aus der Lektion entfernt.')
+        ON DUPLICATE KEY UPDATE label_value = label_value;", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Fix mat.label_owner: rinominato da "Author / Owner" a "Owner" ──────────
 try
 {
