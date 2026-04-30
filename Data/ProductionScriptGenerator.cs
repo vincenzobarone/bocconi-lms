@@ -53,6 +53,22 @@ public class ProductionScriptGenerator
         var colNames = await GetColumnNamesAsync(conn);
         var createSql = await GetCreateStatementsAsync(conn, colNames.Keys);
 
+        // Fail fast: every application table (excluding operational tables with fixed DDL)
+        // must be present in the source DB.  A missing table means migrations have not been
+        // fully applied and the generated script would be incomplete.
+        var operationalTables = new HashSet<string>(["schema_migrations", "app_settings"],
+            StringComparer.OrdinalIgnoreCase);
+        var missingTables = AppTables
+            .Where(t => !operationalTables.Contains(t) && !createSql.ContainsKey(t))
+            .ToList();
+        if (missingTables.Count > 0)
+        {
+            throw new InvalidOperationException(
+                $"Impossibile generare lo script: le seguenti tabelle attese non esistono " +
+                $"nel database corrente — {string.Join(", ", missingTables)}. " +
+                "Assicurarsi che tutte le migrazioni siano state applicate prima di generare lo script.");
+        }
+
         List<TranslationRow> translationRows = [];
         if (includeTranslations)
             translationRows = await _translations.GetAllGroupedAsync();
