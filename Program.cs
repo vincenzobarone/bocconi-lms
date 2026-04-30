@@ -2235,6 +2235,28 @@ try
 }
 catch { }
 
+// ── Fix: forza valori EN corretti per le chiavi del tab Piattaforme ─────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var upd = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
+            ('en','admin.platforms_tab','Platforms'),
+            ('en','admin.platform_add','Add platform'),
+            ('en','admin.platform_name','Platform name'),
+            ('en','admin.create_platform','Create platform'),
+            ('en','admin.edit_platform','Edit platform'),
+            ('en','admin.delete_platform','Delete platform'),
+            ('en','admin.delete_platform_confirm','Delete platform'),
+            ('en','admin.no_platforms','No platforms defined yet.'),
+            ('en','admin.platform_name_placeholder','Platform name…')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
+    await upd.ExecuteNonQueryAsync();
+}
+catch { }
+
 // ── Seed messaggi TempData Materials (tradotti) ───────────────────────────
 try
 {
