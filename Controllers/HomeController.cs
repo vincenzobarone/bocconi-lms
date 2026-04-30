@@ -18,6 +18,7 @@ public class HomeController : Controller
     private readonly DbHelper             _db;
     private readonly SettingsRepository   _settings;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IWebHostEnvironment  _env;
 
     public HomeController(
         CourseRepository courses,
@@ -27,7 +28,8 @@ public class HomeController : Controller
         FeatureFlagService features,
         DbHelper db,
         SettingsRepository settings,
-        UserManager<ApplicationUser> userManager)
+        UserManager<ApplicationUser> userManager,
+        IWebHostEnvironment env)
     {
         _courses     = courses;
         _materials   = materials;
@@ -37,6 +39,7 @@ public class HomeController : Controller
         _db          = db;
         _settings    = settings;
         _userManager = userManager;
+        _env         = env;
     }
 
     public async Task<IActionResult> Index()
@@ -94,6 +97,7 @@ public class HomeController : Controller
             vm.AdminStats = await _users.GetStatsAsync();
             if (materialsEnabled)
                 (vm.TotalMaterials, vm.RecentMaterials) = await GetMaterialCountsAsync();
+            (vm.MigrationApplied, vm.MigrationTotal) = await GetMigrationCountsAsync();
             return View(vm);
         }
 
@@ -172,5 +176,27 @@ public class HomeController : Controller
         cmd.Parameters.AddWithValue("@tid", teacherId);
         var result = await cmd.ExecuteScalarAsync();
         return result is long l ? (int)l : result is int i ? i : 0;
+    }
+
+    private async Task<(int applied, int total)> GetMigrationCountsAsync()
+    {
+        try
+        {
+            using var conn = _db.GetConnection();
+            await conn.OpenAsync();
+            using var cmd = new MySqlCommand(@"
+                SELECT
+                    (SELECT COUNT(*) FROM schema_migrations) AS applied,
+                    @totalFiles AS total", conn);
+            var migDir = Path.Combine(_env.ContentRootPath, "Migrations");
+            int totalFiles = Directory.Exists(migDir)
+                ? Directory.GetFiles(migDir, "*.sql").Length
+                : 0;
+            cmd.Parameters.AddWithValue("@totalFiles", totalFiles);
+            using var reader = await cmd.ExecuteReaderAsync();
+            if (!await reader.ReadAsync()) return (0, totalFiles);
+            return (reader.IsDBNull(0) ? 0 : reader.GetInt32(0), totalFiles);
+        }
+        catch { return (0, 0); }
     }
 }

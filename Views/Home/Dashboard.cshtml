@@ -56,7 +56,7 @@
 {
     @* Shortcut cards *@
     <div class="row g-3 mb-4">
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card h-100 shadow-sm">
                 <div class="card-body text-center p-4">
                     <i class="bi bi-sliders display-4 text-bocconi mb-3 d-block"></i>
@@ -68,7 +68,7 @@
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
             <div class="card h-100 shadow-sm">
                 <div class="card-body text-center p-4">
                     <i class="bi bi-envelope-at display-4 text-bocconi mb-3 d-block"></i>
@@ -76,6 +76,30 @@
                     <p class="text-muted">@T["admin.email_settings_desc", "Configura il server SMTP e le notifiche email"]</p>
                     <a asp-controller="Admin" asp-action="EmailSettings" class="btn btn-bocconi">
                         @T["admin.configure_email", "Configura email"]
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-body text-center p-4">
+                    <i class="bi bi-database-gear display-4 text-bocconi mb-3 d-block"></i>
+                    <h5 class="fw-bold">@T["admin.migrations", "Database Migrations"]</h5>
+                    @if (Model.MigrationTotal > 0)
+                    {
+                        var allApplied = Model.MigrationApplied >= Model.MigrationTotal;
+                        <p class="mb-2">
+                            <span class="badge @(allApplied ? "bg-success" : "bg-warning text-dark")">
+                                @Model.MigrationApplied / @Model.MigrationTotal @T["admin.migrations_applied_badge","applicate"]
+                            </span>
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="text-muted">@T["admin.migrations_desc", "Visualizza e applica le migrazioni del database"]</p>
+                    }
+                    <a asp-controller="Admin" asp-action="Migrations" class="btn btn-bocconi">
+                        @T["admin.migrations_manage", "Gestisci migrazioni"]
                     </a>
                 </div>
             </div>

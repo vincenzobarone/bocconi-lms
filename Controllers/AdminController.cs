@@ -24,6 +24,7 @@ public class AdminController : Controller
     private readonly AreaRepository _areas;
     private readonly PlatformRepository _platforms;
     private readonly RolePermissionRepository _rolePerms;
+    private readonly MigrationRunner _migrationRunner;
 
     public AdminController(
         UserRepository users,
@@ -39,7 +40,8 @@ public class AdminController : Controller
         FeatureFlagService features,
         AreaRepository areas,
         PlatformRepository platforms,
-        RolePermissionRepository rolePerms)
+        RolePermissionRepository rolePerms,
+        MigrationRunner migrationRunner)
     {
         _users = users;
         _courses = courses;
@@ -55,6 +57,7 @@ public class AdminController : Controller
         _areas = areas;
         _platforms = platforms;
         _rolePerms = rolePerms;
+        _migrationRunner = migrationRunner;
     }
 
     public IActionResult Index()
@@ -1047,6 +1050,39 @@ public class AdminController : Controller
             ? _translationService.T("admin.msg_materials_enabled", "Materials module enabled.")
             : _translationService.T("admin.msg_materials_disabled", "Materials module disabled.");
         return RedirectToAction(nameof(PlatformFeatures));
+    }
+
+    // ── Database Migrations ────────────────────────────────────────────────────
+
+    public async Task<IActionResult> Migrations()
+    {
+        var status = await _migrationRunner.GetStatusAsync();
+        return View(status);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RunPendingMigrations()
+    {
+        var results = await _migrationRunner.ApplyPendingAsync();
+        var errors  = results.Where(r => r.Error != null).ToList();
+
+        if (!errors.Any())
+        {
+            TempData["Success"] = _translationService.T(
+                "admin.migrations_success", "Migrations applied successfully.");
+        }
+        else
+        {
+            foreach (var (name, error) in errors)
+            {
+                TempData["Error"] = string.Format(
+                    _translationService.T("admin.migrations_error", "Error applying migration «{0}»: {1}"),
+                    name, error ?? "");
+            }
+        }
+
+        return RedirectToAction(nameof(Migrations));
     }
 
     private async Task<bool> CanAccessMenuAsync(string permission)
