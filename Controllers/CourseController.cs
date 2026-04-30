@@ -39,7 +39,7 @@ public class CourseController : Controller
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
     private string CurrentRole => User.FindFirst(ClaimTypes.Role)!.Value;
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     public async Task<IActionResult> Dashboard()
     {
         var courses = CurrentRole == "Admin"
@@ -133,7 +133,7 @@ public class CourseController : Controller
         return RedirectToAction("Details", new { id });
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpGet]
     public async Task<IActionResult> Create()
     {
@@ -143,7 +143,7 @@ public class CourseController : Controller
         return View(vm);
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(CourseFormViewModel model)
@@ -173,7 +173,7 @@ public class CourseController : Controller
         return RedirectToAction("Details", new { id });
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
@@ -197,7 +197,7 @@ public class CourseController : Controller
         return View(vm);
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, CourseFormViewModel model)
@@ -233,13 +233,13 @@ public class CourseController : Controller
     {
         var all = await _users.GetAllAsync();
         return all
-            .Where(u => u.Role == "Teacher" && u.IsActive)
+            .Where(u => u.CanTeach && u.IsActive)
             .Select(u => new TeacherOption(u.Id, u.FullName))
             .OrderBy(t => t.FullName)
             .ToList();
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
@@ -252,7 +252,7 @@ public class CourseController : Controller
         return RedirectToAction("Dashboard");
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     public async Task<IActionResult> Students(int id)
     {
         var course = await _courses.GetByIdAsync(id);

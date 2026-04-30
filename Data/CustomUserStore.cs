@@ -165,10 +165,22 @@ public class CustomUserStore :
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
-        using var cmd = new MySqlCommand("SELECT role FROM users WHERE id=@id LIMIT 1", conn);
+        using var cmd = new MySqlCommand(@"
+            SELECT u.role, r.can_teach, r.can_attend
+            FROM users u
+            LEFT JOIN roles r ON r.name = u.role
+            WHERE u.id = @id LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@id", user.Id);
-        var role = await cmd.ExecuteScalarAsync(ct) as string;
-        return string.IsNullOrEmpty(role) ? [] : [role];
+        using var r = await cmd.ExecuteReaderAsync(ct);
+        if (!await r.ReadAsync(ct)) return [];
+        var roleName = r.IsDBNull(0) ? "" : r.GetString("role");
+        if (string.IsNullOrEmpty(roleName)) return [];
+        var roles = new List<string> { roleName };
+        if (!r.IsDBNull(r.GetOrdinal("can_teach")) && r.GetBoolean("can_teach"))
+            roles.Add("CanTeach");
+        if (!r.IsDBNull(r.GetOrdinal("can_attend")) && r.GetBoolean("can_attend"))
+            roles.Add("CanAttend");
+        return roles;
     }
 
     public async Task<bool> IsInRoleAsync(ApplicationUser user, string roleName, CancellationToken ct)

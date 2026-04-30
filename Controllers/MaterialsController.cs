@@ -103,13 +103,13 @@ public class MaterialsController : Controller
 
     private async Task<bool> CanCreateMaterialAsync()
     {
-        if (User.IsInRole("Admin") || User.IsInRole("Teacher")) return true;
+        if (User.IsInRole("Admin") || User.IsInRole("CanTeach")) return true;
         return await _rolePerms.HasMenuPermissionAsync(CurrentRoleName(), "materials.create");
     }
 
     private async Task<bool> CanEditMaterialAsync()
     {
-        if (User.IsInRole("Admin") || User.IsInRole("Teacher")) return true;
+        if (User.IsInRole("Admin") || User.IsInRole("CanTeach")) return true;
         return await _rolePerms.HasMenuPermissionAsync(CurrentRoleName(), "materials.edit");
     }
 

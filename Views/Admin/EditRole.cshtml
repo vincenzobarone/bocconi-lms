@@ -54,6 +54,30 @@
                 </div>
             </div>
 
+            @* ── Partecipazione ai corsi ─────────────────────────── *@
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white fw-semibold py-3">
+                    <i class="bi bi-mortarboard me-2 text-bocconi"></i>@T["admin.role_course_participation","Partecipazione ai corsi"]
+                </div>
+                <div class="card-body">
+                    <div class="form-text mb-3">@T["admin.role_course_participation_hint","Definisce come gli utenti con questo ruolo interagiscono con i corsi."]</div>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="checkbox" asp-for="CanTeach" id="chk_can_teach" />
+                        <label class="form-check-label" for="chk_can_teach">
+                            @T["admin.role_can_teach","Sostieni corso"]
+                        </label>
+                        <div class="form-text">@T["admin.role_can_teach_hint","Può creare e gestire corsi come docente."]</div>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" asp-for="CanAttend" id="chk_can_attend" />
+                        <label class="form-check-label" for="chk_can_attend">
+                            @T["admin.role_can_attend","Partecipa al corso"]
+                        </label>
+                        <div class="form-text">@T["admin.role_can_attend_hint","Può iscriversi e frequentare i corsi come studente."]</div>
+                    </div>
+                </div>
+            </div>
+
             @* ── Permessi Corsi (solo se abilitati) ─────────────── *@
             @if (coursesEnabled)
             {

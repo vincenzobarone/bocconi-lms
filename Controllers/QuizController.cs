@@ -64,7 +64,7 @@ public class QuizController : Controller
 
         if (CurrentRole == "Admin") return null;
 
-        if (CurrentRole == "Teacher")
+        if (User.IsInRole("CanTeach"))
         {
             if (!await IsOwnerOrAdminOfCourseAsync(courseId)) return Forbid();
             return null;

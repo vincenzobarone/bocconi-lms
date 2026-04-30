@@ -52,13 +52,13 @@ public class LessonController : Controller
 
         bool isOwner = await IsOwnerOrAdminAsync(lesson.CourseId);
 
-        if (CurrentRole == "Student")
+        if (User.IsInRole("CanAttend"))
         {
             if (!lesson.IsPublished) return Forbid();
             bool enrolled = await _enrollments.IsEnrolledAsync(CurrentUserId, lesson.CourseId);
             if (!enrolled) return RedirectToAction("Details", "Course", new { id = lesson.CourseId });
         }
-        else if (CurrentRole == "Teacher" && !isOwner)
+        else if (User.IsInRole("CanTeach") && !isOwner)
         {
             return Forbid();
         }
@@ -66,7 +66,7 @@ public class LessonController : Controller
         var quizzes = await _quizzes.GetByLessonAsync(id);
         var linkedMaterials = await _materials.GetByLessonAsync(id);
 
-        if (CurrentRole == "Student")
+        if (User.IsInRole("CanAttend"))
             await _progress.MarkLessonCompletedAsync(CurrentUserId, id);
 
         ViewBag.Quizzes = quizzes;

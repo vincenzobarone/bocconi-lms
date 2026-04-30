@@ -104,7 +104,7 @@ public class AdminController : Controller
             return View(model);
         }
 
-        var role = availableRoles.Contains(model.Role) ? model.Role : availableRoles.FirstOrDefault() ?? "Student";
+        var role = availableRoles.Contains(model.Role) ? model.Role : availableRoles.FirstOrDefault() ?? "";
 
         var appUser = new ApplicationUser
         {
@@ -178,8 +178,8 @@ public class AdminController : Controller
 
             if (requestedRole != user.Role)
             {
-                // Block Teacher → * if they have active courses
-                if (user.Role == "Teacher")
+                // Block docente → * if they have active courses
+                if (user.CanTeach)
                 {
                     var courseCount = await _users.GetActiveCourseCountAsync(user.Id);
                     if (courseCount > 0)
@@ -190,8 +190,8 @@ public class AdminController : Controller
                         return View(user);
                     }
                 }
-                // Block Student → * if they are enrolled in any course
-                else if (user.Role == "Student")
+                // Block studente → * if they are enrolled in any course
+                else if (user.CanAttend)
                 {
                     var enrollments = await _enrollments.GetByUserAsync(user.Id);
                     if (enrollments.Count > 0)
@@ -315,7 +315,7 @@ public class AdminController : Controller
             return RedirectToAction("Users");
         }
 
-        if (user.Role == "Teacher")
+        if (user.CanTeach)
         {
             var courseCount = await _users.GetActiveCourseCountAsync(id);
             if (courseCount > 0)
@@ -369,12 +369,12 @@ public class AdminController : Controller
         if (user == null) return NotFound();
 
         object courses;
-        if (user.Role == "Teacher")
+        if (user.CanTeach)
         {
             var list = await _courses.GetByTeacherAsync(id);
             courses = list.Select(c => new { c.Id, c.Title, c.IsPublished, Type = "taught" });
         }
-        else if (user.Role == "Student")
+        else if (user.CanAttend)
         {
             var list = await _enrollments.GetByUserAsync(id);
             courses = list.Select(e => new
@@ -760,7 +760,7 @@ public class AdminController : Controller
             model.Permissions = permissions ?? new List<string>();
             return View(model);
         }
-        var role = new ApplicationRole { Name = name, NormalizedName = name.ToUpperInvariant() };
+        var role = new ApplicationRole { Name = name, NormalizedName = name.ToUpperInvariant(), CanTeach = model.CanTeach, CanAttend = model.CanAttend };
         await _roleManager.CreateAsync(role);
         var created = await _roleManager.FindByNameAsync(name);
         if (created != null)
@@ -788,7 +788,7 @@ public class AdminController : Controller
         }
         var perms = await _rolePerms.GetRolePermissionsAsync(role.Id);
         ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
-        return View(new RoleFormViewModel { Id = role.Id, Name = role.Name!, Permissions = perms });
+        return View(new RoleFormViewModel { Id = role.Id, Name = role.Name!, Permissions = perms, CanTeach = role.CanTeach, CanAttend = role.CanAttend });
     }
 
     [AllowAnonymous]
@@ -829,6 +829,8 @@ public class AdminController : Controller
         }
         role.Name = model.Name;
         role.NormalizedName = model.Name.ToUpperInvariant();
+        role.CanTeach = model.CanTeach;
+        role.CanAttend = model.CanAttend;
         await _roleManager.UpdateAsync(role);
         await _rolePerms.SetRolePermissionsAsync(role.Id, permissions ?? new());
         TempData["Success"] = string.Format(

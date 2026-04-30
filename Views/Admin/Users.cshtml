@@ -114,7 +114,7 @@
                                             </a>
                                         }
 
-                                        @if (coursesEnabled && (u.Role == "Teacher" || u.Role == "Student"))
+                                        @if (coursesEnabled && (u.CanTeach || u.CanAttend))
                                         {
                                             <button type="button"
                                                     class="btn btn-sm btn-outline-info btn-view-courses"
@@ -129,7 +129,7 @@
 
                                         @if (u.Id != currentUserId && u.Role != "Admin")
                                         {
-                                            @if (u.Role == "Teacher" && u.CourseCount > 0)
+                                            @if (u.CanTeach && u.CourseCount > 0)
                                             {
                                                 <button type="button"
                                                         class="btn btn-sm btn-outline-danger"

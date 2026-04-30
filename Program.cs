@@ -1884,6 +1884,79 @@ try
 }
 catch { }
 
+// ── Migrate: add can_teach / can_attend to roles; seed Teacher & Student ───
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+
+    using var addCols = new MySqlConnector.MySqlCommand(@"
+        ALTER TABLE roles
+            ADD COLUMN IF NOT EXISTS can_teach  TINYINT(1) NOT NULL DEFAULT 0,
+            ADD COLUMN IF NOT EXISTS can_attend TINYINT(1) NOT NULL DEFAULT 0;", conn);
+    await addCols.ExecuteNonQueryAsync();
+
+    using var seedRoles = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO roles (name, normalized_name, can_teach, can_attend)
+        VALUES ('Teacher', 'TEACHER', 1, 0),
+               ('Student', 'STUDENT', 0, 1)
+        ON DUPLICATE KEY UPDATE
+            can_teach  = VALUES(can_teach),
+            can_attend = VALUES(can_attend);", conn);
+    await seedRoles.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Migrate: fix users.role DEFAULT (remove 'Student') ────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var fixDefault = new MySqlConnector.MySqlCommand(
+        "ALTER TABLE users MODIFY COLUMN role VARCHAR(50) NOT NULL DEFAULT '';", conn);
+    await fixDefault.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Seed translations: ruolo can_teach / can_attend ───────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
+        ('en','admin.role_course_participation','Course participation'),
+        ('it','admin.role_course_participation','Partecipazione ai corsi'),
+        ('es','admin.role_course_participation','Participación en cursos'),
+        ('de','admin.role_course_participation','Kurs-Teilnahme'),
+        ('en','admin.role_course_participation_hint','Defines how users with this role interact with courses.'),
+        ('it','admin.role_course_participation_hint','Definisce come gli utenti con questo ruolo interagiscono con i corsi.'),
+        ('es','admin.role_course_participation_hint','Define cómo los usuarios con este rol interactúan con los cursos.'),
+        ('de','admin.role_course_participation_hint','Legt fest, wie Benutzer mit dieser Rolle mit Kursen interagieren.'),
+        ('en','admin.role_can_teach','Teach a course'),
+        ('it','admin.role_can_teach','Sostieni corso'),
+        ('es','admin.role_can_teach','Impartir curso'),
+        ('de','admin.role_can_teach','Kurs leiten'),
+        ('en','admin.role_can_teach_hint','Can create and manage courses as a teacher.'),
+        ('it','admin.role_can_teach_hint','Può creare e gestire corsi come docente.'),
+        ('es','admin.role_can_teach_hint','Puede crear y gestionar cursos como docente.'),
+        ('de','admin.role_can_teach_hint','Kann Kurse als Lehrender erstellen und verwalten.'),
+        ('en','admin.role_can_attend','Attend a course'),
+        ('it','admin.role_can_attend','Partecipa al corso'),
+        ('es','admin.role_can_attend','Participar en el curso'),
+        ('de','admin.role_can_attend','Kurs besuchen'),
+        ('en','admin.role_can_attend_hint','Can enroll in and attend courses as a student.'),
+        ('it','admin.role_can_attend_hint','Può iscriversi e frequentare i corsi come studente.'),
+        ('es','admin.role_can_attend_hint','Puede inscribirse y asistir a cursos como estudiante.'),
+        ('de','admin.role_can_attend_hint','Kann sich als Lernender einschreiben und Kurse besuchen.')
+        ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");

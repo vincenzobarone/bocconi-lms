@@ -6,7 +6,7 @@ using BocconiLMS.Models;
 
 namespace BocconiLMS.Controllers;
 
-[Authorize(Roles = "Student")]
+[Authorize(Roles = "CanAttend")]
 public class StudentController : Controller
 {
     private readonly EnrollmentRepository _enrollments;

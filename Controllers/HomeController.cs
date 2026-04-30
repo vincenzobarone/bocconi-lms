@@ -81,8 +81,8 @@ public class HomeController : Controller
         var vm = new DashboardViewModel
         {
             IsAdmin           = User.IsInRole("Admin"),
-            IsTeacher         = User.IsInRole("Teacher"),
-            IsStudent         = User.IsInRole("Student"),
+            IsTeacher         = User.IsInRole("CanTeach"),
+            IsStudent         = User.IsInRole("CanAttend"),
             IsPending         = !hasAnyRole,
             MaterialsEnabled  = materialsEnabled,
             CoursesEnabled    = coursesEnabled,
