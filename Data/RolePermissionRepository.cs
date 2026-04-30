@@ -11,7 +11,6 @@ public class RolePermissionRepository
     {
         ("courses.teach",                    "perm.courses_teach",                    true,  false),
         ("courses.attend",                   "perm.courses_attend",                   true,  false),
-        ("courses.enroll",                   "perm.courses_enroll",                   true,  false),
         ("menu.materials",                   "perm.menu_materials",                   false, true),
         ("materials.create",                 "perm.materials_create",                 false, true),
         ("materials.create.setstatus",       "perm.materials_create_setstatus",       false, true),
