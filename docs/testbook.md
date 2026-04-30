@@ -1,136 +1,121 @@
 # Test Book — Didasco LMS (Università Bocconi)
 
-Versione: 1.1 — aggiornata al 2026-04-30  
-Framework: xUnit + Microsoft.AspNetCore.Mvc.Testing (test d'integrazione HTTP)  
-File sorgente: `BocconiLMS.Tests/`
+Versione: 2.0 — aggiornata al 2026-04-30  
+Framework: xUnit + `Microsoft.AspNetCore.Mvc.Testing` (WebApplicationFactory)  
+Sorgente: `BocconiLMS.Tests/` — ogni riga corrisponde a un metodo di test reale.
 
 ---
 
 ## Convenzioni
 
-- **ID test**: `<MODULO>-<NNN>` (es. `AUTH-001`)
-- **Precondizioni**: stato del sistema prima dell'esecuzione
-- **Risultato atteso**: comportamento che l'asserzione xUnit verifica
-- **Risultato automatico**: esito dell'asserzione xUnit nel test runner (`PASS` = il test passa nel CI; `PASS*` = condizionale, vedi nota)
-- **Tipo**: `Integrazione` = test HTTP end-to-end contro WebApplicationFactory
+| Campo                  | Descrizione                                                                                           |
+|------------------------|-------------------------------------------------------------------------------------------------------|
+| **ID**                 | `<FILE>-<NNN>` (es. `AUTH-001`)                                                                       |
+| **Tipo**               | `[Fact]` = singolo caso; `[Theory]` = eseguito per ogni `[InlineData]`                               |
+| **Metodo di test**     | Nome esatto del metodo in C# — consente la verifica diretta nel test runner                          |
+| **Varianti**           | Valori `[InlineData]` (solo per `[Theory]`); vuoto per `[Fact]`                                      |
+| **Risultato atteso**   | Comportamento verificato dall'asserzione xUnit                                                       |
+| **Risultato automatico** | Esito xUnit (`xUnit PASS` = il test supera `dotnet test` nel CI)                                 |
 
 ---
 
-## AUTH — Autenticazione e Sessione
+## AUTH — `LoginFlowTests.cs` (6 metodi · 12 esecuzioni)
 
-| ID       | Scenario                                        | Precondizioni                                    | Passi                                                                                          | Risultato atteso                                                         | Risultato automatico | Tipo        |
-|----------|-------------------------------------------------|--------------------------------------------------|-----------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|----------------------|-------------|
-| AUTH-001 | Login valido — docente                          | Utente docente creato con ruolo `canTeach`        | 1. GET `/Account/Login` → estrai token CSRF<br>2. POST `/Account/Login` con credenziali valide | HTTP 302 redirect a `/Home/Dashboard`                                    | xUnit PASS           | Integrazione|
-| AUTH-002 | Login valido — studente                         | Utente studente creato con ruolo `canAttend`      | Come AUTH-001 con utente studente                                                             | HTTP 302 redirect a `/Home/Dashboard`                                    | xUnit PASS           | Integrazione|
-| AUTH-003 | Login valido — admin                            | Utente admin con ruolo `Admin`                   | Come AUTH-001 con utente admin                                                                | HTTP 302 redirect a `/Home/Dashboard`                                    | xUnit PASS           | Integrazione|
-| AUTH-004 | Login con password errata                       | Utente esistente nel DB                          | POST `/Account/Login` con password sbagliata                                                  | HTTP 200; risposta contiene "Credenziali non valide"                     | xUnit PASS           | Integrazione|
-| AUTH-005 | Login con e-mail inesistente                    | Nessun utente con quella e-mail                  | POST `/Account/Login` con e-mail sconosciuta                                                  | HTTP 200; risposta contiene "Credenziali non valide"                     | xUnit PASS           | Integrazione|
-| AUTH-006 | Logout — docente                                | Utente docente autenticato                       | 1. Login<br>2. GET `/Home/Dashboard` → token CSRF<br>3. POST `/Account/Logout`               | HTTP 302 redirect a `/`                                                  | xUnit PASS           | Integrazione|
-| AUTH-007 | Logout — studente                               | Utente studente autenticato                      | Come AUTH-006 con utente studente                                                             | HTTP 302 redirect a `/`                                                  | xUnit PASS           | Integrazione|
-| AUTH-008 | Logout — admin                                  | Utente admin autenticato                         | Come AUTH-006 con utente admin                                                                | HTTP 302 redirect a `/`                                                  | xUnit PASS           | Integrazione|
-| AUTH-009 | Login con sessione già attiva — docente         | Utente docente già autenticato                   | GET `/Account/Login` con cookie di sessione valido                                            | HTTP 302 (redirect, non mostra la pagina di login)                       | xUnit PASS           | Integrazione|
-| AUTH-010 | Login con sessione già attiva — studente        | Utente studente già autenticato                  | Come AUTH-009 con utente studente                                                             | HTTP 302                                                                 | xUnit PASS           | Integrazione|
-| AUTH-011 | Login con sessione già attiva — admin           | Utente admin già autenticato                     | Come AUTH-009 con utente admin                                                                | HTTP 302                                                                 | xUnit PASS           | Integrazione|
-| AUTH-012 | Pagina protetta senza autenticazione            | Nessun cookie di sessione                        | GET `/Home/Dashboard` senza cookie                                                            | HTTP 302 redirect a `/Account/Login`                                     | xUnit PASS           | Integrazione|
+| ID       | Tipo     | Metodo di test                                     | Varianti (InlineData)              | Risultato atteso                                         | Risultato automatico |
+|----------|----------|----------------------------------------------------|------------------------------------|---------------------------------------------------------|----------------------|
+| AUTH-001 | [Theory] | `Login_WithValidCredentials_RedirectsToDashboard`  | "attendee", "instructor", "admin"  | HTTP 302 → `/Home/Dashboard`                            | xUnit PASS           |
+| AUTH-002 | [Fact]   | `Login_WithWrongPassword_ShowsError`               | —                                  | HTTP 200; risposta contiene "Credenziali non valide"    | xUnit PASS           |
+| AUTH-003 | [Fact]   | `Login_WithNonExistentEmail_ShowsError`            | —                                  | HTTP 200; risposta contiene "Credenziali non valide"    | xUnit PASS           |
+| AUTH-004 | [Theory] | `Logout_WhenLoggedIn_RedirectsToHome`              | "attendee", "instructor", "admin"  | HTTP 302 → `/`                                          | xUnit PASS           |
+| AUTH-005 | [Theory] | `Login_AlreadyAuthenticated_RedirectsToDashboard`  | "attendee", "instructor", "admin"  | HTTP 302 (non mostra la pagina di login)                | xUnit PASS           |
+| AUTH-006 | [Fact]   | `ProtectedPage_Unauthenticated_RedirectsToLogin`   | —                                  | HTTP 302 → `/Account/Login`                             | xUnit PASS           |
 
 ---
 
-## COURSE — Gestione Corsi
+## COURSE — `CourseFlowTests.cs` (10 metodi · 12 esecuzioni)
 
-| ID        | Scenario                                               | Precondizioni                                            | Passi                                                                        | Risultato atteso                                                  | Risultato automatico | Tipo        |
-|-----------|--------------------------------------------------------|----------------------------------------------------------|------------------------------------------------------------------------------|-------------------------------------------------------------------|----------------------|-------------|
-| COURSE-001| Lista corsi — docente autenticato                      | Utente docente autenticato                               | GET `/Course/Index`                                                          | HTTP 200                                                          | xUnit PASS           | Integrazione|
-| COURSE-002| Lista corsi — studente autenticato                     | Utente studente autenticato                              | GET `/Course/Index`                                                          | HTTP 200                                                          | xUnit PASS           | Integrazione|
-| COURSE-003| Pagina creazione corso — docente con `courses.teach`   | Utente con permesso `courses.teach`                      | GET `/Course/Create`                                                         | HTTP 200                                                          | xUnit PASS           | Integrazione|
-| COURSE-004| Pagina creazione corso — studente senza `courses.teach`| Utente senza permesso `courses.teach`                    | GET `/Course/Create`                                                         | HTTP 403 o HTTP 302 a pagina accesso negato                       | xUnit PASS           | Integrazione|
-| COURSE-005| Dettaglio corso — docente autenticato                  | Corso pubblicato nel DB                                  | GET `/Course/Details/{courseId}`                                             | HTTP 200                                                          | xUnit PASS           | Integrazione|
-| COURSE-006| Dettaglio corso — studente autenticato                 | Corso pubblicato nel DB                                  | GET `/Course/Details/{courseId}`                                             | HTTP 200                                                          | xUnit PASS           | Integrazione|
-| COURSE-007| Iscrizione a corso — studente                          | Studente non ancora iscritto al corso; corso pubblicato  | 1. GET `/Course/Details/{id}` → token CSRF<br>2. POST `/Course/Enroll/{id}` | HTTP 302; record in `enrollments` verificato via DB               | xUnit PASS           | Integrazione|
-| COURSE-008| Lista corsi senza autenticazione                       | Nessun cookie di sessione                                | GET `/Course/Index` senza cookie                                             | HTTP 302 redirect a `/Account/Login`                              | xUnit PASS           | Integrazione|
-
----
-
-## LESSON — Gestione Lezioni
-
-| ID        | Scenario                                             | Precondizioni                                              | Passi                                             | Risultato atteso                                                  | Risultato automatico | Tipo        |
-|-----------|------------------------------------------------------|------------------------------------------------------------|---------------------------------------------------|-------------------------------------------------------------------|----------------------|-------------|
-| LESSON-001| Dettaglio lezione — studente iscritto                | Studente iscritto al corso; lezione pubblicata             | GET `/Lesson/Details/{lessonId}`                  | HTTP 200                                                          | xUnit PASS           | Integrazione|
-| LESSON-002| Dettaglio lezione — studente NON iscritto            | Studente non iscritto al corso                             | GET `/Lesson/Details/{lessonId}`                  | HTTP 403 o HTTP 302 (accesso negato)                              | xUnit PASS           | Integrazione|
-| LESSON-003| Pagina creazione lezione — docente con `courses.teach`| Utente con `courses.teach`; corso esistente               | GET `/Lesson/Create?courseId={id}`                | HTTP 200                                                          | xUnit PASS           | Integrazione|
-| LESSON-004| Pagina creazione lezione — studente senza `courses.teach`| Utente senza `courses.teach`                           | GET `/Lesson/Create?courseId={id}`                | HTTP 403 o HTTP 302 (accesso negato)                              | xUnit PASS           | Integrazione|
+| ID        | Tipo     | Metodo di test                                    | Varianti (InlineData)          | Risultato atteso                                                    | Risultato automatico |
+|-----------|----------|---------------------------------------------------|--------------------------------|---------------------------------------------------------------------|----------------------|
+| COURSE-001| [Theory] | `CourseIndex_AuthenticatedUser_Returns200`        | "instructor", "attendee"       | HTTP 200                                                            | xUnit PASS           |
+| COURSE-002| [Fact]   | `CourseCreate_InstructorWithCanTeach_Returns200`  | —                              | HTTP 200                                                            | xUnit PASS           |
+| COURSE-003| [Fact]   | `CourseCreate_AttendeeWithoutCanTeach_IsForbidden`| —                              | HTTP 302/403 (accesso negato)                                        | xUnit PASS           |
+| COURSE-004| [Theory] | `CourseDetails_AuthenticatedUser_Returns200`      | "instructor", "attendee"       | HTTP 200                                                            | xUnit PASS           |
+| COURSE-005| [Fact]   | `Enroll_AttendeeUser_SucceedsAndRedirects`        | —                              | HTTP 302; record `enrollments` presente nel DB                      | xUnit PASS           |
+| COURSE-006| [Fact]   | `LessonDetails_EnrolledAttendee_Returns200`       | —                              | HTTP 200                                                            | xUnit PASS           |
+| COURSE-007| [Fact]   | `LessonDetails_NotEnrolledAttendee_IsForbidden`   | —                              | HTTP 302/403 (accesso negato)                                        | xUnit PASS           |
+| COURSE-008| [Fact]   | `LessonCreate_InstructorWithCanTeach_Returns200`  | —                              | HTTP 200                                                            | xUnit PASS           |
+| COURSE-009| [Fact]   | `LessonCreate_AttendeeWithoutCanTeach_IsForbidden`| —                              | HTTP 302/403 (accesso negato)                                        | xUnit PASS           |
+| COURSE-010| [Fact]   | `CourseIndex_Unauthenticated_RedirectsToLogin`    | —                              | HTTP 302 → `/Account/Login`                                         | xUnit PASS           |
 
 ---
 
-## QUIZ — Somministrazione Quiz
+## QUIZ — `QuizFlowTests.cs` (6 metodi · 6 esecuzioni)
 
-| ID      | Scenario                                             | Precondizioni                                                        | Passi                                                                          | Risultato atteso                                                    | Risultato automatico | Tipo        |
-|---------|------------------------------------------------------|----------------------------------------------------------------------|--------------------------------------------------------------------------------|---------------------------------------------------------------------|----------------------|-------------|
-| QUIZ-001| Visualizzazione quiz — studente iscritto             | Studente iscritto al corso; quiz con 1 domanda e 2 opzioni           | GET `/Quiz/Take/{quizId}`                                                      | HTTP 200; HTML contiene titolo quiz, testo domanda, contatore `1 /` | xUnit PASS           | Integrazione|
-| QUIZ-002| Invio risposta corretta                              | Come QUIZ-001                                                        | 1. GET `/Quiz/Take/{id}` → token CSRF<br>2. POST `/Quiz/Submit/{id}` con opzione corretta | HTTP 302 a `/Quiz/Result`; pagina risultato mostra punteggio 100 | xUnit PASS          | Integrazione|
-| QUIZ-003| Invio risposta errata                                | Come QUIZ-001                                                        | POST `/Quiz/Submit/{id}` con opzione sbagliata                                 | HTTP 302 a `/Quiz/Result`; pagina risultato mostra punteggio 0      | xUnit PASS           | Integrazione|
-| QUIZ-004| Accesso quiz senza autenticazione                    | Nessun cookie di sessione                                            | GET `/Quiz/Take/{quizId}` senza cookie                                         | HTTP 302 a `/Account/Login`                                         | xUnit PASS           | Integrazione|
-| QUIZ-005| Storico tentativi dopo risposta                      | Studente ha completato un tentativo                                  | GET `/Quiz/History?quizId={id}`                                                | HTTP 200; HTML contiene punteggio o titolo quiz                     | xUnit PASS           | Integrazione|
-| QUIZ-006| Accesso quiz — studente non iscritto al corso        | Studente autenticato ma non iscritto                                 | GET `/Quiz/Take/{quizId}`                                                      | HTTP 302 a `/Account/AccessDenied`                                  | xUnit PASS           | Integrazione|
-
----
-
-## ADMIN — Pannello Amministratore
-
-| ID       | Scenario                                          | Precondizioni                            | Passi                                                                                    | Risultato atteso                                                    | Risultato automatico | Tipo        |
-|----------|---------------------------------------------------|------------------------------------------|------------------------------------------------------------------------------------------|---------------------------------------------------------------------|----------------------|-------------|
-| ADMIN-001| Lista utenti — admin                              | Utente admin autenticato                 | GET `/Admin/Users`                                                                       | HTTP 200                                                            | xUnit PASS           | Integrazione|
-| ADMIN-002| Lista utenti — non-admin                          | Utente docente autenticato               | GET `/Admin/Users`                                                                       | HTTP 403 o HTTP 302 (accesso negato)                                | xUnit PASS           | Integrazione|
-| ADMIN-003| Creazione utente — admin                          | Admin autenticato                        | 1. GET `/Admin/CreateUser` → token CSRF<br>2. POST `/Admin/CreateUser` con dati validi  | HTTP 302; utente trovato nel DB; cleanup dopo il test               | xUnit PASS           | Integrazione|
-| ADMIN-004| Dashboard admin — admin                           | Admin autenticato                        | GET `/Admin/Dashboard`                                                                   | HTTP 200                                                            | xUnit PASS           | Integrazione|
-| ADMIN-005| Dashboard admin — non-admin                       | Docente autenticato                      | GET `/Admin/Dashboard`                                                                   | HTTP 403 o HTTP 302 (accesso negato)                                | xUnit PASS           | Integrazione|
-| ADMIN-006| Impostazioni app — admin                          | Admin autenticato                        | GET `/Admin/Settings`                                                                    | HTTP 200                                                            | xUnit PASS           | Integrazione|
-| ADMIN-007| Creazione area — admin                            | Admin autenticato                        | 1. GET `/Admin/Dictionary?tab=aree` → token<br>2. POST `/Admin/CreateArea`              | HTTP 302; area trovata nel DB; cleanup dopo il test                 | xUnit PASS           | Integrazione|
-| ADMIN-008| Eliminazione area senza utenti — admin            | Area senza utenti associati              | POST `/Admin/DeleteArea/{areaId}`                                                        | HTTP 302; area non trovata nel DB                                   | xUnit PASS           | Integrazione|
-| ADMIN-009| Creazione tipo documento — admin                  | Admin autenticato                        | 1. GET `/Admin/Dictionary?tab=doctypes` → token<br>2. POST `/Admin/CreateDocumentType` | HTTP 302; tipo documento nel DB; cleanup dopo il test               | xUnit PASS           | Integrazione|
-| ADMIN-010| Eliminazione tipo documento senza materiali — admin| Tipo documento senza materiali associati | POST `/Admin/DeleteDocumentType/{id}`                                                   | HTTP 302; tipo documento non trovato nel DB                         | xUnit PASS           | Integrazione|
+| ID      | Tipo   | Metodo di test                                     | Varianti (InlineData) | Risultato atteso                                                          | Risultato automatico |
+|---------|--------|----------------------------------------------------|-----------------------|---------------------------------------------------------------------------|----------------------|
+| QUIZ-001| [Fact] | `TakeQuiz_AsEnrolledAttendee_ShowsQuizPage`        | —                     | HTTP 200; HTML contiene titolo quiz, testo domanda, contatore "1 /"       | xUnit PASS           |
+| QUIZ-002| [Fact] | `SubmitQuiz_WithCorrectAnswer_ReturnsPassedResult` | —                     | HTTP 302 → `/Quiz/Result`; pagina risultato mostra punteggio 100          | xUnit PASS           |
+| QUIZ-003| [Fact] | `SubmitQuiz_WithWrongAnswer_ReturnsFailedResult`   | —                     | HTTP 302 → `/Quiz/Result`; pagina risultato mostra punteggio 0            | xUnit PASS           |
+| QUIZ-004| [Fact] | `TakeQuiz_Unauthenticated_RedirectsToLogin`        | —                     | HTTP 302 → `/Account/Login`                                               | xUnit PASS           |
+| QUIZ-005| [Fact] | `QuizHistory_AfterAttempt_ShowsAttempt`            | —                     | HTTP 200; HTML contiene punteggio o titolo quiz                           | xUnit PASS           |
+| QUIZ-006| [Fact] | `TakeQuiz_AttendeeNotEnrolled_RedirectsToAccessDenied` | —                 | HTTP 302 → `/Account/AccessDenied`                                        | xUnit PASS           |
 
 ---
 
-## ROLES — Gestione Ruoli
+## ADMIN — `AdminCrudTests.cs` (10 metodi · 10 esecuzioni)
 
-| ID      | Scenario                                              | Precondizioni                                       | Passi                                                                               | Risultato atteso                                                        | Risultato automatico | Tipo        |
-|---------|-------------------------------------------------------|-----------------------------------------------------|-------------------------------------------------------------------------------------|-------------------------------------------------------------------------|----------------------|-------------|
-| ROLE-001| Creazione ruolo — admin                               | Admin autenticato                                   | 1. GET `/Admin/CreateRole` → token<br>2. POST `/Admin/CreateRole` con nome          | HTTP 302; ruolo trovato nel DB; cleanup dopo il test                    | xUnit PASS           | Integrazione|
-| ROLE-002| Creazione ruolo con flag `courses.teach` — admin      | Admin autenticato; feature flag CoursesModule=true  | POST `/Admin/CreateRole` con `permissions=courses.teach`                            | HTTP 302; `canTeach=true`, `canAttend=false` verificati nel DB          | xUnit PASS           | Integrazione|
-| ROLE-003| Lista ruoli — admin                                   | Admin autenticato                                   | GET `/Admin/Users?tab=ruoli`                                                        | HTTP 200                                                                | xUnit PASS           | Integrazione|
-| ROLE-004| Modifica nome ruolo — admin                           | Ruolo esistente nel DB                              | 1. GET `/Admin/EditRole/{id}` → token<br>2. POST `/Admin/EditRole` con nuovo nome  | HTTP 302; nuovo nome trovato; vecchio nome non trovato nel DB           | xUnit PASS           | Integrazione|
-| ROLE-005| Eliminazione ruolo senza utenti — admin               | Ruolo senza utenti associati                        | POST `/Admin/DeleteRole/{id}`                                                       | HTTP 302; ruolo non trovato nel DB                                      | xUnit PASS           | Integrazione|
-| ROLE-006| Eliminazione ruolo Admin — bloccata                   | Admin autenticato; ruolo `Admin` nel DB             | POST `/Admin/DeleteRole/{adminRoleId}`                                              | HTTP 302; ruolo `Admin` ancora presente nel DB (operazione bloccata)    | xUnit PASS           | Integrazione|
-| ROLE-007| Gestione ruoli — non autenticato                      | Nessun cookie di sessione                           | GET `/Admin/CreateRole` senza cookie                                                | HTTP 302 a `/Account/Login`                                             | xUnit PASS           | Integrazione|
-
----
-
-## MATERIALS — Libreria Materiali
-
-| ID      | Scenario                                              | Precondizioni                               | Passi                                                 | Risultato atteso                                                          | Risultato automatico | Tipo        |
-|---------|-------------------------------------------------------|---------------------------------------------|-------------------------------------------------------|---------------------------------------------------------------------------|----------------------|-------------|
-| MAT-001 | Lista materiali — docente autenticato                 | Docente autenticato                         | GET `/Materials/Index`                                | HTTP 200                                                                  | xUnit PASS           | Integrazione|
-| MAT-002 | Lista materiali — studente autenticato                | Studente autenticato                        | GET `/Materials/Index`                                | HTTP 200                                                                  | xUnit PASS           | Integrazione|
-| MAT-003 | Lista materiali — admin autenticato                   | Admin autenticato                           | GET `/Materials/Index`                                | HTTP 200                                                                  | xUnit PASS           | Integrazione|
-| MAT-004 | Pagina creazione materiale — docente (`canTeach`)     | Docente con `courses.teach` autenticato     | GET `/Materials/Create`                               | HTTP 200                                                                  | xUnit PASS           | Integrazione|
-| MAT-005 | Pagina creazione materiale — admin                    | Admin autenticato                           | GET `/Materials/Create`                               | HTTP 200                                                                  | xUnit PASS           | Integrazione|
-| MAT-006 | Pagina creazione materiale — studente (`canAttend`)   | Studente senza `materials.*` autenticato    | GET `/Materials/Create`                               | HTTP 403 o HTTP 302 a `/Account/AccessDenied`                            | xUnit PASS           | Integrazione|
-| MAT-007 | Lista materiali — non autenticato                     | Nessun cookie di sessione                   | GET `/Materials/Index` senza cookie                   | HTTP 302 a `/Account/Login`                                               | xUnit PASS           | Integrazione|
-| MAT-008 | Dettaglio materiale pubblicato — studente             | Materiale con `status='pubblicato'`; studente autenticato | GET `/Materials/Details/{id}`          | HTTP 200; HTML contiene titolo materiale                                  | xUnit PASS           | Integrazione|
+| ID       | Tipo   | Metodo di test                                       | Varianti (InlineData) | Risultato atteso                                                        | Risultato automatico |
+|----------|--------|------------------------------------------------------|-----------------------|-------------------------------------------------------------------------|----------------------|
+| ADMIN-001| [Fact] | `UsersList_AsAdmin_Returns200`                       | —                     | HTTP 200                                                                | xUnit PASS           |
+| ADMIN-002| [Fact] | `UsersList_AsNonAdmin_IsForbidden`                   | —                     | HTTP 302/403 (accesso negato)                                            | xUnit PASS           |
+| ADMIN-003| [Fact] | `CreateUser_AsAdmin_PersistsUser`                    | —                     | HTTP 302; utente trovato nel DB; cleanup dopo il test                   | xUnit PASS           |
+| ADMIN-004| [Fact] | `CreateArea_AsAdmin_PersistsArea`                    | —                     | HTTP 302; area trovata nel DB; cleanup dopo il test                     | xUnit PASS           |
+| ADMIN-005| [Fact] | `DeleteArea_WithNoUsers_RemovesArea`                 | —                     | HTTP 302; area non trovata nel DB                                       | xUnit PASS           |
+| ADMIN-006| [Fact] | `CreateDocumentType_AsAdmin_PersistsDocType`         | —                     | HTTP 302; tipo documento trovato nel DB; cleanup dopo il test           | xUnit PASS           |
+| ADMIN-007| [Fact] | `DeleteDocumentType_WithNoMaterials_RemovesDocType`  | —                     | HTTP 302; tipo documento non trovato nel DB                             | xUnit PASS           |
+| ADMIN-008| [Fact] | `AdminDashboard_AsAdmin_Returns200`                  | —                     | HTTP 200                                                                | xUnit PASS           |
+| ADMIN-009| [Fact] | `AdminDashboard_AsNonAdmin_IsForbidden`              | —                     | HTTP 302/403 (accesso negato)                                            | xUnit PASS           |
+| ADMIN-010| [Fact] | `AppSettings_AsAdmin_Returns200`                     | —                     | HTTP 200                                                                | xUnit PASS           |
 
 ---
 
-## Configurazione dell'ambiente di test
+## ROLES — `RoleCrudTests.cs` (7 metodi · 7 esecuzioni)
+
+| ID      | Tipo   | Metodo di test                              | Varianti (InlineData) | Risultato atteso                                                                     | Risultato automatico |
+|---------|--------|---------------------------------------------|-----------------------|--------------------------------------------------------------------------------------|----------------------|
+| ROLE-001| [Fact] | `CreateRole_AsAdmin_PersistsInDatabase`     | —                     | HTTP 302; ruolo trovato nel DB; cleanup dopo il test                                 | xUnit PASS           |
+| ROLE-002| [Fact] | `CreateRole_WithCanTeachFlag_StoredCorrectly` | —                   | HTTP 302; `canTeach=true`, `canAttend=false` verificati nel DB                       | xUnit PASS           |
+| ROLE-003| [Fact] | `UsersPage_RolesTab_ReturnsOk_AsAdmin`      | —                     | HTTP 200                                                                             | xUnit PASS           |
+| ROLE-004| [Fact] | `EditRole_AsAdmin_UpdatesName`              | —                     | HTTP 302; nuovo nome trovato nel DB; vecchio nome assente                            | xUnit PASS           |
+| ROLE-005| [Fact] | `DeleteRole_WithNoUsers_RemovesRole`        | —                     | HTTP 302; ruolo non trovato nel DB                                                   | xUnit PASS           |
+| ROLE-006| [Fact] | `DeleteRole_Admin_IsProtected`              | —                     | HTTP 302; ruolo `Admin` ancora presente nel DB (operazione bloccata dal controller)  | xUnit PASS           |
+| ROLE-007| [Fact] | `RoleManagement_Unauthenticated_RedirectsToLogin` | —               | HTTP 302 → `/Account/Login`                                                          | xUnit PASS           |
+
+---
+
+## MATERIALS — `MaterialFlowTests.cs` (5 metodi · 8 esecuzioni)
+
+| ID      | Tipo     | Metodo di test                                          | Varianti (InlineData)              | Risultato atteso                                                   | Risultato automatico |
+|---------|----------|---------------------------------------------------------|------------------------------------|--------------------------------------------------------------------|----------------------|
+| MAT-001 | [Theory] | `MaterialsIndex_AuthenticatedUser_Returns200`           | "instructor", "attendee", "admin"  | HTTP 200                                                           | xUnit PASS           |
+| MAT-002 | [Theory] | `MaterialsCreate_CanTeachOrAdmin_Returns200`            | "instructor", "admin"              | HTTP 200                                                           | xUnit PASS           |
+| MAT-003 | [Fact]   | `MaterialsCreate_CanAttendUser_IsForbidden`             | —                                  | HTTP 302/403 (accesso negato)                                       | xUnit PASS           |
+| MAT-004 | [Fact]   | `MaterialsIndex_Unauthenticated_RedirectsToLogin`       | —                                  | HTTP 302 → `/Account/Login`                                        | xUnit PASS           |
+| MAT-005 | [Fact]   | `MaterialDetails_CanAttendUser_CanViewPublishedMaterial`| —                                  | HTTP 200; HTML contiene titolo materiale                           | xUnit PASS           |
+
+---
+
+## Configurazione ambiente di test
 
 ```
-Test DB    : Database MySQL separato (configurabile via MYSQL_CONNECTION_STRING_TEST)
-Factory    : LmsWebFactory (estende WebApplicationFactory<Program>)
-Helper DB  : DbTestHelper — crea/elimina dati di test; cleanup in DisposeAsync()
-Isolamento : Ogni test class crea i propri utenti/corsi con suffix GUID univoco
-SMTP       : Disabilitato via EnsureSmtpDisabledAsync() prima di ogni test
+Test DB    : MySQL separato — MYSQL_CONNECTION_STRING_TEST (override via appsettings.Test.json)
+Factory    : LmsWebFactory : WebApplicationFactory<Program>
+Helper     : DbTestHelper — crea/elimina fixture; cleanup in DisposeAsync()
+Isolamento : Ogni test class usa suffix GUID per utenti/risorse → zero conflitti tra test
+SMTP       : Disabilitato via EnsureSmtpDisabledAsync() prima di ogni suite
 ```
 
-### Esecuzione
+### Comando di esecuzione
 
 ```bash
 cd artifacts/bocconi-lms
@@ -139,15 +124,17 @@ dotnet test BocconiLMS.Tests/BocconiLMS.Tests.csproj --logger "console;verbosity
 
 ---
 
-## Copertura funzionale riepilogativa
+## Riepilogo copertura
 
-| Modulo            | Test totali | Test PASS attesi | Funzionalità coperte                                                    |
-|-------------------|-------------|-----------------|-------------------------------------------------------------------------|
-| Autenticazione    | 12          | 12              | Login, logout, sessione attiva, pagine protette                         |
-| Corsi             | 8           | 8               | Lista, dettaglio, creazione (RBAC), iscrizione                          |
-| Lezioni           | 4           | 4               | Dettaglio (iscrizione richiesta), creazione (RBAC)                      |
-| Quiz              | 6           | 6               | Visualizzazione, invio (corretto/errato), storico, RBAC, iscrizione     |
-| Pannello Admin    | 10          | 10              | CRUD utenti/aree/tipi documento, dashboard, accesso non-admin bloccato  |
-| Gestione Ruoli    | 7           | 7               | CRUD ruoli, permessi `canTeach`, protezione ruolo Admin                 |
-| Materiali         | 8           | 8               | Lista, creazione (RBAC), dettaglio pubblicato                           |
-| **Totale**        | **55**      | **55**          |                                                                         |
+| File di test          | Metodi di test | [Fact] | [Theory] | Esecuzioni totali (InlineData espanse) |
+|-----------------------|----------------|--------|----------|----------------------------------------|
+| `LoginFlowTests.cs`   | 6              | 3      | 3        | 12                                     |
+| `CourseFlowTests.cs`  | 10             | 8      | 2        | 12                                     |
+| `QuizFlowTests.cs`    | 6              | 6      | 0        | 6                                      |
+| `AdminCrudTests.cs`   | 10             | 10     | 0        | 10                                     |
+| `RoleCrudTests.cs`    | 7              | 7      | 0        | 7                                      |
+| `MaterialFlowTests.cs`| 5              | 3      | 2        | 8                                      |
+| **Totale**            | **44**         | **37** | **7**    | **55**                                 |
+
+> **Nota**: ogni `[Theory]` con N `[InlineData]` genera N esecuzioni separate nel test runner xUnit.  
+> Il totale 55 esecuzioni corrisponde alla somma delle righe InlineData; i 44 metodi di test sono le unità codificate nel sorgente.
