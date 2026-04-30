@@ -2327,6 +2327,184 @@ try
 }
 catch { }
 
+// ── Seed admin controller translation keys ────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT IGNORE INTO translations (language_code, label_key, label_value) VALUES
+        -- user management
+        ('en','admin.msg_user_created','User created successfully.'),
+        ('it','admin.msg_user_created','Utente creato con successo.'),
+        ('es','admin.msg_user_created','Usuario creado correctamente.'),
+        ('de','admin.msg_user_created','Benutzer erfolgreich erstellt.'),
+        ('en','admin.msg_user_no_edit','You cannot edit this user.'),
+        ('it','admin.msg_user_no_edit','Non puoi modificare questo utente.'),
+        ('es','admin.msg_user_no_edit','No puedes editar este usuario.'),
+        ('de','admin.msg_user_no_edit','Sie können diesen Benutzer nicht bearbeiten.'),
+        ('en','admin.msg_user_updated','User updated.'),
+        ('it','admin.msg_user_updated','Utente aggiornato.'),
+        ('es','admin.msg_user_updated','Usuario actualizado.'),
+        ('de','admin.msg_user_updated','Benutzer aktualisiert.'),
+        ('en','admin.msg_last_admin','Cannot deactivate the only active administrator.'),
+        ('it','admin.msg_last_admin','Impossibile disattivare l''unico amministratore attivo.'),
+        ('es','admin.msg_last_admin','No se puede desactivar al único administrador activo.'),
+        ('de','admin.msg_last_admin','Der einzige aktive Administrator kann nicht deaktiviert werden.'),
+        ('en','admin.msg_user_activated','User activated.'),
+        ('it','admin.msg_user_activated','Utente attivato.'),
+        ('es','admin.msg_user_activated','Usuario activado.'),
+        ('de','admin.msg_user_activated','Benutzer aktiviert.'),
+        ('en','admin.msg_user_deactivated','User deactivated.'),
+        ('it','admin.msg_user_deactivated','Utente disattivato.'),
+        ('es','admin.msg_user_deactivated','Usuario desactivado.'),
+        ('de','admin.msg_user_deactivated','Benutzer deaktiviert.'),
+        -- areas
+        ('en','admin.msg_area_invalid_name','Invalid area name.'),
+        ('it','admin.msg_area_invalid_name','Nome area non valido.'),
+        ('es','admin.msg_area_invalid_name','Nombre de área no válido.'),
+        ('de','admin.msg_area_invalid_name','Ungültiger Bereichsname.'),
+        ('en','admin.msg_area_exists','An area named «{0}» already exists.'),
+        ('it','admin.msg_area_exists','Un''area con il nome «{0}» esiste già.'),
+        ('es','admin.msg_area_exists','Ya existe un área llamada «{0}».'),
+        ('de','admin.msg_area_exists','Ein Bereich namens «{0}» existiert bereits.'),
+        ('en','admin.msg_area_created','Area «{0}» created.'),
+        ('it','admin.msg_area_created','Area «{0}» creata.'),
+        ('es','admin.msg_area_created','Área «{0}» creada.'),
+        ('de','admin.msg_area_created','Bereich «{0}» erstellt.'),
+        ('en','admin.msg_area_renamed','Area renamed to «{0}».'),
+        ('it','admin.msg_area_renamed','Area rinominata in «{0}».'),
+        ('es','admin.msg_area_renamed','Área renombrada a «{0}».'),
+        ('de','admin.msg_area_renamed','Bereich umbenannt in «{0}».'),
+        ('en','admin.msg_area_in_use','Cannot delete: {0} user(s) belong to this area.'),
+        ('it','admin.msg_area_in_use','Impossibile eliminare: {0} utente/i appartiene a questa area.'),
+        ('es','admin.msg_area_in_use','No se puede eliminar: {0} usuario(s) pertenece(n) a esta área.'),
+        ('de','admin.msg_area_in_use','Löschen nicht möglich: {0} Benutzer gehört/gehören zu diesem Bereich.'),
+        ('en','admin.msg_area_deleted','Area deleted.'),
+        ('it','admin.msg_area_deleted','Area eliminata.'),
+        ('es','admin.msg_area_deleted','Área eliminada.'),
+        ('de','admin.msg_area_deleted','Bereich gelöscht.'),
+        -- platforms
+        ('en','admin.msg_platform_invalid_name','Invalid platform name.'),
+        ('it','admin.msg_platform_invalid_name','Nome piattaforma non valido.'),
+        ('es','admin.msg_platform_invalid_name','Nombre de plataforma no válido.'),
+        ('de','admin.msg_platform_invalid_name','Ungültiger Plattformname.'),
+        ('en','admin.msg_platform_exists','A platform named «{0}» already exists.'),
+        ('it','admin.msg_platform_exists','Una piattaforma con il nome «{0}» esiste già.'),
+        ('es','admin.msg_platform_exists','Ya existe una plataforma llamada «{0}».'),
+        ('de','admin.msg_platform_exists','Eine Plattform namens «{0}» existiert bereits.'),
+        ('en','admin.msg_platform_created','Platform «{0}» created.'),
+        ('it','admin.msg_platform_created','Piattaforma «{0}» creata.'),
+        ('es','admin.msg_platform_created','Plataforma «{0}» creada.'),
+        ('de','admin.msg_platform_created','Plattform «{0}» erstellt.'),
+        ('en','admin.msg_platform_renamed','Platform renamed to «{0}».'),
+        ('it','admin.msg_platform_renamed','Piattaforma rinominata in «{0}».'),
+        ('es','admin.msg_platform_renamed','Plataforma renombrada a «{0}».'),
+        ('de','admin.msg_platform_renamed','Plattform umbenannt in «{0}».'),
+        ('en','admin.msg_platform_in_use','Cannot delete: {0} material(s) use this platform.'),
+        ('it','admin.msg_platform_in_use','Impossibile eliminare: {0} materiale/i usa questa piattaforma.'),
+        ('es','admin.msg_platform_in_use','No se puede eliminar: {0} material(es) usa(n) esta plataforma.'),
+        ('de','admin.msg_platform_in_use','Löschen nicht möglich: {0} Material(ien) nutzt/nutzen diese Plattform.'),
+        ('en','admin.msg_platform_deleted','Platform deleted.'),
+        ('it','admin.msg_platform_deleted','Piattaforma eliminata.'),
+        ('es','admin.msg_platform_deleted','Plataforma eliminada.'),
+        ('de','admin.msg_platform_deleted','Plattform gelöscht.'),
+        -- translations management
+        ('en','admin.msg_translations_saved','Translations for ''{0}'' saved.'),
+        ('it','admin.msg_translations_saved','Traduzioni per ''{0}'' salvate.'),
+        ('es','admin.msg_translations_saved','Traducciones para ''{0}'' guardadas.'),
+        ('de','admin.msg_translations_saved','Übersetzungen für ''{0}'' gespeichert.'),
+        ('en','admin.msg_key_deleted','Key ''{0}'' deleted.'),
+        ('it','admin.msg_key_deleted','Chiave ''{0}'' eliminata.'),
+        ('es','admin.msg_key_deleted','Clave ''{0}'' eliminada.'),
+        ('de','admin.msg_key_deleted','Schlüssel ''{0}'' gelöscht.'),
+        -- roles
+        ('en','admin.msg_role_created','Role ''{0}'' created successfully.'),
+        ('it','admin.msg_role_created','Ruolo ''{0}'' creato con successo.'),
+        ('es','admin.msg_role_created','Rol ''{0}'' creado correctamente.'),
+        ('de','admin.msg_role_created','Rolle ''{0}'' erfolgreich erstellt.'),
+        ('en','admin.msg_admin_role_protected','The Admin role is protected and cannot be modified.'),
+        ('it','admin.msg_admin_role_protected','Il ruolo Admin è protetto e non può essere modificato.'),
+        ('es','admin.msg_admin_role_protected','El rol Admin está protegido y no se puede modificar.'),
+        ('de','admin.msg_admin_role_protected','Die Admin-Rolle ist geschützt und kann nicht geändert werden.'),
+        ('en','admin.msg_admin_role_protected_del','The Admin role is protected and cannot be deleted.'),
+        ('it','admin.msg_admin_role_protected_del','Il ruolo Admin è protetto e non può essere eliminato.'),
+        ('es','admin.msg_admin_role_protected_del','El rol Admin está protegido y no se puede eliminar.'),
+        ('de','admin.msg_admin_role_protected_del','Die Admin-Rolle ist geschützt und kann nicht gelöscht werden.'),
+        ('en','admin.msg_role_in_use','Cannot delete ''{0}'': {1} user(s) have this role. Reassign users first.'),
+        ('it','admin.msg_role_in_use','Impossibile eliminare ''{0}'': {1} utente/i ha questo ruolo. Riassegna prima gli utenti.'),
+        ('es','admin.msg_role_in_use','No se puede eliminar ''{0}'': {1} usuario(s) tiene(n) este rol. Reasigna los usuarios primero.'),
+        ('de','admin.msg_role_in_use','Löschen von ''{0}'' nicht möglich: {1} Benutzer hat/haben diese Rolle. Zuerst Benutzer neu zuweisen.'),
+        ('en','admin.msg_role_deleted','Role ''{0}'' deleted.'),
+        ('it','admin.msg_role_deleted','Ruolo ''{0}'' eliminato.'),
+        ('es','admin.msg_role_deleted','Rol ''{0}'' eliminado.'),
+        ('de','admin.msg_role_deleted','Rolle ''{0}'' gelöscht.'),
+        -- document types
+        ('en','admin.msg_doctype_invalid','Invalid name.'),
+        ('it','admin.msg_doctype_invalid','Nome non valido.'),
+        ('es','admin.msg_doctype_invalid','Nombre no válido.'),
+        ('de','admin.msg_doctype_invalid','Ungültiger Name.'),
+        ('en','admin.msg_doctype_exists','A type named ''{0}'' already exists.'),
+        ('it','admin.msg_doctype_exists','Esiste già un tipo chiamato ''{0}''.'),
+        ('es','admin.msg_doctype_exists','Ya existe un tipo llamado ''{0}''.'),
+        ('de','admin.msg_doctype_exists','Ein Typ namens ''{0}'' existiert bereits.'),
+        ('en','admin.msg_doctype_created','Type ''{0}'' created.'),
+        ('it','admin.msg_doctype_created','Tipo ''{0}'' creato.'),
+        ('es','admin.msg_doctype_created','Tipo ''{0}'' creado.'),
+        ('de','admin.msg_doctype_created','Typ ''{0}'' erstellt.'),
+        ('en','admin.msg_doctype_updated','Document type updated.'),
+        ('it','admin.msg_doctype_updated','Tipo documento aggiornato.'),
+        ('es','admin.msg_doctype_updated','Tipo de documento actualizado.'),
+        ('de','admin.msg_doctype_updated','Dokumenttyp aktualisiert.'),
+        ('en','admin.msg_doctype_in_use','Cannot delete: {0} material(s) use this type.'),
+        ('it','admin.msg_doctype_in_use','Impossibile eliminare: {0} materiale/i usa questo tipo.'),
+        ('es','admin.msg_doctype_in_use','No se puede eliminar: {0} material(es) usa(n) este tipo.'),
+        ('de','admin.msg_doctype_in_use','Löschen nicht möglich: {0} Material(ien) nutzt/nutzen diesen Typ.'),
+        ('en','admin.msg_doctype_deleted','Document type deleted.'),
+        ('it','admin.msg_doctype_deleted','Tipo documento eliminato.'),
+        ('es','admin.msg_doctype_deleted','Tipo de documento eliminado.'),
+        ('de','admin.msg_doctype_deleted','Dokumenttyp gelöscht.'),
+        -- feature flags
+        ('en','admin.msg_timezone_updated','Timezone updated.'),
+        ('it','admin.msg_timezone_updated','Fuso orario aggiornato.'),
+        ('es','admin.msg_timezone_updated','Zona horaria actualizada.'),
+        ('de','admin.msg_timezone_updated','Zeitzone aktualisiert.'),
+        ('en','admin.msg_courses_enabled','Courses module enabled.'),
+        ('it','admin.msg_courses_enabled','Modulo Corsi abilitato.'),
+        ('es','admin.msg_courses_enabled','Módulo Cursos habilitado.'),
+        ('de','admin.msg_courses_enabled','Kurs-Modul aktiviert.'),
+        ('en','admin.msg_courses_disabled','Courses module disabled.'),
+        ('it','admin.msg_courses_disabled','Modulo Corsi disabilitato.'),
+        ('es','admin.msg_courses_disabled','Módulo Cursos deshabilitado.'),
+        ('de','admin.msg_courses_disabled','Kurs-Modul deaktiviert.'),
+        ('en','admin.msg_materials_enabled','Materials module enabled.'),
+        ('it','admin.msg_materials_enabled','Modulo Materiali abilitato.'),
+        ('es','admin.msg_materials_enabled','Módulo Materiales habilitado.'),
+        ('de','admin.msg_materials_enabled','Materialien-Modul aktiviert.'),
+        ('en','admin.msg_materials_disabled','Materials module disabled.'),
+        ('it','admin.msg_materials_disabled','Modulo Materiali disabilitato.'),
+        ('es','admin.msg_materials_disabled','Módulo Materiales deshabilitado.'),
+        ('de','admin.msg_materials_disabled','Materialien-Modul deaktiviert.');
+    ", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Fix admin.role_updated fallback to English ────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var upd = new MySqlConnector.MySqlCommand(@"
+        UPDATE translations SET label_value = 'Role updated to ''{0}''.'
+        WHERE label_key = 'admin.role_updated' AND language_code = 'en'
+          AND label_value != 'Role updated to ''{0}''.';", conn);
+    await upd.ExecuteNonQueryAsync();
+}
+catch { }
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
