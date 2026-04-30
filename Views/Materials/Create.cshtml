@@ -103,17 +103,15 @@
                             <label asp-for="AuthorName" class="form-label fw-semibold">
                                 @T["mat.label_author","Autore"] <span class="text-danger">*</span>
                             </label>
-                            <input asp-for="AuthorName" class="form-control"
-                                   list="authorsList"
-                                   placeholder="@T["mat.author_placeholder","Nome autore"]"
-                                   autocomplete="off"
-                                   data-lockable />
-                            <datalist id="authorsList">
-                                @foreach (var a in existingAuthors)
-                                {
-                                    <option value="@a"></option>
-                                }
-                            </datalist>
+                            <div class="position-relative">
+                                <input asp-for="AuthorName" id="authorInput" class="form-control"
+                                       placeholder="@T["mat.author_placeholder","Nome autore"]"
+                                       autocomplete="off"
+                                       data-lockable />
+                                <ul id="authorDropdown"
+                                    class="dropdown-menu w-100 shadow-sm py-1"
+                                    style="max-height:200px;overflow-y:auto;display:none;position:absolute;z-index:1055"></ul>
+                            </div>
                             <span asp-validation-for="AuthorName" class="text-danger small"></span>
                         </div>
                         <div class="col-md-8">
@@ -778,5 +776,61 @@
             // Controlla titoli simili
             checkSimilarTitles(titleInp ? titleInp.value : '');
         }
+
+        // ── Author autocomplete ────────────────────────────────────────────
+        (function() {
+            var authors = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(existingAuthors));
+            var inp  = document.getElementById('authorInput');
+            var drop = document.getElementById('authorDropdown');
+            if (!inp || !drop || !authors || !authors.length) return;
+
+            function showDrop(matches) {
+                drop.innerHTML = '';
+                if (!matches.length) { drop.style.display = 'none'; return; }
+                matches.forEach(function(a) {
+                    var li  = document.createElement('li');
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'dropdown-item py-1 small';
+                    btn.textContent = a;
+                    btn.addEventListener('mousedown', function(e) {
+                        e.preventDefault();
+                        inp.value = a;
+                        drop.style.display = 'none';
+                        inp.dispatchEvent(new Event('input'));
+                    });
+                    li.appendChild(btn);
+                    drop.appendChild(li);
+                });
+                drop.style.display = 'block';
+            }
+
+            function filter(term) {
+                if (!term) { drop.style.display = 'none'; return; }
+                var lc = term.toLowerCase();
+                var m = authors.filter(function(a) {
+                    return a && a.toLowerCase().indexOf(lc) !== -1;
+                }).slice(0, 12);
+                showDrop(m);
+            }
+
+            inp.addEventListener('input',  function() { filter(this.value.trim()); });
+            inp.addEventListener('focus',  function() { if (this.value.trim()) filter(this.value.trim()); });
+            inp.addEventListener('blur',   function() { setTimeout(function(){ drop.style.display='none'; }, 150); });
+            inp.addEventListener('keydown', function(e) {
+                var items = Array.from(drop.querySelectorAll('.dropdown-item'));
+                if (e.key === 'ArrowDown' && items.length) { items[0].focus(); e.preventDefault(); }
+                else if (e.key === 'Escape') { drop.style.display = 'none'; }
+            });
+            drop.addEventListener('keydown', function(e) {
+                var items = Array.from(drop.querySelectorAll('.dropdown-item'));
+                var idx = items.indexOf(document.activeElement);
+                if (e.key === 'ArrowDown' && idx < items.length - 1) { items[idx+1].focus(); e.preventDefault(); }
+                else if (e.key === 'ArrowUp') {
+                    if (idx > 0) items[idx-1].focus(); else inp.focus();
+                    e.preventDefault();
+                } else if (e.key === 'Escape') { drop.style.display='none'; inp.focus(); }
+            });
+        })();
     </script>
 }
