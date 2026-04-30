@@ -1,6 +1,9 @@
+using System.Text.Json;
 using BocconiLMS.Data;
 using BocconiLMS.Services;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using QuestPDF.Infrastructure;
 
 QuestPDF.Settings.License = LicenseType.Community;
@@ -73,6 +76,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<TranslationService>();
 builder.Services.AddSingleton<AppVersionService>();
 
+builder.Services.AddHealthChecks()
+    .AddCheck<MySqlHealthCheck>("database", tags: ["db"]);
+
 builder.Services.AddControllersWithViews();
 builder.Services.AddSession(options =>
 {
@@ -105,6 +111,39 @@ app.UseRouting();
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (ctx, report) =>
+    {
+        ctx.Response.ContentType = "application/json; charset=utf-8";
+        var logger = ctx.RequestServices.GetRequiredService<ILogger<Program>>();
+        var status = report.Status == HealthStatus.Healthy ? "healthy"
+                   : report.Status == HealthStatus.Degraded ? "degraded"
+                   : "unhealthy";
+
+        var result = new
+        {
+            status,
+            timestamp = DateTimeOffset.UtcNow.ToString("O"),
+            duration_ms = (int)report.TotalDuration.TotalMilliseconds,
+            checks = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString().ToLower(),
+                description = e.Value.Description,
+                duration_ms = (int)e.Value.Duration.TotalMilliseconds,
+                error = e.Value.Exception?.Message
+            })
+        };
+
+        logger.LogInformation("[$HEALTH-CHECK] status={Status} duration_ms={Duration}",
+            status, (int)report.TotalDuration.TotalMilliseconds);
+
+        await ctx.Response.WriteAsync(JsonSerializer.Serialize(result,
+            new JsonSerializerOptions { WriteIndented = true }));
+    }
+}).AllowAnonymous();
 
 app.MapControllerRoute(
     name: "default",
