@@ -1112,14 +1112,8 @@ public class AdminController : Controller
         {
             var (sql, tempPassword) = await _scriptGenerator.GenerateAsync(includeTranslations);
 
-            // Design note: we intentionally use the PRG (Post-Redirect-Get) pattern rather
-            // than returning FileContentResult directly from the POST.  The reason is that we
-            // need to surface the one-time temp password in TempData — which is only consumed
-            // on the subsequent GET request.  Returning File() from POST would keep the browser
-            // on the same page with no mechanism to render the password banner.
-            // The trade-off (session state + auto-triggered JS download) is explicitly accepted.
-            // SQL scripts are typically ≤ 500 KB so session memory pressure is negligible;
-            // the payload is cleared immediately after download or on next visit.
+            // PRG pattern: redirect keeps TempData alive so the password banner
+            // is shown once on the GET; JS on the Migrations page auto-triggers download.
             TempData["TmpAdminPassword"] = tempPassword;
             TempData["TmpAdminEmail"] = "admin@bocconi.it";
 
