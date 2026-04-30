@@ -253,13 +253,23 @@
                     <label class="form-label fw-semibold">
                         <i class="bi bi-folder2 me-1"></i>@T["mat.label_folder","Cartella"] <span class="text-danger">*</span>
                     </label>
-                    <input type="text" id="modalFolderInput" list="folderDatalist"
-                           class="form-control"
-                           placeholder="@T["mat.folder_placeholder","Digita o seleziona una cartella…"]"
-                           autocomplete="off" />
-                    <datalist id="folderDatalist"></datalist>
-                    <div class="form-text">@T["mat.folder_hint","Raggruppamento logico del documento. Inizia con il prefisso della lingua (es. IT, EN)."]</div>
-                    <div id="folderError" class="text-danger small d-none">@T["mat.folder_required","Inserisci il nome della cartella."]</div>
+                    <div class="input-group input-group-sm mb-1">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" id="folderSearch" class="form-control border-start-0 ps-0"
+                               placeholder="@T["mat.folder_filter","Filtra cartelle…"]"
+                               autocomplete="off" />
+                    </div>
+                    <div id="folderList"
+                         class="overflow-auto border rounded bg-white"
+                         style="max-height:180px; min-height:38px"></div>
+                    <input type="text" id="newFolderInput" class="form-control form-control-sm mt-1 d-none"
+                           placeholder="@T["mat.folder_new_placeholder","es. IT – DOCUMENTI VARI"]"
+                           maxlength="120" autocomplete="off" />
+                    <div id="folderError" class="text-danger small d-none mt-1">
+                        @T["mat.folder_required","Seleziona una cartella o inserisci il nome della nuova."]
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -304,6 +314,60 @@
         var hasProtocol = form.dataset.hasProtocol === 'true';
         var hasFolder   = form.dataset.hasFolder === 'true';
 
+        var _selectedFolderId   = null;
+        var _selectedFolderName = null;
+        var _selectedIsNew      = false;
+        var _tNewFolder = @Json.Serialize(T["mat.folder_new","+ Nuova cartella"]);
+
+        function escHtml(s) {
+            return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function folderListBuild(filter) {
+            var list = document.getElementById('folderList');
+            list.innerHTML = '';
+            var term = (filter || '').toLowerCase();
+            var filtered = folderMap.filter(function(f) {
+                return !term || f.Name.toLowerCase().indexOf(term) !== -1;
+            });
+            filtered.forEach(function(f) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                var active = (_selectedFolderId === f.Id && !_selectedIsNew);
+                btn.className = 'list-group-item list-group-item-action py-1 px-2 small border-0' + (active ? ' active' : '');
+                btn.innerHTML = '<i class="bi bi-folder me-1"></i>' + escHtml(f.Name);
+                btn.addEventListener('click', function() {
+                    _selectedFolderId   = f.Id;
+                    _selectedFolderName = f.Name;
+                    _selectedIsNew      = false;
+                    document.getElementById('newFolderInput').classList.add('d-none');
+                    document.getElementById('newFolderInput').value = '';
+                    document.getElementById('folderError').classList.add('d-none');
+                    folderListBuild(document.getElementById('folderSearch').value);
+                });
+                list.appendChild(btn);
+            });
+            var newBtn = document.createElement('button');
+            newBtn.type = 'button';
+            newBtn.className = 'list-group-item list-group-item-action py-1 px-2 small border-0 text-primary fw-semibold' +
+                               (_selectedIsNew ? ' active text-white' : '');
+            newBtn.innerHTML = _tNewFolder;
+            newBtn.addEventListener('click', function() {
+                _selectedFolderId   = null;
+                _selectedFolderName = null;
+                _selectedIsNew      = true;
+                document.getElementById('newFolderInput').classList.remove('d-none');
+                document.getElementById('newFolderInput').focus();
+                document.getElementById('folderError').classList.add('d-none');
+                folderListBuild(document.getElementById('folderSearch').value);
+            });
+            list.appendChild(newBtn);
+        }
+
+        document.getElementById('folderSearch').addEventListener('input', function() {
+            folderListBuild(this.value);
+        });
+
         function langPrefix() {
             var lang = document.getElementById('langSelect').value;
             return LANG_PREFIX[lang] || 'XX';
@@ -315,37 +379,22 @@
         }
 
         async function openVerifiedModal() {
-            // Load next protocol
             try {
                 var resp = await fetch('@Url.Action("NextProtocol","Materials")', {headers:{'X-Requested-With':'XMLHttpRequest'}});
                 var data = await resp.json();
                 document.getElementById('modalProtocol').value = data.protocol;
             } catch(e) { document.getElementById('modalProtocol').value = '—'; }
 
-            // Populate datalist with existing folders
-            var dl = document.getElementById('folderDatalist');
-            dl.innerHTML = '';
-            folderMap.forEach(function(f) {
-                var opt = document.createElement('option');
-                opt.value = f.Name;
-                opt.dataset.id = f.Id;
-                dl.appendChild(opt);
-            });
-
-            // Pre-fill folder input with language prefix if not already set
-            var inp = document.getElementById('modalFolderInput');
-            var prefix = langPrefix() + ' - ';
-            if (!inp.value || inp.value === inp.dataset.lastPrefix) {
-                inp.value = prefix;
-            }
-            inp.dataset.lastPrefix = prefix;
-
+            _selectedFolderId   = null;
+            _selectedFolderName = null;
+            _selectedIsNew      = false;
+            document.getElementById('folderSearch').value = '';
+            document.getElementById('newFolderInput').classList.add('d-none');
+            document.getElementById('newFolderInput').value = '';
             document.getElementById('folderError').classList.add('d-none');
+            folderListBuild('');
             verifiedModal.show();
-            setTimeout(function() {
-                inp.focus();
-                inp.setSelectionRange(inp.value.length, inp.value.length);
-            }, 300);
+            setTimeout(function() { document.getElementById('folderSearch').focus(); }, 300);
         }
 
         document.getElementById('submitBtn').addEventListener('click', async function() {
@@ -359,25 +408,23 @@
         });
 
         document.getElementById('modalConfirmBtn').addEventListener('click', function() {
-            var folderInput = document.getElementById('modalFolderInput');
-            var folderValue = folderInput.value.trim();
-
-            if (!folderValue) {
-                document.getElementById('folderError').classList.remove('d-none');
+            var errEl = document.getElementById('folderError');
+            if (_selectedFolderId && !_selectedIsNew) {
+                document.getElementById('hidFolderId').value = _selectedFolderId;
+                document.getElementById('hidFolderName').value = '';
+            } else if (_selectedIsNew) {
+                var newName = (document.getElementById('newFolderInput').value || '').trim();
+                if (!newName) {
+                    errEl.classList.remove('d-none');
+                    document.getElementById('newFolderInput').focus();
+                    return;
+                }
+                document.getElementById('hidFolderId').value = '';
+                document.getElementById('hidFolderName').value = newName;
+            } else {
+                errEl.classList.remove('d-none');
                 return;
             }
-
-            var matched = folderMap.find(function(f) {
-                return f.Name.toLowerCase() === folderValue.toLowerCase();
-            });
-            if (matched) {
-                document.getElementById('hidFolderId').value = matched.Id;
-                document.getElementById('hidFolderName').value = '';
-            } else {
-                document.getElementById('hidFolderId').value = '';
-                document.getElementById('hidFolderName').value = folderValue;
-            }
-
             verifiedModal.hide();
             form.submit();
         });

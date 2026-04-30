@@ -245,13 +245,23 @@
                     <label class="form-label fw-semibold">
                         <i class="bi bi-folder2 me-1"></i>@T["mat.label_folder","Cartella"] <span class="text-danger">*</span>
                     </label>
-                    <input type="text" id="modalFolderInput" list="folderDatalist"
-                           class="form-control"
-                           placeholder="@T["mat.folder_placeholder","Digita o seleziona una cartella…"]"
-                           autocomplete="off" />
-                    <datalist id="folderDatalist"></datalist>
-                    <div class="form-text">@T["mat.folder_hint","Raggruppamento logico del documento. Inizia con il prefisso della lingua (es. IT, EN)."]</div>
-                    <div id="folderError" class="text-danger small d-none">@T["mat.folder_required","Inserisci il nome della cartella."]</div>
+                    <div class="input-group input-group-sm mb-1">
+                        <span class="input-group-text bg-white border-end-0">
+                            <i class="bi bi-search text-muted"></i>
+                        </span>
+                        <input type="text" id="folderSearch" class="form-control border-start-0 ps-0"
+                               placeholder="@T["mat.folder_filter","Filtra cartelle…"]"
+                               autocomplete="off" />
+                    </div>
+                    <div id="folderList"
+                         class="overflow-auto border rounded bg-white"
+                         style="max-height:180px; min-height:38px"></div>
+                    <input type="text" id="newFolderInput" class="form-control form-control-sm mt-1 d-none"
+                           placeholder="@T["mat.folder_new_placeholder","es. IT – DOCUMENTI VARI"]"
+                           maxlength="120" autocomplete="off" />
+                    <div id="folderError" class="text-danger small d-none mt-1">
+                        @T["mat.folder_required","Seleziona una cartella o inserisci il nome della nuova."]
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
@@ -332,6 +342,63 @@
         var folderMap = [];
         try { folderMap = JSON.parse(document.getElementById('folderMap').dataset.folders); } catch(e){}
 
+        var _selectedFolderId   = null;   // ID cartella esistente selezionata
+        var _selectedFolderName = null;   // nome (solo se esistente, per display)
+        var _selectedIsNew      = false;  // è selezionata la riga "Nuova cartella"
+
+        var _tNewFolder = @Json.Serialize(T["mat.folder_new","+ Nuova cartella"]);
+
+        function folderListBuild(filter) {
+            var list = document.getElementById('folderList');
+            list.innerHTML = '';
+            var term = (filter || '').toLowerCase();
+            var filtered = folderMap.filter(function(f) {
+                return !term || f.Name.toLowerCase().indexOf(term) !== -1;
+            });
+            if (filtered.length === 0 && !term) {
+                // nessuna cartella ancora — mostra solo "nuova"
+            }
+            filtered.forEach(function(f) {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                var active = (_selectedFolderId === f.Id && !_selectedIsNew);
+                btn.className = 'list-group-item list-group-item-action py-1 px-2 small border-0' + (active ? ' active' : '');
+                btn.innerHTML = '<i class="bi bi-folder me-1"></i>' + escHtml(f.Name);
+                btn.addEventListener('click', function() {
+                    _selectedFolderId   = f.Id;
+                    _selectedFolderName = f.Name;
+                    _selectedIsNew      = false;
+                    document.getElementById('newFolderInput').classList.add('d-none');
+                    document.getElementById('newFolderInput').value = '';
+                    document.getElementById('folderError').classList.add('d-none');
+                    folderListBuild(document.getElementById('folderSearch').value);
+                });
+                list.appendChild(btn);
+            });
+            // Riga "Nuova cartella"
+            var newBtn = document.createElement('button');
+            newBtn.type = 'button';
+            newBtn.className = 'list-group-item list-group-item-action py-1 px-2 small border-0 text-primary fw-semibold' +
+                               (_selectedIsNew ? ' active text-white' : '');
+            newBtn.innerHTML = _tNewFolder;
+            newBtn.addEventListener('click', function() {
+                _selectedFolderId   = null;
+                _selectedFolderName = null;
+                _selectedIsNew      = true;
+                document.getElementById('newFolderInput').classList.remove('d-none');
+                document.getElementById('newFolderInput').focus();
+                document.getElementById('folderError').classList.add('d-none');
+                folderListBuild(document.getElementById('folderSearch').value);
+            });
+            list.appendChild(newBtn);
+        }
+        function escHtml(s) {
+            return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+        document.getElementById('folderSearch').addEventListener('input', function() {
+            folderListBuild(this.value);
+        });
+
         function langPrefix() {
             var el = document.getElementById('langSelect');
             return el ? (LANG_PREFIX[el.value] || 'XX') : 'XX';
@@ -346,20 +413,17 @@
                 var data = await resp.json();
                 document.getElementById('modalProtocol').value = data.protocol;
             } catch(e) { document.getElementById('modalProtocol').value = '—'; }
-            var dl = document.getElementById('folderDatalist');
-            dl.innerHTML = '';
-            folderMap.forEach(function(f) {
-                var opt = document.createElement('option');
-                opt.value = f.Name; opt.dataset.id = f.Id;
-                dl.appendChild(opt);
-            });
-            var inp = document.getElementById('modalFolderInput');
-            var prefix = langPrefix() + ' - ';
-            if (!inp.value || inp.value === inp.dataset.lastPrefix) inp.value = prefix;
-            inp.dataset.lastPrefix = prefix;
+            // Reset selezione
+            _selectedFolderId   = null;
+            _selectedFolderName = null;
+            _selectedIsNew      = false;
+            document.getElementById('folderSearch').value = '';
+            document.getElementById('newFolderInput').classList.add('d-none');
+            document.getElementById('newFolderInput').value = '';
             document.getElementById('folderError').classList.add('d-none');
+            folderListBuild('');
             verifiedModal.show();
-            setTimeout(function() { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }, 300);
+            setTimeout(function() { document.getElementById('folderSearch').focus(); }, 300);
         }
 
         // ── Helpers validazione client-side ──────────────────────────────
@@ -434,21 +498,23 @@
         });
 
         document.getElementById('modalConfirmBtn').addEventListener('click', function() {
-            var folderInput = document.getElementById('modalFolderInput');
-            var folderValue = folderInput.value.trim();
-            if (!folderValue) {
-                document.getElementById('folderError').classList.remove('d-none');
-                return;
-            }
-            var matched = folderMap.find(function(f) {
-                return f.Name.toLowerCase() === folderValue.toLowerCase();
-            });
-            if (matched) {
-                document.getElementById('hidFolderId').value = matched.Id;
+            var errEl = document.getElementById('folderError');
+            if (_selectedFolderId && !_selectedIsNew) {
+                // Cartella esistente selezionata
+                document.getElementById('hidFolderId').value = _selectedFolderId;
                 document.getElementById('hidFolderName').value = '';
-            } else {
+            } else if (_selectedIsNew) {
+                var newName = (document.getElementById('newFolderInput').value || '').trim();
+                if (!newName) {
+                    errEl.classList.remove('d-none');
+                    document.getElementById('newFolderInput').focus();
+                    return;
+                }
                 document.getElementById('hidFolderId').value = '';
-                document.getElementById('hidFolderName').value = folderValue;
+                document.getElementById('hidFolderName').value = newName;
+            } else {
+                errEl.classList.remove('d-none');
+                return;
             }
             verifiedModal.hide();
             document.getElementById('matForm').submit();

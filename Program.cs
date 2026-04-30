@@ -1643,10 +1643,22 @@ try
         ('en','mat.folder_placeholder','Type or select a folder…'),
         ('es','mat.folder_placeholder','Escribe o selecciona una carpeta…'),
         ('de','mat.folder_placeholder','Ordner eingeben oder auswählen…'),
-        ('it','mat.folder_required','Inserisci il nome della cartella.'),
-        ('en','mat.folder_required','Please enter the folder name.'),
-        ('es','mat.folder_required','Por favor, introduce el nombre de la carpeta.'),
-        ('de','mat.folder_required','Bitte gib den Ordnernamen ein.'),
+        ('it','mat.folder_required','Seleziona una cartella o inserisci il nome della nuova.'),
+        ('en','mat.folder_required','Select a folder or enter the name of the new one.'),
+        ('es','mat.folder_required','Selecciona una carpeta o introduce el nombre de la nueva.'),
+        ('de','mat.folder_required','Ordner auswählen oder neuen Namen eingeben.'),
+        ('it','mat.folder_filter','Filtra cartelle…'),
+        ('en','mat.folder_filter','Filter folders…'),
+        ('es','mat.folder_filter','Filtrar carpetas…'),
+        ('de','mat.folder_filter','Ordner filtern…'),
+        ('it','mat.folder_new','+ Nuova cartella'),
+        ('en','mat.folder_new','+ New folder'),
+        ('es','mat.folder_new','+ Nueva carpeta'),
+        ('de','mat.folder_new','+ Neuer Ordner'),
+        ('it','mat.folder_new_placeholder','es. IT – DOCUMENTI VARI'),
+        ('en','mat.folder_new_placeholder','e.g. EN – MISC DOCUMENTS'),
+        ('es','mat.folder_new_placeholder','p.ej. ES – DOCUMENTOS VARIOS'),
+        ('de','mat.folder_new_placeholder','z.B. DE – VERSCHIEDENE DOKUMENTE'),
         ('it','mat.modal_confirm','Conferma e salva'),
         ('en','mat.modal_confirm','Confirm and save'),
         ('es','mat.modal_confirm','Confirmar y guardar'),
@@ -1664,6 +1676,38 @@ try
         ('es','mat.page_count','Páginas'),
         ('de','mat.page_count','Seiten');", conn);
     await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Force-update Italian modal translations (fix INSERT IGNORE stale values) ─
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    var itFixes = new Dictionary<string, string>
+    {
+        ["mat.protocol_number"]    = "Numero di protocollo",
+        ["mat.protocol_auto"]      = "Assegnato automaticamente — sola lettura",
+        ["mat.verified_modal_title"]= "Verifica completata",
+        ["mat.verified_modal_hint"] = "Completa i dati di registrazione prima di salvare come Verificato.",
+        ["mat.label_folder"]        = "Cartella",
+        ["mat.folder_hint"]         = "Raggruppamento logico del documento. Inizia con il prefisso della lingua (es. IT, EN).",
+        ["mat.folder_required"]     = "Seleziona una cartella o inserisci il nome della nuova.",
+        ["mat.folder_filter"]       = "Filtra cartelle…",
+        ["mat.folder_new"]          = "+ Nuova cartella",
+        ["mat.folder_new_placeholder"] = "es. IT – DOCUMENTI VARI",
+        ["mat.modal_confirm"]       = "Conferma e salva",
+        ["common.cancel"]           = "Annulla",
+    };
+    foreach (var kv in itFixes)
+    {
+        using var upd = new MySqlConnector.MySqlCommand(
+            "UPDATE translations SET label_value = @v WHERE language_code = 'it' AND label_key = @k;", conn);
+        upd.Parameters.AddWithValue("@k", kv.Key);
+        upd.Parameters.AddWithValue("@v", kv.Value);
+        await upd.ExecuteNonQueryAsync();
+    }
 }
 catch { }
 
