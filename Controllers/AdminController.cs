@@ -1149,4 +1149,40 @@ public class AdminController : Controller
         if (!await _roleManager.RoleExistsAsync(roleName))
             await _roleManager.CreateAsync(new ApplicationRole(roleName));
     }
+
+    // ── Temporary: fix corrupted EN translations (run once, then remove) ───────
+    public async Task<IActionResult> FixTranslationsEn()
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+        var fixes = new (string key, string val)[]
+        {
+            ("admin.prod_script_title",          "Production script"),
+            ("admin.prod_script_desc",            "Generates a complete SQL file to install Didasco on an empty production database. The script includes: drift detection, CREATE TABLE for all application tables, Admin role seed and an administrator user with a temporary password."),
+            ("admin.prod_script_generate_btn",    "Generate script"),
+            ("admin.prod_script_warning_title",   "Notes"),
+            ("admin.prod_script_w1",              "The temporary password is shown only once. Note it down before closing the page."),
+            ("admin.prod_script_w2",              "The script does NOT delete existing data: it uses CREATE TABLE IF NOT EXISTS and INSERT IGNORE."),
+            ("admin.prod_script_w3",              "The drift detection block aborts the script if it finds tables with different column names or order."),
+            ("admin.prod_script_w4",              "Run with: mysql -u<user> -p <database> < didasco_production_YYYYMMDD.sql"),
+            ("admin.prod_script_ready",           "Script generated — temporary admin password"),
+            ("admin.prod_script_pwd_hint",        "This password is shown only once. Note it down before closing the page. The download starts automatically."),
+            ("admin.prod_script_download",        "Download SQL script"),
+            ("admin.prod_script_auto_download",   "(download starts automatically)"),
+            ("admin.prod_script_already_ready",   "A script is still available from the previous page load."),
+            ("admin.prod_script_error",           "Error generating the script: "),
+            ("admin.prod_script_expired",         "Script no longer available. Please regenerate."),
+            ("admin.database",                    "Database"),
+            ("admin.database_page_title",         "Database"),
+            ("admin.database_desc",               "Generate the production installation SQL script."),
+            ("admin.database_manage",             "Open"),
+            ("admin.prod_script_include_data_dictionary", "Include data dictionary"),
+            ("admin.prod_script_data_dictionary_hint",    "If checked, inserts organisational areas, delivery platforms and translation keys (INSERT IGNORE / ON DUPLICATE KEY UPDATE)."),
+            ("common.copy",                       "Copy"),
+        };
+        foreach (var (key, val) in fixes)
+            await _translations.UpsertAsync("en", key, val);
+        _translationService.InvalidateCache();
+        TempData["Success"] = "EN translations fixed.";
+        return RedirectToAction(nameof(Database));
+    }
 }
