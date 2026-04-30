@@ -265,6 +265,86 @@
         }
     </div>
 
+    @* ── Elenco corsi con barra di avanzamento ─────────────────────────── *@
+    @if (Model.CoursesEnabled)
+    {
+        <h5 class="fw-semibold mb-3 mt-2">@T["dashboard.student.my_courses","I miei corsi"]</h5>
+        @if (Model.StudentEnrollments.Any())
+        {
+            <div class="row g-3 mb-4">
+                @foreach (var e in Model.StudentEnrollments)
+                {
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm h-100">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-2">@e.CourseTitle</h6>
+                                <div class="d-flex justify-content-between small text-muted mb-1">
+                                    <span>@e.CompletedLessons / @e.TotalLessons @T["common.lessons","lezioni"]</span>
+                                    <span class="fw-semibold @(e.ProgressPercent == 100 ? "text-success" : "text-bocconi")">@e.ProgressPercent%</span>
+                                </div>
+                                <div class="progress mb-3" style="height:6px;">
+                                    <div class="progress-bar" role="progressbar"
+                                         style="width:@e.ProgressPercent%; background-color:var(--bocconi-blue)!important;"
+                                         aria-valuenow="@e.ProgressPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                                <a asp-controller="Course" asp-action="Details" asp-route-id="@e.CourseId"
+                                   class="btn btn-sm btn-outline-secondary w-100">
+                                    @(e.ProgressPercent == 100
+                                        ? T["dashboard.student.review_btn","Rivedi"]
+                                        : T["dashboard.student.continue_btn","Continua"])
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle me-2"></i>@T["dashboard.student.no_courses","Non sei iscritto a nessun corso."]
+                <a asp-controller="Course" asp-action="Index">@T["dashboard.student.explore_catalog","Esplora il catalogo"]</a>.
+            </div>
+        }
+    }
+
+    @* ── Ultimi tentativi quiz ──────────────────────────────────────────── *@
+    @if (Model.StudentRecentAttempts.Any())
+    {
+        <h5 class="fw-semibold mb-3">@T["dashboard.student.recent_quizzes","Quiz recenti"]</h5>
+        <div class="table-responsive mb-4">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>@T["quiz.col_quiz","Quiz"]</th>
+                        <th>@T["quiz.col_score","Punteggio"]</th>
+                        <th>@T["quiz.col_result","Esito"]</th>
+                        <th>@T["quiz.col_date","Data"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var a in Model.StudentRecentAttempts)
+                    {
+                        <tr>
+                            <td>@a.QuizTitle</td>
+                            <td><strong>@a.Score%</strong> <small class="text-muted">(@a.CorrectAnswers/@a.TotalQuestions)</small></td>
+                            <td>
+                                @if (a.Passed)
+                                {
+                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>@T["quiz.passed","Superato"]</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>@T["quiz.failed","Non superato"]</span>
+                                }
+                            </td>
+                            <td class="text-muted small">@a.AttemptedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
 }
 
 @* ── Ruolo personalizzato (non Admin, Teacher, Student) ────────────────────── *@

@@ -13,6 +13,7 @@ public class HomeController : Controller
     private readonly CourseRepository     _courses;
     private readonly MaterialRepository   _materials;
     private readonly EnrollmentRepository _enrollments;
+    private readonly QuizRepository       _quizzes;
     private readonly UserRepository       _users;
     private readonly FeatureFlagService   _features;
     private readonly DbHelper             _db;
@@ -24,6 +25,7 @@ public class HomeController : Controller
         CourseRepository courses,
         MaterialRepository materials,
         EnrollmentRepository enrollments,
+        QuizRepository quizzes,
         UserRepository users,
         FeatureFlagService features,
         DbHelper db,
@@ -34,6 +36,7 @@ public class HomeController : Controller
         _courses     = courses;
         _materials   = materials;
         _enrollments = enrollments;
+        _quizzes     = quizzes;
         _users       = users;
         _features    = features;
         _db          = db;
@@ -127,6 +130,9 @@ public class HomeController : Controller
                     var enrollments = await _enrollments.GetByUserAsync(userId);
                     vm.StudentEnrolledCount    = enrollments.Count;
                     vm.StudentCompletedLessons = enrollments.Sum(e => e.CompletedLessons);
+                    vm.StudentEnrollments      = enrollments;
+                    var attempts = await _quizzes.GetAttemptsAsync(userId);
+                    vm.StudentRecentAttempts   = attempts.Take(5).ToList();
                 }
             }
         }

@@ -24,6 +24,8 @@ public class DashboardViewModel
     // Student
     public int StudentEnrolledCount { get; set; }
     public int StudentCompletedLessons { get; set; }
+    public List<Enrollment>    StudentEnrollments    { get; set; } = [];
+    public List<QuizAttempt>   StudentRecentAttempts { get; set; } = [];
     // Admin
     public DashboardStats? AdminStats { get; set; }
     // Platform
