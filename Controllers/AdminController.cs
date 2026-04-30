@@ -213,6 +213,8 @@ public class AdminController : Controller
                     }
                 }
                 resolvedRole = requestedRole;
+                _audit.Log("user.role_change",
+                    $"user#{model.Id} \"{user.Email}\" from={user.Role} to={resolvedRole}");
             }
 
             user.Role = resolvedRole;
