@@ -1065,13 +1065,11 @@ public class AdminController : Controller
 
     // ── Database ───────────────────────────────────────────────────────────────
 
-    public IActionResult Migrations() => RedirectToAction(nameof(Database));
-
     public async Task<IActionResult> Database()
     {
         if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         ViewData["HasPendingScript"] = HttpContext.Session.Get("ProdScript") != null;
-        return View("Migrations");
+        return View();
     }
 
     [HttpPost]
