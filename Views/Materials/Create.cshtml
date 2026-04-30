@@ -285,6 +285,7 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         // ── Inizializzazione stato form ────────────────────────────────────
         var FORM_LOCKED_INIT  = @(formLocked ? "true" : "false");
@@ -630,30 +631,63 @@
             }).catch(function() { return null; });
         }
 
+        // Configura il worker di pdf.js (necessario per parsing fuori dal main thread)
+        if (window.pdfjsLib) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // Estrazione metadati PDF con pdf.js (fallback a regex sui primi 64 KB)
         function extractPdfMetadata(file) {
+            // ── Tentativo 1: pdf.js (legge xref/trailer → metadati completi) ─
+            if (window.pdfjsLib) {
+                return file.arrayBuffer().then(function(ab) {
+                    return window.pdfjsLib.getDocument({ data: ab }).promise;
+                }).then(function(pdf) {
+                    var numPages = pdf.numPages;
+                    return pdf.getMetadata().then(function(meta) {
+                        var author = null;
+                        if (meta && meta.info) {
+                            author = (meta.info.Author || meta.info.author || '').trim() || null;
+                        }
+                        if (!author && meta && meta.metadata) {
+                            try {
+                                var raw = meta.metadata.getRaw ? meta.metadata.getRaw() : '';
+                                var mXmp = raw.match(/<dc:creator[\s\S]{0,400}?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/);
+                                if (mXmp && mXmp[1].trim()) author = mXmp[1].trim();
+                            } catch(e) {}
+                        }
+                        return { author: author, pageCount: numPages };
+                    }).catch(function() {
+                        return { author: null, pageCount: numPages };
+                    });
+                }).catch(function() {
+                    return _extractPdfFallback(file);
+                });
+            }
+            // ── Tentativo 2 (fallback): regex sui primi 64 KB ────────────────
+            return _extractPdfFallback(file);
+        }
+
+        function _extractPdfFallback(file) {
             return new Promise(function(resolve) {
                 var reader = new FileReader();
                 reader.onload = function(e) {
                     try {
                         var text = e.target.result;
-                        // Author: PDF info dict /Author (...)
                         var author = null;
                         var mAuth = text.match(/\/Author\s*\(([^)\\]*(?:\\.[^)\\]*)*)\)/);
                         if (mAuth && mAuth[1].trim()) author = mAuth[1].trim();
                         if (!author) {
-                            // XMP metadata <dc:creator>...<rdf:li>...</rdf:li>
                             var mXmp = text.match(/<dc:creator[\s\S]{0,200}?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/);
                             if (mXmp && mXmp[1].trim()) author = mXmp[1].trim();
                         }
-                        // Page count: find /Type /Pages ... /Count N
                         var pageCount = null;
                         var mPg = text.match(/\/Type\s*\/Pages[\s\S]{0,300}?\/Count\s+(\d+)/);
                         if (mPg) {
                             pageCount = parseInt(mPg[1]);
                         } else {
-                            // Fallback: largest /Count value
-                            var all = [];
-                            var re = /\/Count\s+(\d+)/g, mc;
+                            var all = [], re = /\/Count\s+(\d+)/g, mc;
                             while ((mc = re.exec(text)) !== null) all.push(parseInt(mc[1]));
                             if (all.length) pageCount = Math.max.apply(null, all);
                         }
@@ -661,7 +695,6 @@
                     } catch(err) { resolve(null); }
                 };
                 reader.onerror = function() { resolve(null); };
-                // Read first 64 KB as windows-1252 (closest to Latin-1 for ASCII metadata)
                 reader.readAsText(file.slice(0, 65536), 'windows-1252');
             });
         }

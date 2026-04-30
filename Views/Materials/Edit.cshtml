@@ -293,6 +293,7 @@
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         (function () {
             var summary = document.getElementById('valSummary');
@@ -454,7 +455,42 @@
             }).catch(function () { return null; });
         }
 
+        // Configura il worker di pdf.js
+        if (window.pdfjsLib) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
         function extractPdfMetadata(file) {
+            if (window.pdfjsLib) {
+                return file.arrayBuffer().then(function(ab) {
+                    return window.pdfjsLib.getDocument({ data: ab }).promise;
+                }).then(function(pdf) {
+                    var numPages = pdf.numPages;
+                    return pdf.getMetadata().then(function(meta) {
+                        var author = null;
+                        if (meta && meta.info) {
+                            author = (meta.info.Author || meta.info.author || '').trim() || null;
+                        }
+                        if (!author && meta && meta.metadata) {
+                            try {
+                                var raw = meta.metadata.getRaw ? meta.metadata.getRaw() : '';
+                                var mXmp = raw.match(/<dc:creator[\s\S]{0,400}?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/);
+                                if (mXmp && mXmp[1].trim()) author = mXmp[1].trim();
+                            } catch(e) {}
+                        }
+                        return { author: author, pageCount: numPages };
+                    }).catch(function() {
+                        return { author: null, pageCount: numPages };
+                    });
+                }).catch(function() {
+                    return _extractPdfFallback(file);
+                });
+            }
+            return _extractPdfFallback(file);
+        }
+
+        function _extractPdfFallback(file) {
             return new Promise(function(resolve) {
                 var reader = new FileReader();
                 reader.onload = function(e) {
@@ -472,8 +508,7 @@
                         if (mPg) {
                             pageCount = parseInt(mPg[1]);
                         } else {
-                            var all = [];
-                            var re = /\/Count\s+(\d+)/g, mc;
+                            var all = [], re = /\/Count\s+(\d+)/g, mc;
                             while ((mc = re.exec(text)) !== null) all.push(parseInt(mc[1]));
                             if (all.length) pageCount = Math.max.apply(null, all);
                         }
