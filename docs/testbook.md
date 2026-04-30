@@ -138,3 +138,14 @@ dotnet test BocconiLMS.Tests/BocconiLMS.Tests.csproj --logger "console;verbosity
 
 > **Nota**: ogni `[Theory]` con N `[InlineData]` genera N esecuzioni separate nel test runner xUnit.  
 > Il totale 55 esecuzioni corrisponde alla somma delle righe InlineData; i 44 metodi di test sono le unità codificate nel sorgente.
+
+---
+
+## Validazione documento
+
+| Campo         | Valore                              |
+|---------------|-------------------------------------|
+| Data          | 2026-04-30                          |
+| Approvatore   | _Da compilare — DPO / ICT Bocconi_  |
+| Revisione     | Da compilare dopo revisione legale  |
+| Versione doc. | Vedere intestazione                 |

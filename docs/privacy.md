@@ -155,3 +155,14 @@ Ai sensi degli art. 15–22 GDPR, ogni utente ha diritto a:
 | DPO                  | Data Protection Officer — responsabile della protezione dei dati         |
 | RBAC                 | Role-Based Access Control — controllo accessi basato sul ruolo           |
 | HSTS                 | HTTP Strict Transport Security — impone HTTPS per il dominio             |
+
+---
+
+## Validazione documento
+
+| Campo         | Valore                              |
+|---------------|-------------------------------------|
+| Data          | 2026-04-30                          |
+| Approvatore   | _Da compilare — DPO / ICT Bocconi_  |
+| Revisione     | Da compilare dopo revisione legale  |
+| Versione doc. | Vedere intestazione                 |

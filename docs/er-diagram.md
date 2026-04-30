@@ -575,3 +575,14 @@ erDiagram
 | password_hash        | Hash BCrypt (work factor 11) — la password in chiaro non viene mai salvata  |
 | status (materials)   | Ciclo di vita: `bozza` → `pubblicato`                                       |
 | is_active (mv)       | Solo una versione per materiale è attiva contemporaneamente                 |
+
+---
+
+## Validazione documento
+
+| Campo         | Valore                              |
+|---------------|-------------------------------------|
+| Data          | 2026-04-30                          |
+| Approvatore   | _Da compilare — DPO / ICT Bocconi_  |
+| Revisione     | Da compilare dopo revisione legale  |
+| Versione doc. | Vedere intestazione                 |

@@ -506,3 +506,14 @@ Ogni repository riceve `DbHelper` via DI e apre connessioni on-demand.
 | Feature Flag         | Valore runtime che abilita/disabilita funzionalità senza rideploy            |
 | `courses.teach`      | Permesso che abilita la creazione e gestione di corsi                        |
 | `courses.attend`     | Permesso che abilita l'iscrizione ai corsi                                   |
+
+---
+
+## Validazione documento
+
+| Campo         | Valore                              |
+|---------------|-------------------------------------|
+| Data          | 2026-04-30                          |
+| Approvatore   | _Da compilare — DPO / ICT Bocconi_  |
+| Revisione     | Da compilare dopo revisione legale  |
+| Versione doc. | Vedere intestazione                 |

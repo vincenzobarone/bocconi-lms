@@ -156,3 +156,14 @@ Un utente può eliminare i cookie:
 | CSRF          | Cross-Site Request Forgery — attacco che sfrutta la sessione autenticata di un utente     |
 | Data Protection| Sistema ASP.NET Core per cifrare e firmare i cookie (chiavi ruotate automaticamente)    |
 | Essenziale    | Cookie necessario per l'erogazione del servizio; esente da consenso ex ePrivacy Directive |
+
+---
+
+## Validazione documento
+
+| Campo         | Valore                              |
+|---------------|-------------------------------------|
+| Data          | 2026-04-30                          |
+| Approvatore   | _Da compilare — DPO / ICT Bocconi_  |
+| Revisione     | Da compilare dopo revisione legale  |
+| Versione doc. | Vedere intestazione                 |

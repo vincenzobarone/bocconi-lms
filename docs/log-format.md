@@ -197,3 +197,14 @@ La rotazione è delegata all'infrastruttura di hosting (es. `logrotate`, Elastic
 | `standard`  | Livello audit che include tutti gli eventi CRUD oltre a quelli di autenticazione      |
 | `duration_ms`| Tempo di elaborazione della richiesta in millisecondi                                |
 | `outcome`   | Esito dell'azione: `success` = completata correttamente, `failure` = errore/blocco   |
+
+---
+
+## Validazione documento
+
+| Campo         | Valore                              |
+|---------------|-------------------------------------|
+| Data          | 2026-04-30                          |
+| Approvatore   | _Da compilare — DPO / ICT Bocconi_  |
+| Revisione     | Da compilare dopo revisione legale  |
+| Versione doc. | Vedere intestazione                 |

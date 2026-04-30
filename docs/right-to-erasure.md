@@ -288,3 +288,14 @@ Inserire nel registro dei trattamenti:
 | DPO                | Data Protection Officer — figura obbligatoria ex art. 37 GDPR                  |
 | Registro trattamenti| Documento obbligatorio ex art. 30 GDPR che traccia le operazioni di trattamento|
 | Art. 17 GDPR       | Diritto dell'interessato a ottenere la cancellazione dei propri dati personali  |
+
+---
+
+## Validazione documento
+
+| Campo         | Valore                              |
+|---------------|-------------------------------------|
+| Data          | 2026-04-30                          |
+| Approvatore   | _Da compilare — DPO / ICT Bocconi_  |
+| Revisione     | Da compilare dopo revisione legale  |
+| Versione doc. | Vedere intestazione                 |

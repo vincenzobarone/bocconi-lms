@@ -91,3 +91,14 @@ Versioni pinate alle rispettive dichiarazioni in `BocconiLMS.csproj`, `BocconiLM
 |16 | xunit                              | 2.9.2       | Apache-2.0           | NuGet test      |
 |17 | xunit.runner.visualstudio          | 2.8.2       | Apache-2.0           | NuGet test      |
 |18 | coverlet.collector                 | 6.0.2       | MIT                  | NuGet test      |
+
+---
+
+## Validazione documento
+
+| Campo         | Valore                              |
+|---------------|-------------------------------------|
+| Data          | 2026-04-30                          |
+| Approvatore   | _Da compilare — DPO / ICT Bocconi_  |
+| Revisione     | Da compilare dopo revisione legale  |
+| Versione doc. | Vedere intestazione                 |
