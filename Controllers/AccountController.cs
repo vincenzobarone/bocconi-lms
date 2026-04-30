@@ -54,7 +54,7 @@ public class AccountController : Controller
         var user = await _userManager.FindByEmailAsync(model.Email);
         if (user == null || !user.IsActive)
         {
-            _audit.LogMinimal("auth.login", $"user#{model.Email}", "failure");
+            _audit.LogMinimal("auth.login", null, "failure", user: model.Email);
             ModelState.AddModelError("", "Credenziali non valide o account disattivato.");
             return View(model);
         }
@@ -62,12 +62,12 @@ public class AccountController : Controller
         var result = await _signInManager.PasswordSignInAsync(user, model.Password, isPersistent: false, lockoutOnFailure: false);
         if (!result.Succeeded)
         {
-            _audit.LogMinimal("auth.login", $"user#{model.Email}", "failure");
+            _audit.LogMinimal("auth.login", null, "failure", user: model.Email);
             ModelState.AddModelError("", "Credenziali non valide o account disattivato.");
             return View(model);
         }
 
-        _audit.LogMinimal("auth.login", $"user#{user.Id} \"{user.Email}\"", "success");
+        _audit.LogMinimal("auth.login", $"user#{user.Id}", "success", user: user.Email);
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);

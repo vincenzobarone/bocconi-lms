@@ -112,8 +112,8 @@ app.UseStaticFiles();
 app.UseRouting();
 app.UseSession();
 app.UseAuthentication();
-app.UseAuthorization();
 app.UseMiddleware<HttpAccessLogMiddleware>();
+app.UseAuthorization();
 
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
