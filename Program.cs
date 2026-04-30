@@ -110,10 +110,10 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
-app.UseMiddleware<HttpAccessLogMiddleware>();
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseMiddleware<HttpAccessLogMiddleware>();
 
 app.MapHealthChecks("/health", new HealthCheckOptions
 {

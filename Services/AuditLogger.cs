@@ -24,22 +24,30 @@ public sealed class AuditLogger : IAuditLogger
 
         var section = configuration.GetSection("AuditLog");
         IsEnabled = section.GetValue<bool>("Enabled", defaultValue: true);
-        Level = section.GetValue<string>("Level") ?? "standard";
+        Level = (section.GetValue<string>("Level") ?? "standard").ToLowerInvariant();
     }
 
+    /// <summary>
+    /// Logs a standard-level event (written at Level=standard or verbose).
+    /// Use for all write operations (create/edit/delete).
+    /// </summary>
     public void Log(string action, string? target = null, string? outcome = "success",
                     string? user = null, string? ip = null)
     {
         if (!IsEnabled) return;
+        if (Level == "minimal") return;
         Write(action, target, outcome, user, ip);
     }
 
+    /// <summary>
+    /// Logs a minimal-level event (written at ALL levels, including minimal).
+    /// Use for authentication events (login, logout, password reset).
+    /// </summary>
     public void LogMinimal(string action, string? target = null, string? outcome = "success",
                            string? user = null, string? ip = null)
     {
         if (!IsEnabled) return;
-        if (Level == "verbose" || Level == "standard")
-            Write(action, target, outcome, user, ip);
+        Write(action, target, outcome, user, ip);
     }
 
     private void Write(string action, string? target, string? outcome, string? user, string? ip)

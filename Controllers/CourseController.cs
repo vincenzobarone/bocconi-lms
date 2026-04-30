@@ -176,6 +176,8 @@ public class CourseController : Controller
         };
         var id = await _courses.CreateAsync(course);
         _audit.Log("course.create", $"course#{id} \"{course.Title}\"");
+        if (model.IsPublished)
+            _audit.Log("course.publish", $"course#{id} \"{course.Title}\"");
         TempData["Success"] = "Corso creato!";
         return RedirectToAction("Details", new { id });
     }
@@ -222,6 +224,8 @@ public class CourseController : Controller
         if (course == null) return NotFound();
         if (CurrentRole != "Admin" && course.TeacherId != CurrentUserId) return Forbid();
 
+        bool wasPublished = course.IsPublished;
+
         course.Title       = model.Title;
         course.Description = model.Description;
         course.Category    = model.Category;
@@ -233,6 +237,10 @@ public class CourseController : Controller
 
         await _courses.UpdateAsync(course);
         _audit.Log("course.edit", $"course#{id} \"{course.Title}\"");
+        if (!wasPublished && model.IsPublished)
+            _audit.Log("course.publish", $"course#{id} \"{course.Title}\"");
+        else if (wasPublished && !model.IsPublished)
+            _audit.Log("course.unpublish", $"course#{id} \"{course.Title}\"");
         TempData["Success"] = "Corso aggiornato!";
         return RedirectToAction("Details", new { id });
     }
