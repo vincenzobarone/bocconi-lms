@@ -1,11 +1,11 @@
 @model MigrationStatus
 @{
-    ViewData["Title"] = T["admin.migrations_page_title", "Database Migrations"];
+    ViewData["Title"] = T["admin.database_page_title", "Database"];
 }
 
 <div class="d-flex align-items-center justify-content-between mb-4">
     <h2 class="fw-bold text-bocconi mb-0">
-        <i class="bi bi-database-gear me-2"></i>@T["admin.migrations_page_title", "Database Migrations"]
+        <i class="bi bi-database-gear me-2"></i>@T["admin.database_page_title", "Database"]
     </h2>
     <a asp-controller="Home" asp-action="Dashboard" class="btn btn-outline-secondary btn-sm">
         <i class="bi bi-arrow-left me-1"></i>@T["common.back_dashboard", "Dashboard"]
@@ -76,103 +76,8 @@
     </div>
 }
 
-@* ── Status summary cards ─────────────────────────────────────────────── *@
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card text-center border-0 shadow-sm h-100">
-            <div class="card-body py-4">
-                <div class="display-5 fw-bold text-bocconi">@Model.TotalCount</div>
-                <div class="text-muted small mt-1">@T["admin.migrations_total", "Total"]</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-center border-0 shadow-sm h-100">
-            <div class="card-body py-4">
-                <div class="display-5 fw-bold text-success">@Model.AppliedCount</div>
-                <div class="text-muted small mt-1">@T["admin.migrations_applied", "Applied"]</div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-center border-0 shadow-sm h-100">
-            <div class="card-body py-4">
-                <div class="display-5 fw-bold @(Model.PendingCount > 0 ? "text-warning" : "text-secondary")">
-                    @Model.PendingCount
-                </div>
-                <div class="text-muted small mt-1">@T["admin.migrations_pending", "Pending"]</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-@* ── Run pending button ────────────────────────────────────────────────── *@
-<div class="mb-4">
-    @if (Model.PendingCount > 0)
-    {
-        <form method="post" asp-action="RunPendingMigrations">
-            @Html.AntiForgeryToken()
-            <button type="submit" class="btn btn-bocconi">
-                <i class="bi bi-play-circle me-1"></i>@T["admin.migrations_run_btn", "Apply pending migrations"]
-                <span class="badge bg-warning text-dark ms-1">@Model.PendingCount</span>
-            </button>
-        </form>
-    }
-    else
-    {
-        <div class="alert alert-success d-inline-flex align-items-center gap-2 mb-0">
-            <i class="bi bi-check-circle-fill"></i>
-            @T["admin.migrations_no_pending", "All migrations are up to date."]
-        </div>
-    }
-</div>
-
-@* ── Migration list ───────────────────────────────────────────────────── *@
-<div class="card shadow-sm">
-    <div class="card-header fw-semibold bg-light">
-        <i class="bi bi-list-check me-1"></i>@T["admin.migrations_list", "Migration files"]
-    </div>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th style="width:50px">#</th>
-                    <th>@T["admin.migrations_list", "Migration"]</th>
-                    <th style="width:120px" class="text-center">@T["admin.migrations_applied", "Applied"]</th>
-                    <th style="width:200px">@T["admin.migrations_applied_at", "Applied at"]</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (int i = 0; i < Model.Rows.Count; i++)
-                {
-                    var row = Model.Rows[i];
-                    <tr class="@(row.IsApplied ? "" : "table-warning")">
-                        <td class="text-muted">@(i + 1)</td>
-                        <td>
-                            <code class="small">@row.Name</code>
-                        </td>
-                        <td class="text-center">
-                            @if (row.IsApplied)
-                            {
-                                <span class="badge bg-success"><i class="bi bi-check-lg"></i></span>
-                            }
-                            else
-                            {
-                                <span class="badge bg-warning text-dark"><i class="bi bi-clock"></i></span>
-                            }
-                        </td>
-                        <td class="text-muted small">
-                            @(row.AppliedAt.HasValue ? row.AppliedAt.Value.ToString("dd/MM/yyyy HH:mm") : "—")
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
-    </div>
-</div>
-
 @* ── Script per produzione ─────────────────────────────────────────────── *@
-<div class="card shadow-sm mt-4">
+<div class="card shadow-sm">
     <div class="card-header fw-semibold bg-light d-flex align-items-center gap-2">
         <i class="bi bi-file-earmark-code"></i>
         @T["admin.prod_script_title", "Production script"]
@@ -192,11 +97,11 @@
                 <input class="form-check-input" type="checkbox" name="includeDataDictionary"
                        value="true" id="chkDataDictionary" />
                 <label class="form-check-label" for="chkDataDictionary">
-                    @T["admin.prod_script_include_data_dictionary", "Includi dati del dizionario"]
+                    @T["admin.prod_script_include_data_dictionary", "Include data dictionary"]
                 </label>
                 <div class="form-text">
                     @T["admin.prod_script_data_dictionary_hint",
-                       "Se selezionato, inserisce aree organizzative, piattaforme di erogazione e chiavi di traduzione presenti nel DB (INSERT IGNORE / ON DUPLICATE KEY UPDATE)."]
+                       "If checked, inserts organisational areas, delivery platforms and translation keys (INSERT IGNORE / ON DUPLICATE KEY UPDATE)."]
                 </div>
             </div>
 
@@ -223,13 +128,9 @@
 @if (!string.IsNullOrEmpty(tmpPwd) && hasPendingScript)
 {
     <script>
-        // Auto-trigger the SQL download immediately after the page loads,
-        // so the user gets a single-click experience: submit form → see password + file downloads.
         window.addEventListener('DOMContentLoaded', function () {
             var link = document.getElementById('autoDownloadLink');
-            if (link) {
-                setTimeout(function () { link.click(); }, 600);
-            }
+            if (link) { setTimeout(function () { link.click(); }, 600); }
         });
     </script>
 }

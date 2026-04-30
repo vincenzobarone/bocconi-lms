@@ -1066,40 +1066,15 @@ public class AdminController : Controller
         return RedirectToAction(nameof(PlatformFeatures));
     }
 
-    // ── Database Migrations ────────────────────────────────────────────────────
+    // ── Database ───────────────────────────────────────────────────────────────
 
-    public async Task<IActionResult> Migrations()
+    public IActionResult Migrations() => RedirectToAction(nameof(Database));
+
+    public async Task<IActionResult> Database()
     {
         if (!await CanAccessMenuAsync("menu.users")) return Forbid();
-        var status = await _migrationRunner.GetStatusAsync();
         ViewData["HasPendingScript"] = HttpContext.Session.Get("ProdScript") != null;
-        return View(status);
-    }
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public async Task<IActionResult> RunPendingMigrations()
-    {
-        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
-
-        var results = await _migrationRunner.ApplyPendingAsync();
-
-        // ApplyPendingAsync stops at first failure, so at most one error entry.
-        var firstError = results.FirstOrDefault(r => r.Error != null);
-
-        if (firstError == default)
-        {
-            TempData["Success"] = _translationService.T(
-                "admin.migrations_success", "Migrations applied successfully.");
-        }
-        else
-        {
-            TempData["Error"] = string.Format(
-                _translationService.T("admin.migrations_error", "Error applying migration «{0}»: {1}"),
-                firstError.Name, firstError.Error ?? "");
-        }
-
-        return RedirectToAction(nameof(Migrations));
+        return View("Migrations", new MigrationStatus());
     }
 
     [HttpPost]
@@ -1130,13 +1105,13 @@ public class AdminController : Controller
             HttpContext.Session.Set("ProdScript", bytes);
             HttpContext.Session.SetString("ProdScriptFileName", fileName);
 
-            return RedirectToAction(nameof(Migrations));
+            return RedirectToAction(nameof(Database));
         }
         catch (Exception ex)
         {
             TempData["Error"] = _translationService.T(
-                "admin.prod_script_error", "Errore durante la generazione dello script: ") + ex.Message;
-            return RedirectToAction(nameof(Migrations));
+                "admin.prod_script_error", "Error generating the script: ") + ex.Message;
+            return RedirectToAction(nameof(Database));
         }
     }
 
@@ -1151,8 +1126,8 @@ public class AdminController : Controller
         if (bytes == null || bytes.Length == 0)
         {
             TempData["Error"] = _translationService.T(
-                "admin.prod_script_expired", "Script non più disponibile. Rigenerare.");
-            return RedirectToAction(nameof(Migrations));
+                "admin.prod_script_expired", "Script no longer available. Please regenerate.");
+            return RedirectToAction(nameof(Database));
         }
 
         HttpContext.Session.Remove("ProdScript");

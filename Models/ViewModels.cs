@@ -26,9 +26,6 @@ public class DashboardViewModel
     public int StudentCompletedLessons { get; set; }
     // Admin
     public DashboardStats? AdminStats { get; set; }
-    // Migrations
-    public int MigrationApplied { get; set; }
-    public int MigrationTotal   { get; set; }
     // Platform
     public string PlatformTimezone { get; set; } = "Europe/Rome";
 }

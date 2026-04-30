@@ -84,22 +84,10 @@
             <div class="card h-100 shadow-sm">
                 <div class="card-body text-center p-4">
                     <i class="bi bi-database-gear display-4 text-bocconi mb-3 d-block"></i>
-                    <h5 class="fw-bold">@T["admin.migrations", "Database Migrations"]</h5>
-                    @if (Model.MigrationTotal > 0)
-                    {
-                        var allApplied = Model.MigrationApplied >= Model.MigrationTotal;
-                        <p class="mb-2">
-                            <span class="badge @(allApplied ? "bg-success" : "bg-warning text-dark")">
-                                @Model.MigrationApplied / @Model.MigrationTotal @T["admin.migrations_applied_badge","applicate"]
-                            </span>
-                        </p>
-                    }
-                    else
-                    {
-                        <p class="text-muted">@T["admin.migrations_desc", "Visualizza e applica le migrazioni del database"]</p>
-                    }
-                    <a asp-controller="Admin" asp-action="Migrations" class="btn btn-bocconi">
-                        @T["admin.migrations_manage", "Gestisci migrazioni"]
+                    <h5 class="fw-bold">@T["admin.database", "Database"]</h5>
+                    <p class="text-muted">@T["admin.database_desc", "Generate the production installation SQL script."]</p>
+                    <a asp-controller="Admin" asp-action="Database" class="btn btn-bocconi">
+                        @T["admin.database_manage", "Open"]
                     </a>
                 </div>
             </div>
