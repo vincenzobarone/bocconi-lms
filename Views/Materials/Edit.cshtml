@@ -106,10 +106,10 @@
                         }
                         else
                         {
-                            @* Utenti senza flag: l'edit fissa sempre lo stato a "in revisione" *@
-                            <input type="hidden" id="statusSelect" name="Status" value="in_revisione" />
+                            @* Utenti senza flag: preserva lo stato attuale del materiale *@
+                            <input type="hidden" id="statusSelect" name="Status" value="@Model.Status" />
                             <input type="text" class="form-control bg-light" readonly
-                                   value="@T["mat.status_in_revisione","In review"]" />
+                                   value="@(Model.Status == "verificato" ? T["mat.status_verificato","Verified"] : Model.Status == "in_revisione" ? T["mat.status_in_revisione","In review"] : T["mat.status_bozza","Draft"])" />
                             <div class="form-text">
                                 <i class="bi bi-lock me-1"></i>@T["mat.status_locked_edit","Lo stato non è modificabile con il tuo ruolo."]
                             </div>
