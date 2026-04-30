@@ -26,35 +26,53 @@
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 }
-@if (TempData["TmpAdminPassword"] is string tmpPwd && !string.IsNullOrEmpty(tmpPwd))
+@{
+    var hasPendingScript = (bool)(ViewData["HasPendingScript"] ?? false);
+    var tmpPwd = TempData["TmpAdminPassword"] as string ?? "";
+    var tmpEmail = TempData["TmpAdminEmail"] as string ?? "admin@bocconi.it";
+}
+@if (!string.IsNullOrEmpty(tmpPwd))
 {
     <div class="alert alert-warning border border-warning shadow-sm" role="alert">
         <div class="d-flex align-items-start gap-2">
             <i class="bi bi-key-fill fs-4 mt-1 text-warning"></i>
-            <div>
+            <div class="flex-fill">
                 <strong>@T["admin.prod_script_ready", "Script generato — password temporanea admin"]</strong>
                 <p class="mb-1 small text-muted">
-                    @T["admin.prod_script_pwd_hint", "Questa password verrà mostrata una sola volta. Annotarla prima di scaricare lo script."]
+                    @T["admin.prod_script_pwd_hint", "Questa password verrà mostrata una sola volta. Annotarla prima di chiudere la pagina. Il download si avvia in automatico."]
                 </p>
                 <div class="d-flex align-items-center gap-2 mt-2">
-                    <code class="fs-5 bg-light px-3 py-1 rounded border" id="tmpPwdCode">@tmpPwd</code>
+                    <code class="fs-5 bg-white px-3 py-1 rounded border" id="tmpPwdCode">@tmpPwd</code>
                     <button type="button" class="btn btn-sm btn-outline-secondary"
-                            onclick="navigator.clipboard.writeText('@tmpPwd').then(()=>this.textContent='Copiata ✓')">
+                            onclick="navigator.clipboard.writeText(document.getElementById('tmpPwdCode').textContent.trim()).then(()=>{this.textContent='Copiata ✓';this.disabled=true;})">
                         @T["common.copy", "Copia"]
                     </button>
                 </div>
                 <p class="mb-0 mt-2 small">
-                    <strong>Email:</strong> <code>@TempData["TmpAdminEmail"]</code>
+                    <strong>Email admin:</strong> <code>@tmpEmail</code>
                 </p>
             </div>
         </div>
-        @if ((bool)(ViewData["HasPendingScript"] ?? false))
+        @if (hasPendingScript)
         {
             <hr class="my-2" />
-            <a asp-action="DownloadProductionScript" class="btn btn-warning">
+            <a asp-action="DownloadProductionScript" id="autoDownloadLink" class="btn btn-warning">
                 <i class="bi bi-download me-1"></i>@T["admin.prod_script_download", "Scarica script SQL"]
             </a>
+            <span class="text-muted small ms-2">
+                @T["admin.prod_script_auto_download", "(il download si avvia automaticamente)"]
+            </span>
         }
+    </div>
+}
+@if (hasPendingScript && string.IsNullOrEmpty(tmpPwd))
+{
+    <div class="alert alert-info d-flex align-items-center gap-2" role="alert">
+        <i class="bi bi-info-circle"></i>
+        @T["admin.prod_script_already_ready", "Uno script è ancora disponibile dal caricamento precedente."]
+        <a asp-action="DownloadProductionScript" class="btn btn-sm btn-info ms-2">
+            <i class="bi bi-download me-1"></i>@T["admin.prod_script_download", "Scarica script SQL"]
+        </a>
     </div>
 }
 
@@ -187,17 +205,6 @@
                         onclick="this.disabled=true; this.innerHTML='<span class=\'spinner-border spinner-border-sm me-1\'></span>Generazione…'; this.form.submit();">
                     <i class="bi bi-gear me-1"></i>@T["admin.prod_script_generate_btn", "Genera script"]
                 </button>
-
-                @if ((bool)(ViewData["HasPendingScript"] ?? false) && TempData["TmpAdminPassword"] == null)
-                {
-                    <a asp-action="DownloadProductionScript" class="btn btn-outline-bocconi">
-                        <i class="bi bi-download me-1"></i>@T["admin.prod_script_download", "Scarica script SQL"]
-                    </a>
-                    <span class="text-muted small">
-                        <i class="bi bi-info-circle me-1"></i>
-                        @T["admin.prod_script_already_ready", "Script già pronto dal precedente caricamento della pagina."]
-                    </span>
-                }
             </div>
         </form>
 
@@ -206,9 +213,23 @@
             <ul class="mb-0 mt-1 ps-3">
                 <li>@T["admin.prod_script_w1", "La password temporanea viene mostrata una sola volta al momento del download. Annotarla prima di chiudere la pagina."]</li>
                 <li>@T["admin.prod_script_w2", "Lo script NON cancella dati esistenti: usa CREATE TABLE IF NOT EXISTS e INSERT IGNORE."]</li>
-                <li>@T["admin.prod_script_w3", "Il blocco di drift detection interrompe lo script se trova tabelle con struttura diversa da quella attesa."]</li>
+                <li>@T["admin.prod_script_w3", "Il blocco di drift detection interrompe lo script se trova tabelle con struttura e nomi colonne diversi da quelli attesi."]</li>
                 <li>@T["admin.prod_script_w4", "Eseguire con: mysql -u&lt;user&gt; -p &lt;database&gt; &lt; didasco_production_YYYYMMDD.sql"]</li>
             </ul>
         </div>
     </div>
 </div>
+
+@if (!string.IsNullOrEmpty(tmpPwd) && hasPendingScript)
+{
+    <script>
+        // Auto-trigger the SQL download immediately after the page loads,
+        // so the user gets a single-click experience: submit form → see password + file downloads.
+        window.addEventListener('DOMContentLoaded', function () {
+            var link = document.getElementById('autoDownloadLink');
+            if (link) {
+                setTimeout(function () { link.click(); }, 600);
+            }
+        });
+    </script>
+}

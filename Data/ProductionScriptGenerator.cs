@@ -7,8 +7,8 @@ namespace BocconiLMS.Data;
 /// <summary>
 /// Generates a self-contained SQL script ready to be applied to a fresh
 /// production MySQL database.  The script:
-///   1. Runs a stored-procedure drift check — aborts if any table already
-///      exists with a different column count.
+///   1. Runs a stored-procedure drift check — aborts with SIGNAL SQLSTATE '45000'
+///      if any table already exists with different column names or ordering.
 ///   2. Issues CREATE TABLE IF NOT EXISTS for every application table.
 ///   3. Seeds the Admin role and a temporary admin user (BCrypt hash).
 ///   4. Optionally inserts all translation keys.
@@ -49,8 +49,9 @@ public class ProductionScriptGenerator
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
 
-        var colCounts = await GetColumnCountsAsync(conn);
-        var createSql = await GetCreateStatementsAsync(conn, colCounts.Keys);
+        // Map: table name → comma-separated column names in ORDINAL_POSITION order
+        var colNames = await GetColumnNamesAsync(conn);
+        var createSql = await GetCreateStatementsAsync(conn, colNames.Keys);
 
         List<TranslationRow> translationRows = [];
         if (includeTranslations)
@@ -60,10 +61,10 @@ public class ProductionScriptGenerator
         var hash = BCrypt.Net.BCrypt.HashPassword(tempPassword, workFactor: 11);
 
         var sb = new StringBuilder();
-        AppendHeader(sb, includeTranslations);
-        AppendDriftProcedure(sb, colCounts);
+        AppendHeader(sb, includeTranslations, tempPassword);
+        AppendDriftProcedure(sb, colNames);
         AppendCreateTables(sb, createSql);
-        AppendSchemaOperationalTables(sb, colCounts);
+        AppendSchemaOperationalTables(sb);
         AppendSeedData(sb, hash);
         if (includeTranslations && translationRows.Count > 0)
             AppendTranslations(sb, translationRows);
@@ -74,12 +75,17 @@ public class ProductionScriptGenerator
 
     // ── Schema introspection ──────────────────────────────────────────────────
 
-    private static async Task<Dictionary<string, int>> GetColumnCountsAsync(MySqlConnection conn)
+    /// <summary>
+    /// Returns a map of table name → comma-separated column names ordered by ORDINAL_POSITION.
+    /// Only tables that actually exist in the DB are returned.
+    /// </summary>
+    private static async Task<Dictionary<string, string>> GetColumnNamesAsync(MySqlConnection conn)
     {
-        var result = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         using var cmd = new MySqlCommand(@"
-            SELECT TABLE_NAME, COUNT(*) AS col_count
+            SELECT TABLE_NAME,
+                   GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',') AS col_list
             FROM information_schema.COLUMNS
             WHERE TABLE_SCHEMA = DATABASE()
               AND TABLE_NAME IN ('" + string.Join("','", AppTables) + @"')
@@ -87,14 +93,15 @@ public class ProductionScriptGenerator
 
         using var reader = await cmd.ExecuteReaderAsync();
         while (await reader.ReadAsync())
-            result[reader.GetString(0)] = reader.GetInt32(1);
+            result[reader.GetString(0)] = reader.GetString(1);
 
         return result;
     }
 
     /// <summary>
     /// Returns SHOW CREATE TABLE text for tables that actually exist in the DB,
-    /// keyed by lowercase table name.
+    /// keyed by table name.  'schema_migrations' and 'app_settings' are skipped
+    /// (emitted separately with a fixed DDL).
     /// </summary>
     private static async Task<Dictionary<string, string>> GetCreateStatementsAsync(
         MySqlConnection conn, IEnumerable<string> existingTables)
@@ -103,35 +110,28 @@ public class ProductionScriptGenerator
 
         foreach (var tbl in existingTables)
         {
-            // Skip operational tables — handled separately below.
             if (tbl is "schema_migrations" or "app_settings") continue;
 
             using var cmd = new MySqlCommand($"SHOW CREATE TABLE `{tbl}`", conn);
             using var reader = await cmd.ExecuteReaderAsync();
             if (await reader.ReadAsync())
-            {
-                var raw = reader.GetString(1);
-                result[tbl] = CleanCreateStatement(raw);
-            }
+                result[tbl] = CleanCreateStatement(reader.GetString(1));
         }
 
         return result;
     }
 
     /// <summary>
-    /// Cleans up the output of SHOW CREATE TABLE for use in a fresh-DB script:
-    ///   - Adds IF NOT EXISTS
-    ///   - Strips the AUTO_INCREMENT=N counter (reset to 1 on fresh DB)
+    /// Cleans the output of SHOW CREATE TABLE for use in a fresh-DB script:
+    /// adds IF NOT EXISTS and strips the AUTO_INCREMENT=N counter.
     /// </summary>
     private static string CleanCreateStatement(string raw)
     {
-        // Add IF NOT EXISTS
         var result = Regex.Replace(raw,
             @"^CREATE TABLE (`[^`]+`)",
             "CREATE TABLE IF NOT EXISTS $1",
             RegexOptions.Multiline);
 
-        // Remove AUTO_INCREMENT=NNN at end of statement (trailing table options)
         result = Regex.Replace(result,
             @"\bAUTO_INCREMENT=\d+\s*",
             "",
@@ -142,7 +142,7 @@ public class ProductionScriptGenerator
 
     // ── SQL generation ────────────────────────────────────────────────────────
 
-    private static void AppendHeader(StringBuilder sb, bool includeTranslations)
+    private static void AppendHeader(StringBuilder sb, bool includeTranslations, string tempPassword)
     {
         sb.AppendLine("-- =============================================================================");
         sb.AppendLine("-- Didasco LMS — Script di installazione per produzione");
@@ -152,17 +152,15 @@ public class ProductionScriptGenerator
         sb.AppendLine("-- ISTRUZIONI:");
         sb.AppendLine("--   1. Eseguire su un database MySQL vuoto con:");
         sb.AppendLine("--        mysql -u<user> -p <db_name> < questo_file.sql");
-        sb.AppendLine("--   2. Il blocco di drift detection all'inizio blocca lo script");
-        sb.AppendLine("--      se trova tabelle esistenti con struttura diversa da quella");
-        sb.AppendLine("--      attesa — verificare manualmente e procedere.");
-        sb.AppendLine("--   3. La password temporanea dell'utente admin è stata mostrata");
-        sb.AppendLine("--      nel browser al momento del download. Cambiarla al primo accesso.");
+        sb.AppendLine("--   2. Il blocco di drift detection blocca lo script se trova tabelle");
+        sb.AppendLine("--      con colonne diverse da quelle attese — verificare manualmente.");
+        sb.AppendLine("--   3. PASSWORD TEMPORANEA ADMIN (cambiare al primo accesso):");
+        sb.AppendLine($"--        Email:    admin@bocconi.it");
+        sb.AppendLine($"--        Password: {tempPassword}");
         if (includeTranslations)
             sb.AppendLine("--   4. Le chiavi di traduzione sono incluse in questo script.");
         sb.AppendLine("--");
-        sb.AppendLine("-- ATTENZIONE: questo script NON elimina dati esistenti.");
-        sb.AppendLine("--   CREATE TABLE usa IF NOT EXISTS.");
-        sb.AppendLine("--   INSERT usa INSERT IGNORE o ON DUPLICATE KEY UPDATE.");
+        sb.AppendLine("-- CREATE TABLE usa IF NOT EXISTS; INSERT usa INSERT IGNORE / ON DUPLICATE KEY.");
         sb.AppendLine("-- =============================================================================");
         sb.AppendLine();
         sb.AppendLine("SET NAMES utf8mb4;");
@@ -170,15 +168,15 @@ public class ProductionScriptGenerator
         sb.AppendLine();
     }
 
-    private static void AppendDriftProcedure(StringBuilder sb, Dictionary<string, int> colCounts)
+    private static void AppendDriftProcedure(StringBuilder sb, Dictionary<string, string> colNames)
     {
-        if (colCounts.Count == 0) return;
+        if (colNames.Count == 0) return;
 
         sb.AppendLine("-- =============================================================================");
         sb.AppendLine("-- DRIFT DETECTION");
-        sb.AppendLine("-- Controlla che le tabelle eventualmente già presenti abbiano");
-        sb.AppendLine("-- lo stesso numero di colonne atteso. In caso di discrepanza");
-        sb.AppendLine("-- lo script si interrompe con un errore.");
+        sb.AppendLine("-- Controlla che ogni tabella già presente nel DB di destinazione");
+        sb.AppendLine("-- abbia esattamente le stesse colonne (nomi + ordine) dello schema");
+        sb.AppendLine("-- atteso.  Lo script si interrompe con SIGNAL se la lista non coincide.");
         sb.AppendLine("-- =============================================================================");
         sb.AppendLine();
         sb.AppendLine("DROP PROCEDURE IF EXISTS `_didasco_drift_check`;");
@@ -186,18 +184,22 @@ public class ProductionScriptGenerator
         sb.AppendLine("DELIMITER $$");
         sb.AppendLine("CREATE PROCEDURE `_didasco_drift_check`()");
         sb.AppendLine("BEGIN");
-        sb.AppendLine("    DECLARE actual_cols INT DEFAULT 0;");
+        sb.AppendLine("    DECLARE actual_cols VARCHAR(4000) DEFAULT '';");
         sb.AppendLine();
 
-        foreach (var (table, expected) in colCounts.OrderBy(k => k.Key))
+        foreach (var (table, expectedCols) in colNames.OrderBy(k => k.Key))
         {
-            sb.AppendLine($"    -- Tabella: {table} (colonne attese: {expected})");
-            sb.AppendLine($"    SELECT COUNT(*) INTO actual_cols");
+            // Skip operational tables — emitted separately with fixed DDL
+            if (table is "schema_migrations" or "app_settings") continue;
+
+            sb.AppendLine($"    -- Tabella: {table}");
+            sb.AppendLine($"    SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',')");
+            sb.AppendLine($"        INTO actual_cols");
             sb.AppendLine($"        FROM information_schema.COLUMNS");
             sb.AppendLine($"        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{table}';");
-            sb.AppendLine($"    IF actual_cols > 0 AND actual_cols != {expected} THEN");
-            // MySQL SIGNAL MESSAGE_TEXT max 128 chars; must be a string literal (no variable interpolation)
-            var msg = $"SCHEMA DRIFT: {table} ha colonne diverse da attese ({expected}). Verificare.";
+            sb.AppendLine($"    IF actual_cols IS NOT NULL AND actual_cols != '{expectedCols}' THEN");
+
+            var msg = $"SCHEMA DRIFT: {table}: colonne diverse da attese. Verificare prima di procedere.";
             if (msg.Length > 128) msg = msg[..128];
             sb.AppendLine($"        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = '{msg}';");
             sb.AppendLine($"    END IF;");
@@ -219,7 +221,6 @@ public class ProductionScriptGenerator
         sb.AppendLine("-- =============================================================================");
         sb.AppendLine();
 
-        // Emit tables in AppTables order (preserves FK-safe order)
         foreach (var tbl in AppTables)
         {
             if (tbl is "schema_migrations" or "app_settings") continue;
@@ -231,8 +232,7 @@ public class ProductionScriptGenerator
         }
     }
 
-    private static void AppendSchemaOperationalTables(
-        StringBuilder sb, Dictionary<string, int> colCounts)
+    private static void AppendSchemaOperationalTables(StringBuilder sb)
     {
         sb.AppendLine("-- =============================================================================");
         sb.AppendLine("-- TABELLE OPERATIVE (create al boot dall'applicazione)");
@@ -328,9 +328,7 @@ public class ProductionScriptGenerator
 
     private static string GenerateTempPassword()
     {
-        // 12-character alphanumeric password from a GUID
-        var raw = Guid.NewGuid().ToString("N"); // 32 hex chars
-        // Mix case and add a digit prefix for "complexity"
+        var raw = Guid.NewGuid().ToString("N");
         return "Tmp" + raw[..8] + "!";
     }
 }

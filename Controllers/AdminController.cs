@@ -1141,9 +1141,9 @@ public class AdminController : Controller
         }
     }
 
-    public IActionResult DownloadProductionScript()
+    public async Task<IActionResult> DownloadProductionScript()
     {
-        if (!User.IsInRole("Admin")) return Forbid();
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
 
         var bytes = HttpContext.Session.Get("ProdScript");
         var fileName = HttpContext.Session.GetString("ProdScriptFileName")
