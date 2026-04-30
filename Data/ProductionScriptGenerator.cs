@@ -205,9 +205,6 @@ public class ProductionScriptGenerator
 
         foreach (var (table, expectedCols) in colNames.OrderBy(k => k.Key))
         {
-            // Skip operational tables — emitted separately with fixed DDL
-            if (table is "schema_migrations" or "app_settings") continue;
-
             sb.AppendLine($"    -- Tabella: {table}");
             sb.AppendLine($"    SELECT GROUP_CONCAT(COLUMN_NAME ORDER BY ORDINAL_POSITION SEPARATOR ',')");
             sb.AppendLine($"        INTO actual_cols");
