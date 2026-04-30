@@ -38,38 +38,41 @@ L'applicazione produce tre categorie di log, tutte convogliate nel sistema di lo
 
 ### Azioni catalogate
 
-| Azione                   | Livello  | Descrizione                                    |
-|--------------------------|----------|------------------------------------------------|
-| `user.login`             | minimal  | Accesso riuscito                               |
-| `user.login_failed`      | minimal  | Tentativo di accesso fallito                   |
-| `user.logout`            | minimal  | Logout eseguito                                |
-| `user.password_reset`    | minimal  | Reset password completato                      |
-| `user.forgot_password`   | minimal  | Richiesta reset password                       |
-| `user.create`            | standard | Nuovo utente creato da Admin                   |
-| `user.edit`              | standard | Dati utente modificati                         |
-| `user.delete`            | standard | Utente eliminato                               |
-| `user.role_change`       | standard | Ruolo utente modificato                        |
-| `course.create`          | standard | Nuovo corso creato                             |
-| `course.edit`            | standard | Corso modificato                               |
-| `course.delete`          | standard | Corso eliminato                                |
-| `course.publish`         | standard | Corso pubblicato                               |
-| `course.unpublish`       | standard | Pubblicazione corso revocata                   |
-| `course.enroll`          | standard | Studente iscritto a un corso                   |
-| `course.unenroll`        | standard | Studente disiscritto                           |
-| `lesson.create`          | standard | Nuova lezione creata                           |
-| `lesson.edit`            | standard | Lezione modificata                             |
-| `lesson.delete`          | standard | Lezione eliminata                              |
-| `quiz.create`            | standard | Nuovo quiz creato                              |
-| `quiz.edit`              | standard | Quiz modificato                                |
-| `quiz.delete`            | standard | Quiz eliminato                                 |
-| `quiz.submit`            | standard | Tentativo quiz inviato                         |
-| `material.create`        | standard | Nuovo materiale caricato                       |
-| `material.edit`          | standard | Materiale modificato                           |
-| `material.delete`        | standard | Materiale eliminato                            |
-| `material.download`      | standard | File materiale scaricato                       |
-| `role.create`            | standard | Nuovo ruolo creato                             |
-| `role.edit`              | standard | Ruolo modificato                               |
-| `role.delete`            | standard | Ruolo eliminato                                |
+Le azioni di seguito rispecchiano esattamente le stringhe prodotte dal codice sorgente (`AccountController`, `AdminController`, `CourseController`, `LessonController`, `QuizController`, `MaterialsController`).
+
+| Azione                    | Livello  | Controller          | Descrizione                                    |
+|---------------------------|----------|---------------------|------------------------------------------------|
+| `auth.login`              | minimal  | AccountController   | Accesso riuscito                               |
+| `auth.login` (failure)    | minimal  | AccountController   | Tentativo di accesso fallito (outcome=failure) |
+| `auth.logout`             | minimal  | AccountController   | Logout eseguito                                |
+| `auth.password_change`    | minimal  | AccountController   | Cambio password completato (reset)             |
+| `auth.password_reset`     | minimal  | AccountController   | Reset password completato via token            |
+| `user.create`             | standard | AdminController     | Nuovo utente creato da Admin                   |
+| `user.edit`               | standard | AdminController     | Dati utente modificati                         |
+| `user.delete`             | standard | AdminController     | Utente eliminato                               |
+| `user.role_change`        | standard | AdminController     | Ruolo utente modificato                        |
+| `user.activate`           | standard | AdminController     | Account utente riattivato                      |
+| `user.deactivate`         | standard | AdminController     | Account utente disattivato                     |
+| `settings.email_saved`    | standard | AdminController     | Configurazione SMTP salvata                    |
+| `role.create`             | standard | AdminController     | Nuovo ruolo creato                             |
+| `role.edit`               | standard | AdminController     | Ruolo modificato                               |
+| `role.delete`             | standard | AdminController     | Ruolo eliminato                                |
+| `course.create`           | standard | CourseController    | Nuovo corso creato                             |
+| `course.edit`             | standard | CourseController    | Corso modificato                               |
+| `course.delete`           | standard | CourseController    | Corso eliminato                                |
+| `course.publish`          | standard | CourseController    | Corso pubblicato                               |
+| `course.unpublish`        | standard | CourseController    | Pubblicazione corso revocata                   |
+| `course.enroll`           | standard | CourseController    | Studente iscritto a un corso                   |
+| `course.unenroll`         | standard | CourseController    | Studente disiscritto                           |
+| `lesson.create`           | standard | LessonController    | Nuova lezione creata                           |
+| `lesson.edit`             | standard | LessonController    | Lezione modificata                             |
+| `lesson.delete`           | standard | LessonController    | Lezione eliminata                              |
+| `quiz.create`             | standard | QuizController      | Nuovo quiz creato                              |
+| `quiz.delete`             | standard | QuizController      | Quiz eliminato                                 |
+| `quiz.submit`             | standard | QuizController      | Tentativo quiz inviato                         |
+| `material.create`         | standard | MaterialsController | Nuovo materiale caricato                       |
+| `material.edit`           | standard | MaterialsController | Materiale modificato                           |
+| `material.delete`         | standard | MaterialsController | Materiale eliminato                            |
 
 ### Livelli di log audit
 
@@ -92,10 +95,10 @@ Se `Enabled = false` nessun evento viene registrato (compreso il livello minimal
 ### Esempi
 
 ```
-[APP-AUDIT] 2026-04-30T14:22:01.123+00:00 | user=m.rossi@bocconi.it | ip=10.0.0.5 | action=user.login | outcome=success
-[APP-AUDIT] 2026-04-30T14:22:45.988+00:00 | user=m.rossi@bocconi.it | ip=10.0.0.5 | action=course.create | target=courseId=42 | outcome=success
-[APP-AUDIT] 2026-04-30T14:23:00.001+00:00 | user=m.rossi@bocconi.it | ip=10.0.0.5 | action=user.login_failed | outcome=failure
-[APP-AUDIT] 2026-04-30T14:30:00.000+00:00 | user=anonymous          | ip=-        | action=user.forgot_password | target=email=x@example.it | outcome=success
+[APP-AUDIT] 2026-04-30T14:22:01.123+00:00 | user=m.rossi@bocconi.it | ip=10.0.0.5 | action=auth.login | outcome=success
+[APP-AUDIT] 2026-04-30T14:22:45.988+00:00 | user=m.rossi@bocconi.it | ip=10.0.0.5 | action=course.create | target=course#42 "Economia Aziendale" | outcome=success
+[APP-AUDIT] 2026-04-30T14:23:00.001+00:00 | user=anonymous          | ip=10.0.0.5 | action=auth.login | outcome=failure
+[APP-AUDIT] 2026-04-30T14:30:00.000+00:00 | user=admin@bocconi.it   | ip=10.0.0.5 | action=user.create | target=user#55 "nuovo@bocconi.it" role=Student | outcome=success
 ```
 
 ---

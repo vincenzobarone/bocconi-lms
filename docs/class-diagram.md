@@ -1,6 +1,6 @@
 # Diagramma delle Classi — Didasco LMS (Università Bocconi)
 
-Versione: 1.0 — aggiornata al 2026-04-30
+Versione: 1.1 — aggiornata al 2026-04-30
 
 ---
 
@@ -35,15 +35,223 @@ Nessun ORM: l'accesso ai dati avviene tramite classi **Repository** con query SQ
 
 ---
 
-## Controllers
+## Diagramma UML delle classi principali (Mermaid)
+
+```mermaid
+classDiagram
+    class AccountController {
+        -SignInManager signInManager
+        -UserManager userManager
+        -EmailService emailService
+        -IAuditLogger audit
+        +Login() IActionResult
+        +Logout() IActionResult
+        +ForgotPassword() IActionResult
+        +ResetPassword() IActionResult
+        +AccessDenied() IActionResult
+    }
+
+    class AdminController {
+        -UserRepository users
+        -RolePermissionRepository rolePerms
+        -AreaRepository areas
+        -DocumentTypeRepository docTypes
+        -TranslationRepository translations
+        -SettingsRepository settings
+        -PlatformRepository platforms
+        -MigrationRunner migrations
+        -IAuditLogger audit
+        +Dashboard() IActionResult
+        +Users() IActionResult
+        +CreateUser() IActionResult
+        +EditUser() IActionResult
+        +DeleteUser() IActionResult
+        +CreateRole() IActionResult
+        +EditRole() IActionResult
+        +DeleteRole() IActionResult
+        +Dictionary() IActionResult
+        +Settings() IActionResult
+        +Migrations() IActionResult
+    }
+
+    class CourseController {
+        -CourseRepository courses
+        -EnrollmentRepository enrollments
+        -LessonRepository lessons
+        -IAuditLogger audit
+        +Index() IActionResult
+        +Details() IActionResult
+        +Create() IActionResult
+        +Edit() IActionResult
+        +Delete() IActionResult
+        +Enroll() IActionResult
+        +Unenroll() IActionResult
+        +Publish() IActionResult
+        +Unpublish() IActionResult
+    }
+
+    class LessonController {
+        -LessonRepository lessons
+        -CourseRepository courses
+        -EnrollmentRepository enrollments
+        -ProgressRepository progress
+        -MaterialRepository materials
+        -IAuditLogger audit
+        +Details() IActionResult
+        +Create() IActionResult
+        +Edit() IActionResult
+        +Delete() IActionResult
+        +MarkComplete() IActionResult
+    }
+
+    class QuizController {
+        -QuizRepository quizzes
+        -EnrollmentRepository enrollments
+        -IAuditLogger audit
+        +Take() IActionResult
+        +Submit() IActionResult
+        +Result() IActionResult
+        +History() IActionResult
+        +CreateQuiz() IActionResult
+        +DeleteQuiz() IActionResult
+    }
+
+    class MaterialsController {
+        -MaterialRepository materials
+        -DocumentTypeRepository docTypes
+        -AreaRepository areas
+        -PlatformRepository platforms
+        -IAuditLogger audit
+        +Index() IActionResult
+        +Details() IActionResult
+        +Create() IActionResult
+        +Edit() IActionResult
+        +Delete() IActionResult
+        +UploadVersion() IActionResult
+        +Download() IActionResult
+        +ExportExcel() IActionResult
+        +ExportPdf() IActionResult
+    }
+
+    class HomeController {
+        -CourseRepository courses
+        -MaterialRepository materials
+        -EnrollmentRepository enrollments
+        -UserRepository users
+        -FeatureFlagService features
+        -SettingsRepository settings
+        -UserManager userManager
+        +Index() IActionResult
+        +Dashboard() IActionResult
+        +NoModules() IActionResult
+        +Error() IActionResult
+        +Health() IActionResult
+    }
+
+    class LanguageController {
+        +Set() IActionResult
+    }
+
+    class StudentController {
+        -EnrollmentRepository enrollments
+        -QuizRepository quizzes
+        +Dashboard() IActionResult
+    }
+
+    class IAuditLogger {
+        <<interface>>
+        +Log(action, target, outcome, user, ip) void
+        +LogMinimal(action, target, outcome, user, ip) void
+        +IsEnabled bool
+        +Level string
+    }
+
+    class AuditLogger {
+        -ILogger logger
+        -IHttpContextAccessor httpContextAccessor
+        -bool IsEnabled
+        -string Level
+        +Log() void
+        +LogMinimal() void
+    }
+
+    class TranslationService {
+        -TranslationRepository repo
+        -IMemoryCache cache
+        -ISession session
+        +T(key, fallback) string
+    }
+
+    class EmailService {
+        -SmtpSettings settings
+        +SendAsync(to, subject, body) Task
+    }
+
+    class FeatureFlagService {
+        -SettingsRepository settings
+        +IsEnabled(flag) bool
+    }
+
+    class DbHelper {
+        -string connectionString
+        +GetConnection() MySqlConnection
+        +GetConnectionWithUserVariables() MySqlConnection
+    }
+
+    class CustomUserStore {
+        -UserRepository users
+        -RolePermissionRepository rolePerms
+        +FindByEmailAsync() Task
+        +FindByIdAsync() Task
+        +GetPasswordHashAsync() Task
+        +IsInRoleAsync() Task
+    }
+
+    class CustomRoleStore {
+        -DbHelper db
+        +FindByNameAsync() Task
+        +CreateAsync() Task
+        +DeleteAsync() Task
+    }
+
+    class MigrationRunner {
+        -DbHelper db
+        +RunAsync() Task
+    }
+
+    class HttpAccessLogMiddleware {
+        -RequestDelegate next
+        -ILogger logger
+        +InvokeAsync(context) Task
+    }
+
+    AuditLogger ..|> IAuditLogger
+    AccountController --> IAuditLogger
+    AdminController --> IAuditLogger
+    CourseController --> IAuditLogger
+    LessonController --> IAuditLogger
+    QuizController --> IAuditLogger
+    MaterialsController --> IAuditLogger
+    AccountController --> EmailService
+    AdminController --> MigrationRunner
+    HomeController --> FeatureFlagService
+    TranslationService --> DbHelper
+    CustomUserStore --> DbHelper
+    CustomRoleStore --> DbHelper
+    MigrationRunner --> DbHelper
+```
+
+---
+
+## Controllers — dettaglio
 
 ### `AccountController`
-- **Azioni:** `Login (GET/POST)`, `Logout (POST)`, `AccessDenied`, `ForgotPassword (GET/POST)`, `ResetPassword (GET/POST)`
-- **Dipendenze:** `SignInManager<ApplicationUser>`, `IAuditLogger`, `EmailService`
+- **Azioni:** `Login (GET/POST)`, `Logout (POST)`, `AccessDenied (GET)`, `ForgotPassword (GET/POST)`, `ResetPassword (GET/POST)`
+- **Dipendenze:** `SignInManager<ApplicationUser>`, `UserManager<ApplicationUser>`, `IAuditLogger`, `EmailService`
 - **Autenticazione:** Login via ASP.NET Identity + cookie; password hashing BCrypt
 
 ### `AdminController`
-- **Azioni:** `Dashboard`, `Users`, `CreateUser (GET/POST)`, `EditUser (GET/POST)`, `DeleteUser`, `Roles`, `CreateRole (GET/POST)`, `EditRole (GET/POST)`, `DeleteRole`, `Dictionary`, `CreateArea`, `DeleteArea`, `CreateDocumentType`, `DeleteDocumentType`, `Settings`, `Translations`, `EditTranslation`, `Platforms`, `CreatePlatform`, `DeletePlatform`, `Migrations`
+- **Azioni:** `Dashboard`, `Users`, `CreateUser (GET/POST)`, `EditUser (GET/POST)`, `DeleteUser (POST)`, `ToggleUserActive (POST)`, `Roles`, `CreateRole (GET/POST)`, `EditRole (GET/POST)`, `DeleteRole (POST)`, `Dictionary`, `CreateArea (POST)`, `DeleteArea (POST)`, `CreateDocumentType (POST)`, `DeleteDocumentType (POST)`, `Settings (GET/POST)`, `Translations`, `EditTranslation (GET/POST)`, `Platforms`, `CreatePlatform (POST)`, `DeletePlatform (POST)`, `Migrations`
 - **Dipendenze:** `UserRepository`, `RolePermissionRepository`, `AreaRepository`, `DocumentTypeRepository`, `TranslationRepository`, `SettingsRepository`, `PlatformRepository`, `MigrationRunner`, `IAuditLogger`
 - **Accesso:** Solo ruolo `Admin`
 
@@ -58,26 +266,27 @@ Nessun ORM: l'accesso ai dati avviene tramite classi **Repository** con query SQ
 - **Accesso:** `[Authorize]`; creazione/modifica richiede `courses.teach`
 
 ### `QuizController`
-- **Azioni:** `Take/{id}`, `Submit/{id} (POST)`, `Result/{attemptId}`, `History`
+- **Azioni:** `Take/{id}`, `Submit/{id} (POST)`, `Result/{attemptId}`, `History`, `CreateQuiz (GET/POST)`, `DeleteQuiz/{id} (POST)`
 - **Dipendenze:** `QuizRepository`, `EnrollmentRepository`, `IAuditLogger`
 - **Accesso:** `[Authorize]`
 
 ### `MaterialsController`
 - **Azioni:** `Index`, `Details/{id}`, `Create (GET/POST)`, `Edit/{id} (GET/POST)`, `Delete/{id} (POST)`, `UploadVersion (POST)`, `Download/{id}`, `ExportExcel`, `ExportPdf`
-- **Dipendenze:** `MaterialRepository`, `DocumentTypeRepository`, `AreaRepository`, `PlatformRepository`, `MaterialRepository`, `IAuditLogger`
+- **Dipendenze:** `MaterialRepository`, `DocumentTypeRepository`, `AreaRepository`, `PlatformRepository`, `IAuditLogger`
 - **Accesso:** lettura = `[Authorize]`; creazione/modifica = `materials.*`
 
 ### `HomeController`
-- **Azioni:** `Index`, `Dashboard`, `Error`, `ChangeLanguage`
-- **Dipendenze:** `CourseRepository`, `EnrollmentRepository`, `TranslationService`
+- **Azioni:** `Index`, `Dashboard`, `NoModules`, `Error`, `Health`
+- **Dipendenze:** `CourseRepository`, `MaterialRepository`, `EnrollmentRepository`, `UserRepository`, `FeatureFlagService`, `SettingsRepository`, `UserManager<ApplicationUser>`, `IWebHostEnvironment`
 
 ### `LanguageController`
-- **Azioni:** `Set (POST)` — imposta la lingua nella sessione
-- **Dipendenze:** `ISession`
+- **Azioni:** `Set (POST)` — imposta il cookie `lang` con scadenza 1 anno
+- **Dipendenze:** `IResponseCookies` (via `Response.Cookies`)
+- **Note:** non usa `ISession`; preferisce un cookie permanente
 
 ### `StudentController`
-- **Azioni:** `MyCourses`, `Progress`
-- **Dipendenze:** `EnrollmentRepository`, `ProgressRepository`
+- **Azioni:** `Dashboard`
+- **Dipendenze:** `EnrollmentRepository`, `QuizRepository`
 
 ---
 
@@ -192,7 +401,7 @@ Ogni repository riceve `DbHelper` via DI e apre connessioni on-demand.
 | `PlatformRepository`        | `platforms`                      |                                              |
 | `RolePermissionRepository`  | `role_permissions`               | Permessi funzionali per ruolo                |
 | `TranslationRepository`     | `translations`                   | Stringhe UI multilingua                      |
-| `SettingsRepository`        | (tabella `app_settings`)         | Feature flags e configurazioni runtime       |
+| `SettingsRepository`        | `app_settings`                   | Feature flags e configurazioni runtime       |
 
 ### `CustomUserStore`
 - Implementa `IUserStore<ApplicationUser>`, `IUserPasswordStore`, `IUserRoleStore`
@@ -220,7 +429,7 @@ Ogni repository riceve `DbHelper` via DI e apre connessioni on-demand.
 
 ### `TranslationService`
 - Scoped — carica le traduzioni dal DB e le mette in cache (`IMemoryCache`)
-- `T(key, fallback)` — restituisce la traduzione per la lingua corrente (in sessione)
+- `T(key, fallback)` — restituisce la traduzione per la lingua corrente (da cookie `lang`)
 
 ### `EmailService`
 - Scoped — invia e-mail via SMTP usando MailKit

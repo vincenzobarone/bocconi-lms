@@ -7,11 +7,12 @@ Riferimento: `Program.cs` (ConfigureApplicationCookie, AddSession), ASP.NET Core
 
 ## Riepilogo cookie prodotti dall'applicazione
 
-| Nome cookie                   | Tipo         | Durata             | HttpOnly | Secure | SameSite | Scopo                                                         |
-|-------------------------------|--------------|-------------------|----------|--------|----------|---------------------------------------------------------------|
-| `.AspNetCore.Identity.Application` | Essenziale | 8 ore (sliding) | Sì | Sì\* | Lax | Sessione di autenticazione utente (ASP.NET Identity)          |
-| `.AspNetCore.Session`          | Essenziale   | 8 ore (idle)       | Sì       | Sì\*  | Lax      | Sessione applicativa (lingua UI, dati temporanei)             |
-| `.AspNetCore.Antiforgery.*`    | Essenziale   | Sessione browser   | Sì       | Sì\*  | Strict   | Token CSRF anti-forgery per protezione form POST              |
+| Nome cookie                        | Tipo         | Durata             | HttpOnly | Secure | SameSite | Scopo                                                         |
+|------------------------------------|--------------|-------------------|----------|--------|----------|---------------------------------------------------------------|
+| `.AspNetCore.Identity.Application` | Essenziale   | 8 ore (sliding)   | Sì       | Sì\*  | Lax      | Sessione di autenticazione utente (ASP.NET Identity)          |
+| `.AspNetCore.Session`              | Essenziale   | 8 ore (idle)      | Sì       | Sì\*  | Lax      | Sessione applicativa (dati temporanei di richiesta)           |
+| `.AspNetCore.Antiforgery.*`        | Essenziale   | Sessione browser  | Sì       | Sì\*  | Strict   | Token CSRF anti-forgery per protezione form POST              |
+| `lang`                             | Essenziale   | 1 anno            | No       | Sì\*  | Lax      | Lingua dell'interfaccia utente selezionata (`LanguageController`) |
 
 \* Il flag `Secure` è imposto automaticamente da ASP.NET Core quando l'applicazione è servita via HTTPS (produzione). In sviluppo su HTTP non viene impostato.
 
@@ -46,7 +47,7 @@ options.SlidingExpiration = true;
 ### 2. `.AspNetCore.Session` — Cookie di sessione applicativa
 
 **Categoria:** Strettamente necessario / Essenziale  
-**Finalità:** Mantiene la sessione server-side per dati temporanei dell'applicazione, in particolare la **lingua selezionata dall'utente** nell'interfaccia (`LanguageController`).
+**Finalità:** Mantiene la sessione server-side per dati temporanei dell'applicazione. La preferenza di lingua è gestita dal cookie `lang` (vedi sezione 4); la sessione è usata per altri dati temporanei di richiesta.
 
 **Configurazione (Program.cs):**
 ```csharp
@@ -81,6 +82,35 @@ options.Cookie.IsEssential = true;
 | SameSite         | Strict                                                                   |
 | Contenuto        | Token crittografato; non contiene dati utente                            |
 | Dati personali   | No                                                                       |
+
+---
+
+### 4. `lang` — Preferenza lingua interfaccia
+
+**Categoria:** Strettamente necessario / Essenziale  
+**Finalità:** Memorizza la lingua dell'interfaccia selezionata dall'utente tramite il selettore di lingua (`LanguageController.Set`). Valori possibili: `it`, `en`, `es`, `de`.
+
+**Codice sorgente (`LanguageController.cs`):**
+```csharp
+Response.Cookies.Append("lang", lang, new CookieOptions
+{
+    Expires = DateTimeOffset.UtcNow.AddYears(1),
+    HttpOnly = false,
+    IsEssential = true,
+    SameSite = SameSiteMode.Lax
+});
+```
+
+| Attributo        | Valore                                                       |
+|------------------|--------------------------------------------------------------|
+| Nome             | `lang`                                                       |
+| Durata           | 1 anno dalla data di impostazione                            |
+| HttpOnly         | **No** — accessibile da JavaScript (necessario per eventuale lettura lato client) |
+| Secure           | Sì (HTTPS) / No (HTTP dev)                                   |
+| SameSite         | Lax                                                          |
+| IsEssential      | Sì — non soggetto a consenso cookie                          |
+| Contenuto        | Stringa lingua: `it`, `en`, `es`, `de`                       |
+| Dati personali   | No — preferenza di presentazione, non identificativa         |
 
 ---
 
