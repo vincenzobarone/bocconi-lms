@@ -2006,22 +2006,6 @@ try
 }
 catch { }
 
-// ── Seed default Teacher / Student roles with capability flags ─────────────
-try
-{
-    var dbHelper = app.Services.GetRequiredService<DbHelper>();
-    using var conn = dbHelper.GetConnection();
-    await conn.OpenAsync();
-    using var seedRoles = new MySqlConnector.MySqlCommand(@"
-        INSERT INTO roles (name, normalized_name, can_teach, can_attend)
-        VALUES ('Teacher', 'TEACHER', 1, 0),
-               ('Student', 'STUDENT', 0, 1)
-        ON DUPLICATE KEY UPDATE
-            can_teach  = VALUES(can_teach),
-            can_attend = VALUES(can_attend);", conn);
-    await seedRoles.ExecuteNonQueryAsync();
-}
-catch { }
 
 // ── Migrate: fix users.role DEFAULT (remove 'Student') ────────────────────
 try
