@@ -244,9 +244,10 @@
                     <label class="form-label fw-semibold">
                         <i class="bi bi-hash me-1"></i>@T["mat.protocol_number","Numero di protocollo"]
                     </label>
-                    <input type="text" id="modalProtocol" class="form-control" readonly
-                           placeholder="…" />
-                    <div class="form-text">@T["mat.protocol_auto","Assegnato automaticamente — sola lettura"]</div>
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 rounded border bg-light text-muted small">
+                        <i class="bi bi-magic"></i>
+                        <span>@T["mat.protocol_auto","Assegnato automaticamente al salvataggio"]</span>
+                    </div>
                 </div>
 
                 <div class="mb-2">
@@ -383,13 +384,7 @@
             return !hasProtocol || !hasFolder;
         }
 
-        async function openVerifiedModal() {
-            try {
-                var resp = await fetch('@Url.Action("NextProtocol","Materials")', {headers:{'X-Requested-With':'XMLHttpRequest'}});
-                var data = await resp.json();
-                document.getElementById('modalProtocol').value = data.protocol;
-            } catch(e) { document.getElementById('modalProtocol').value = '—'; }
-
+        function openVerifiedModal() {
             _selectedFolderId   = null;
             _selectedFolderName = null;
             _selectedIsNew      = false;
@@ -403,11 +398,11 @@
             setTimeout(function() { document.getElementById('folderSearch').focus(); }, 300);
         }
 
-        document.getElementById('submitBtn').addEventListener('click', async function() {
+        document.getElementById('submitBtn').addEventListener('click', function() {
             if (!form.reportValidity || !form.reportValidity()) return;
 
             if (needsModal()) {
-                await openVerifiedModal();
+                openVerifiedModal();
             } else {
                 form.submit();
             }

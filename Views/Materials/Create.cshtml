@@ -238,8 +238,10 @@
                     <label class="form-label fw-semibold">
                         <i class="bi bi-hash me-1"></i>@T["mat.protocol_number","Numero di protocollo"]
                     </label>
-                    <input type="text" id="modalProtocol" class="form-control" readonly placeholder="…" />
-                    <div class="form-text">@T["mat.protocol_auto","Assegnato automaticamente — sola lettura"]</div>
+                    <div class="d-flex align-items-center gap-2 px-3 py-2 rounded border bg-light text-muted small">
+                        <i class="bi bi-magic"></i>
+                        <span>@T["mat.protocol_auto","Assegnato automaticamente al salvataggio"]</span>
+                    </div>
                 </div>
                 <div class="mb-2">
                     <label class="form-label fw-semibold">
@@ -412,12 +414,7 @@
             var sel = document.getElementById('statusSelect');
             return sel ? sel.value === 'verificato' : false;
         }
-        async function openVerifiedModal() {
-            try {
-                var resp = await fetch('@Url.Action("NextProtocol","Materials")', {headers:{'X-Requested-With':'XMLHttpRequest'}});
-                var data = await resp.json();
-                document.getElementById('modalProtocol').value = data.protocol;
-            } catch(e) { document.getElementById('modalProtocol').value = '—'; }
+        function openVerifiedModal() {
             // Reset selezione
             _selectedFolderId   = null;
             _selectedFolderName = null;
@@ -451,7 +448,7 @@
         if (titleInp) titleInp.addEventListener('input', function() { clearFieldError(titleInp, titleSpan); });
         if (dtSelect) dtSelect.addEventListener('change', function() { clearFieldError(dtSelect, dtSpan); });
 
-        document.getElementById('submitBtn').addEventListener('click', async function() {
+        document.getElementById('submitBtn').addEventListener('click', function() {
             var hasError = false;
 
             // 1. Verifica file
@@ -495,7 +492,7 @@
             }
 
             if (needsModal()) {
-                await openVerifiedModal();
+                openVerifiedModal();
             } else {
                 document.getElementById('hidFolderId').value = '';
                 document.getElementById('hidFolderName').value = '';

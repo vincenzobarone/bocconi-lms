@@ -1691,7 +1691,7 @@ try
         ["it"] = new()
         {
             ["mat.protocol_number"]       = "Numero di protocollo",
-            ["mat.protocol_auto"]         = "Assegnato automaticamente — sola lettura",
+            ["mat.protocol_auto"]         = "Assegnato automaticamente al salvataggio",
             ["mat.verified_modal_title"]  = "Verifica completata",
             ["mat.verified_modal_hint"]   = "Completa i dati di registrazione prima di salvare come Verificato.",
             ["mat.label_folder"]          = "Cartella",
@@ -1706,7 +1706,7 @@ try
         ["en"] = new()
         {
             ["mat.protocol_number"]       = "Protocol number",
-            ["mat.protocol_auto"]         = "Assigned automatically on verification",
+            ["mat.protocol_auto"]         = "Assigned automatically on save",
             ["mat.verified_modal_title"]  = "Verification complete",
             ["mat.verified_modal_hint"]   = "Complete the registration data before saving as Verified.",
             ["mat.label_folder"]          = "Folder",
