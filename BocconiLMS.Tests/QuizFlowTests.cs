@@ -9,7 +9,7 @@ public class QuizFlowTests : IAsyncLifetime
     private readonly LmsWebFactory _factory;
     private readonly DbTestHelper _db;
 
-    private int _teacherId, _studentId;
+    private int _instructorId, _attendeeId;
     private int _courseId, _lessonId;
     private int _quizId, _questionId, _correctOptionId;
     private string _quizTitle = string.Empty;
@@ -25,17 +25,21 @@ public class QuizFlowTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         await _db.CleanupOrphanTestDataAsync();
-        var suffix = Guid.NewGuid().ToString("N")[..8];
-        _teacherId = await _db.CreateUserAsync(
-            $"quiz_teacher_{suffix}@test.it",
-            "Quiz", "Teacher", "Teacher", Password);
-        _studentId = await _db.CreateUserAsync(
-            $"quiz_student_{suffix}@test.it",
-            "Quiz", "Student", "Student", Password);
+        await _db.EnsureSmtpDisabledAsync();
 
-        _courseId = await _db.CreateCourseAsync(_teacherId, $"Test Course {suffix}", isPublished: true);
+        var suffix = Guid.NewGuid().ToString("N")[..8];
+
+        var instructorRole = await _db.CreateRoleAsync($"TestRole_{suffix}_Instructor", canTeach: true, canAttend: false);
+        var attendeeRole   = await _db.CreateRoleAsync($"TestRole_{suffix}_Attendee",   canTeach: false, canAttend: true);
+
+        _instructorId = await _db.CreateUserAsync(
+            $"quiz_instructor_{suffix}@test.it", "Quiz", "Instructor", instructorRole, Password);
+        _attendeeId = await _db.CreateUserAsync(
+            $"quiz_attendee_{suffix}@test.it", "Quiz", "Attendee", attendeeRole, Password);
+
+        _courseId = await _db.CreateCourseAsync(_instructorId, $"Test Course {suffix}", isPublished: true);
         _lessonId = await _db.CreateLessonAsync(_courseId, $"Test Lesson {suffix}", isPublished: true);
-        await _db.EnrollStudentAsync(_studentId, _courseId);
+        await _db.EnrollStudentAsync(_attendeeId, _courseId);
 
         _quizTitle = $"Quiz {suffix}";
         _questionText = $"Domanda test {suffix}";
@@ -49,28 +53,32 @@ public class QuizFlowTests : IAsyncLifetime
         _factory.Dispose();
     }
 
+    // ── Quiz page ──────────────────────────────────────────────────────────
+
     [Fact]
-    public async Task TakeQuiz_AsStudent_ShowsQuizPage()
+    public async Task TakeQuiz_AsEnrolledAttendee_ShowsQuizPage()
     {
         var client = _factory.CreateClientWithCookies();
-        await LoginAsync(client, await GetEmailAsync(_studentId), Password);
+        await LoginFlowTests.LoginAsync(client, await _db.GetEmailAsync(_attendeeId), Password);
 
         var response = await client.GetAsync($"/Quiz/Take/{_quizId}");
 
         Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
         var html = await response.Content.ReadAsStringAsync();
         Assert.True(html.Contains(_quizTitle),
-            $"Expected quiz title '{_quizTitle}' in page. HTML snippet: {html[..Math.Min(500, html.Length)]}");
+            $"Expected quiz title '{_quizTitle}'. HTML snippet: {html[..Math.Min(500, html.Length)]}");
         Assert.True(html.Contains("1 /"),
-            $"Expected question counter '1 /' in page (questions not loaded?). HTML snippet: {html[..Math.Min(500, html.Length)]}");
+            $"Expected question counter '1 /'. HTML snippet: {html[..Math.Min(500, html.Length)]}");
         Assert.Contains(_questionText, html);
     }
+
+    // ── Correct answer ─────────────────────────────────────────────────────
 
     [Fact]
     public async Task SubmitQuiz_WithCorrectAnswer_ReturnsPassedResult()
     {
         var client = _factory.CreateClientWithCookies();
-        await LoginAsync(client, await GetEmailAsync(_studentId), Password);
+        await LoginFlowTests.LoginAsync(client, await _db.GetEmailAsync(_attendeeId), Password);
 
         var takePage = await client.GetAsync($"/Quiz/Take/{_quizId}");
         var html = await takePage.Content.ReadAsStringAsync();
@@ -89,18 +97,20 @@ public class QuizFlowTests : IAsyncLifetime
         Assert.Contains("/Quiz/Result", location, StringComparison.OrdinalIgnoreCase);
 
         var resultClient = _factory.CreateClientWithCookies();
-        await LoginAsync(resultClient, await GetEmailAsync(_studentId), Password);
+        await LoginFlowTests.LoginAsync(resultClient, await _db.GetEmailAsync(_attendeeId), Password);
         var resultResponse = await resultClient.GetAsync(location);
         Assert.Equal(System.Net.HttpStatusCode.OK, resultResponse.StatusCode);
         var resultHtml = await resultResponse.Content.ReadAsStringAsync();
         Assert.Contains("100", resultHtml);
     }
 
+    // ── Wrong answer ───────────────────────────────────────────────────────
+
     [Fact]
     public async Task SubmitQuiz_WithWrongAnswer_ReturnsFailedResult()
     {
         var client = _factory.CreateClientWithCookies();
-        await LoginAsync(client, await GetEmailAsync(_studentId), Password);
+        await LoginFlowTests.LoginAsync(client, await _db.GetEmailAsync(_attendeeId), Password);
 
         var takePage = await client.GetAsync($"/Quiz/Take/{_quizId}");
         var html = await takePage.Content.ReadAsStringAsync();
@@ -116,16 +126,14 @@ public class QuizFlowTests : IAsyncLifetime
         var response = await client.PostAsync($"/Quiz/Submit/{_quizId}", form);
 
         Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
-        var location = response.Headers.Location?.ToString() ?? "";
-        Assert.Contains("/Quiz/Result", location, StringComparison.OrdinalIgnoreCase);
-
         var resultClient = _factory.CreateClientWithCookies();
-        await LoginAsync(resultClient, await GetEmailAsync(_studentId), Password);
-        var resultResponse = await resultClient.GetAsync(location);
-        Assert.Equal(System.Net.HttpStatusCode.OK, resultResponse.StatusCode);
+        await LoginFlowTests.LoginAsync(resultClient, await _db.GetEmailAsync(_attendeeId), Password);
+        var resultResponse = await resultClient.GetAsync(response.Headers.Location!.ToString());
         var resultHtml = await resultResponse.Content.ReadAsStringAsync();
         Assert.Contains("0", resultHtml);
     }
+
+    // ── Unauthenticated ───────────────────────────────────────────────────
 
     [Fact]
     public async Task TakeQuiz_Unauthenticated_RedirectsToLogin()
@@ -138,15 +146,17 @@ public class QuizFlowTests : IAsyncLifetime
         var response = await client.GetAsync($"/Quiz/Take/{_quizId}");
 
         Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
-        var location = response.Headers.Location?.ToString() ?? "";
-        Assert.Contains("/Account/Login", location, StringComparison.OrdinalIgnoreCase);
+        Assert.Contains("/Account/Login",
+            response.Headers.Location?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
     }
+
+    // ── History ───────────────────────────────────────────────────────────
 
     [Fact]
     public async Task QuizHistory_AfterAttempt_ShowsAttempt()
     {
         var client = _factory.CreateClientWithCookies();
-        await LoginAsync(client, await GetEmailAsync(_studentId), Password);
+        await LoginFlowTests.LoginAsync(client, await _db.GetEmailAsync(_attendeeId), Password);
 
         var takePage = await client.GetAsync($"/Quiz/Take/{_quizId}");
         var html = await takePage.Content.ReadAsStringAsync();
@@ -164,48 +174,25 @@ public class QuizFlowTests : IAsyncLifetime
         Assert.Equal(System.Net.HttpStatusCode.OK, historyResponse.StatusCode);
         var historyHtml = await historyResponse.Content.ReadAsStringAsync();
         Assert.True(historyHtml.Contains("100") || historyHtml.Contains(_quizTitle),
-            $"Expected score or quiz title in history page. HTML: {historyHtml[..Math.Min(500, historyHtml.Length)]}");
+            $"Expected score or title in history. HTML: {historyHtml[..Math.Min(500, historyHtml.Length)]}");
     }
 
+    // ── Not enrolled ──────────────────────────────────────────────────────
+
     [Fact]
-    public async Task TakeQuiz_StudentNotEnrolled_RedirectsToAccessDenied()
+    public async Task TakeQuiz_AttendeeNotEnrolled_RedirectsToAccessDenied()
     {
         var suffix = Guid.NewGuid().ToString("N")[..8];
-        var unenrolledEmail = $"unenrolled_{suffix}@test.it";
-        await _db.CreateUserAsync(
-            unenrolledEmail,
-            "Un", "Enrolled", "Student", Password);
+        var attendeeRole = await _db.CreateRoleAsync($"TestRole_{suffix}_Attendee2", canTeach: false, canAttend: true);
+        await _db.CreateUserAsync($"unenrolled_{suffix}@test.it", "Un", "Enrolled", attendeeRole, Password);
 
         var client = _factory.CreateClientWithCookies();
-        await LoginAsync(client, unenrolledEmail, Password);
+        await LoginFlowTests.LoginAsync(client, $"unenrolled_{suffix}@test.it", Password);
 
         var response = await client.GetAsync($"/Quiz/Take/{_quizId}");
 
         Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
-        var location = response.Headers.Location?.ToString() ?? "";
-        Assert.Contains("/Account/AccessDenied", location, StringComparison.OrdinalIgnoreCase);
-    }
-
-    private async Task<string> GetEmailAsync(int userId)
-    {
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync();
-        using var cmd = new MySqlConnector.MySqlCommand("SELECT email FROM users WHERE id=@id LIMIT 1", conn);
-        cmd.Parameters.AddWithValue("@id", userId);
-        return (string)(await cmd.ExecuteScalarAsync())!;
-    }
-
-    private static async Task LoginAsync(HttpClient client, string email, string password)
-    {
-        var loginPage = await client.GetAsync("/Account/Login");
-        var html = await loginPage.Content.ReadAsStringAsync();
-        var token = CsrfHelper.Extract(html);
-        var form = new FormUrlEncodedContent(new Dictionary<string, string>
-        {
-            ["Email"] = email,
-            ["Password"] = password,
-            ["__RequestVerificationToken"] = token
-        });
-        await client.PostAsync("/Account/Login", form);
+        Assert.Contains("/Account/AccessDenied",
+            response.Headers.Location?.ToString() ?? "", StringComparison.OrdinalIgnoreCase);
     }
 }

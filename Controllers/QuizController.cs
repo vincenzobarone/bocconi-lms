@@ -182,7 +182,7 @@ public class QuizController : Controller
         return View(attempts);
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpGet]
     public async Task<IActionResult> Create(int lessonId)
     {
@@ -193,7 +193,7 @@ public class QuizController : Controller
         return View(new QuizFormViewModel { LessonId = lessonId });
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(QuizFormViewModel model, List<string> questionTexts,
@@ -244,7 +244,7 @@ public class QuizController : Controller
         return RedirectToAction("Details", "Lesson", new { id = model.LessonId });
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)

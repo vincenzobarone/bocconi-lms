@@ -18,12 +18,13 @@ public class LessonController : Controller
     private readonly EmailService _email;
     private readonly ILogger<LessonController> _logger;
     private readonly MaterialRepository _materials;
+    private readonly SettingsRepository _settings;
 
     public LessonController(LessonRepository lessons, CourseRepository courses,
         QuizRepository quizzes,
         EnrollmentRepository enrollments, ProgressRepository progress,
         EmailService email, ILogger<LessonController> logger,
-        MaterialRepository materials)
+        MaterialRepository materials, SettingsRepository settings)
     {
         _lessons = lessons;
         _courses = courses;
@@ -33,6 +34,7 @@ public class LessonController : Controller
         _email = email;
         _logger = logger;
         _materials = materials;
+        _settings = settings;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -79,7 +81,7 @@ public class LessonController : Controller
         return View(lesson);
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpGet]
     public async Task<IActionResult> Create(int courseId)
     {
@@ -91,7 +93,7 @@ public class LessonController : Controller
         return View(model);
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(LessonFormViewModel model)
@@ -115,7 +117,7 @@ public class LessonController : Controller
         return RedirectToAction("Details", "Course", new { id = model.CourseId });
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
@@ -133,7 +135,7 @@ public class LessonController : Controller
         });
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, LessonFormViewModel model)
@@ -160,6 +162,8 @@ public class LessonController : Controller
     {
         try
         {
+            if ((await _settings.GetAsync("Notifications:CoursesEnabled")) != "true") return;
+
             var students = await _enrollments.GetEnrolledStudentContactsAsync(courseId);
             var course = await _courses.GetByIdAsync(courseId);
             if (course == null || students.Count == 0) return;
@@ -183,7 +187,7 @@ public class LessonController : Controller
         }
     }
 
-    [Authorize(Roles = "Teacher,Admin")]
+    [Authorize(Roles = "CanTeach,Admin")]
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)

@@ -6,6 +6,7 @@ public class DbTestHelper : IAsyncDisposable
 {
     private readonly string _connectionString;
     private readonly List<(string table, string condition)> _cleanups = new();
+    private readonly Dictionary<string, string?> _originalSettings = new();
 
     public DbTestHelper()
     {
@@ -13,10 +14,7 @@ public class DbTestHelper : IAsyncDisposable
             ?? "Server=localhost;Port=3306;Database=bocconi_lms;User=root;Password=;";
     }
 
-    public MySqlConnection GetConnection()
-    {
-        return new MySqlConnection(_connectionString);
-    }
+    public MySqlConnection GetConnection() => new MySqlConnection(_connectionString);
 
     private static async Task<int> GetLastInsertIdAsync(MySqlConnection conn)
     {
@@ -24,13 +22,38 @@ public class DbTestHelper : IAsyncDisposable
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
 
+    // ── Roles ─────────────────────────────────────────────────────────────
+
+    /// <summary>Creates a dynamic role. Convention: prefix name with 'TestRole_' for orphan cleanup.</summary>
+    public async Task<string> CreateRoleAsync(string name, bool canTeach, bool canAttend)
+    {
+        using var conn = GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            INSERT INTO roles (name, normalized_name, can_teach, can_attend)
+            VALUES (@name, @norm, @ct, @ca)
+            ON DUPLICATE KEY UPDATE can_teach=VALUES(can_teach), can_attend=VALUES(can_attend)", conn);
+        cmd.Parameters.AddWithValue("@name", name);
+        cmd.Parameters.AddWithValue("@norm", name.ToUpperInvariant());
+        cmd.Parameters.AddWithValue("@ct", canTeach ? 1 : 0);
+        cmd.Parameters.AddWithValue("@ca", canAttend ? 1 : 0);
+        await cmd.ExecuteNonQueryAsync();
+
+        using var selCmd = new MySqlCommand("SELECT id FROM roles WHERE normalized_name=@norm LIMIT 1", conn);
+        selCmd.Parameters.AddWithValue("@norm", name.ToUpperInvariant());
+        var id = Convert.ToInt32(await selCmd.ExecuteScalarAsync());
+        _cleanups.Add(("roles", $"id = {id}"));
+        return name;
+    }
+
+    // ── Users ─────────────────────────────────────────────────────────────
+
     public async Task<int> CreateUserAsync(string email, string firstName, string lastName,
         string role, string password = "TestPassword1!")
     {
         var hash = BCrypt.Net.BCrypt.HashPassword(password);
         using var conn = GetConnection();
         await conn.OpenAsync();
-
         using var cmd = new MySqlCommand(@"
             INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, created_at)
             VALUES (@email, @hash, @fn, @ln, @role, 1, NOW())", conn);
@@ -44,6 +67,8 @@ public class DbTestHelper : IAsyncDisposable
         _cleanups.Add(("users", $"id = {userId}"));
         return userId;
     }
+
+    // ── Courses & Lessons ─────────────────────────────────────────────────
 
     public async Task<int> CreateCourseAsync(int teacherId, string title, bool isPublished = true)
     {
@@ -89,6 +114,8 @@ public class DbTestHelper : IAsyncDisposable
         _cleanups.Add(("enrollments", $"user_id = {userId} AND course_id = {courseId}"));
     }
 
+    // ── Quizzes ───────────────────────────────────────────────────────────
+
     public async Task<(int quizId, int questionId, int correctOptionId)> CreateQuizWithOneQuestionAsync(
         int lessonId, string quizTitle, string questionText = "Test question A or B", int passingScore = 60)
     {
@@ -129,53 +156,98 @@ public class DbTestHelper : IAsyncDisposable
             var optId = await GetLastInsertIdAsync(conn);
             if (isCorrect) correctOptId = optId;
         }
-
         return (quizId, questionId, correctOptId);
     }
 
-    public async Task<int> CreateDocumentAsync(int lessonId, string title)
+    // ── Materials ─────────────────────────────────────────────────────────
+
+    public async Task<int> CreateMaterialAsync(int ownerId, string title, int? documentTypeId = null)
     {
         using var conn = GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            INSERT INTO documents (lesson_id, title, created_at)
-            VALUES (@lid, @title, NOW())", conn);
-        cmd.Parameters.AddWithValue("@lid", lessonId);
+            INSERT INTO materials (title, owner_id, document_type_id, language, status, created_at)
+            VALUES (@title, @owner, @dtype, 'Italiano', 'bozza', NOW())", conn);
         cmd.Parameters.AddWithValue("@title", title);
+        cmd.Parameters.AddWithValue("@owner", ownerId);
+        cmd.Parameters.AddWithValue("@dtype", (object?)documentTypeId ?? DBNull.Value);
         await cmd.ExecuteNonQueryAsync();
         var id = await GetLastInsertIdAsync(conn);
-        _cleanups.Add(("documents", $"id = {id}"));
+        _cleanups.Add(("materials", $"id = {id}"));
         return id;
     }
 
-    public async Task<int> CreateDocumentVersionAsync(int documentId, int uploadedBy,
-        int versionNumber, bool isActive = true, string? notes = null)
+    // ── Areas ─────────────────────────────────────────────────────────────
+
+    public async Task<int> CreateAreaAsync(string name)
     {
-        var fakeFilePath = $"/uploads/{documentId}/v{versionNumber}_test.txt";
+        using var conn = GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            INSERT INTO areas (name, sort_order, created_at)
+            VALUES (@name, 0, NOW())", conn);
+        cmd.Parameters.AddWithValue("@name", name);
+        await cmd.ExecuteNonQueryAsync();
+        var id = await GetLastInsertIdAsync(conn);
+        _cleanups.Add(("areas", $"id = {id}"));
+        return id;
+    }
+
+    // ── Document Types ────────────────────────────────────────────────────
+
+    public async Task<int> CreateDocumentTypeAsync(string name)
+    {
+        using var conn = GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(@"
+            INSERT INTO document_types (name, sort_order)
+            VALUES (@name, 99)", conn);
+        cmd.Parameters.AddWithValue("@name", name);
+        await cmd.ExecuteNonQueryAsync();
+        var id = await GetLastInsertIdAsync(conn);
+        _cleanups.Add(("document_types", $"id = {id}"));
+        return id;
+    }
+
+    // ── App Settings ──────────────────────────────────────────────────────
+
+    /// <summary>Sets an app_setting for the duration of the test; original value is restored in DisposeAsync.</summary>
+    public async Task SetAppSettingAsync(string key, string value)
+    {
         using var conn = GetConnection();
         await conn.OpenAsync();
 
-        if (isActive)
+        if (!_originalSettings.ContainsKey(key))
         {
-            using var deact = new MySqlCommand(
-                "UPDATE document_versions SET is_active=0 WHERE document_id=@did", conn);
-            deact.Parameters.AddWithValue("@did", documentId);
-            await deact.ExecuteNonQueryAsync();
+            using var getCmd = new MySqlCommand(
+                "SELECT setting_value FROM app_settings WHERE setting_key=@k LIMIT 1", conn);
+            getCmd.Parameters.AddWithValue("@k", key);
+            var orig = await getCmd.ExecuteScalarAsync();
+            _originalSettings[key] = orig is DBNull || orig is null ? null : (string)orig;
         }
 
-        using var cmd = new MySqlCommand(@"
-            INSERT INTO document_versions (document_id, version_number, file_name, file_path,
-                file_type, file_size_bytes, uploaded_by, notes, is_active, uploaded_at)
-            VALUES (@did, @vn, @fn, @fp, 'TXT', 100, @ub, @notes, @active, NOW())", conn);
-        cmd.Parameters.AddWithValue("@did", documentId);
-        cmd.Parameters.AddWithValue("@vn", versionNumber);
-        cmd.Parameters.AddWithValue("@fn", $"test_v{versionNumber}.txt");
-        cmd.Parameters.AddWithValue("@fp", fakeFilePath);
-        cmd.Parameters.AddWithValue("@ub", uploadedBy);
-        cmd.Parameters.AddWithValue("@notes", (object?)notes ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@active", isActive ? 1 : 0);
-        await cmd.ExecuteNonQueryAsync();
-        return await GetLastInsertIdAsync(conn);
+        using var setCmd = new MySqlCommand(@"
+            INSERT INTO app_settings (setting_key, setting_value)
+            VALUES (@k, @v)
+            ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)", conn);
+        setCmd.Parameters.AddWithValue("@k", key);
+        setCmd.Parameters.AddWithValue("@v", value);
+        await setCmd.ExecuteNonQueryAsync();
+    }
+
+    /// <summary>Ensures SMTP is disabled for the duration of the test (no real emails sent).</summary>
+    public async Task EnsureSmtpDisabledAsync()
+        => await SetAppSettingAsync("Smtp:Enabled", "false");
+
+    // ── Queries ───────────────────────────────────────────────────────────
+
+    public async Task<string> GetEmailAsync(int userId)
+    {
+        using var conn = GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand("SELECT email FROM users WHERE id=@id LIMIT 1", conn);
+        cmd.Parameters.AddWithValue("@id", userId);
+        return (string)(await cmd.ExecuteScalarAsync())!;
     }
 
     public async Task<int?> GetActiveVersionNumberAsync(int documentId)
@@ -189,10 +261,73 @@ public class DbTestHelper : IAsyncDisposable
         return result is DBNull || result is null ? null : Convert.ToInt32(result);
     }
 
+    public async Task<bool> RoleExistsAsync(string name)
+    {
+        using var conn = GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM roles WHERE name=@name LIMIT 1", conn);
+        cmd.Parameters.AddWithValue("@name", name);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync()) > 0;
+    }
+
+    public async Task<(bool canTeach, bool canAttend)> GetRoleFlagsAsync(string name)
+    {
+        using var conn = GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT can_teach, can_attend FROM roles WHERE name=@name LIMIT 1", conn);
+        cmd.Parameters.AddWithValue("@name", name);
+        using var reader = await cmd.ExecuteReaderAsync();
+        if (!await reader.ReadAsync()) return (false, false);
+        return (reader.GetBoolean(0), reader.GetBoolean(1));
+    }
+
+    public async Task<int> GetRoleIdAsync(string name)
+    {
+        using var conn = GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT id FROM roles WHERE name=@name LIMIT 1", conn);
+        cmd.Parameters.AddWithValue("@name", name);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
+    // ── Cleanup ───────────────────────────────────────────────────────────
+
+    public async Task CleanupOrphanTestDataAsync()
+    {
+        using var conn = GetConnection();
+        await conn.OpenAsync();
+
+        var tables = new[]
+        {
+            ("quiz_attempts",   "user_id IN (SELECT id FROM users WHERE email LIKE '%@test.it')"),
+            ("lesson_progress", "user_id IN (SELECT id FROM users WHERE email LIKE '%@test.it')"),
+            ("enrollments",     "user_id IN (SELECT id FROM users WHERE email LIKE '%@test.it')"),
+            ("users",           "email LIKE '%@test.it'"),
+            ("roles",           "name LIKE 'TestRole_%'"),
+            ("areas",           "name LIKE 'TestArea_%'"),
+            ("document_types",  "name LIKE 'TestDocType_%'"),
+            ("materials",       "title LIKE 'TestMaterial_%'"),
+        };
+
+        foreach (var (table, condition) in tables)
+        {
+            try
+            {
+                using var cmd = new MySqlCommand($"DELETE FROM {table} WHERE {condition}", conn);
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch { }
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         using var conn = GetConnection();
         await conn.OpenAsync();
+
         foreach (var (table, condition) in Enumerable.Reverse(_cleanups))
         {
             try
@@ -200,29 +335,30 @@ public class DbTestHelper : IAsyncDisposable
                 using var cmd = new MySqlCommand($"DELETE FROM {table} WHERE {condition}", conn);
                 await cmd.ExecuteNonQueryAsync();
             }
-            catch
-            {
-            }
+            catch { }
         }
-    }
 
-    public async Task CleanupOrphanTestDataAsync()
-    {
-        using var conn = GetConnection();
-        await conn.OpenAsync();
-        var tables = new[]
-        {
-            ("quiz_attempts",   "user_id IN (SELECT id FROM users WHERE email LIKE '%@test.it')"),
-            ("lesson_progress", "user_id IN (SELECT id FROM users WHERE email LIKE '%@test.it')"),
-            ("enrollments",     "user_id IN (SELECT id FROM users WHERE email LIKE '%@test.it')"),
-            ("users",           "email LIKE '%@test.it'"),
-        };
-        foreach (var (table, condition) in tables)
+        foreach (var (key, originalValue) in _originalSettings)
         {
             try
             {
-                using var cmd = new MySqlCommand($"DELETE FROM {table} WHERE {condition}", conn);
-                await cmd.ExecuteNonQueryAsync();
+                if (originalValue is null)
+                {
+                    using var del = new MySqlCommand(
+                        "DELETE FROM app_settings WHERE setting_key=@k", conn);
+                    del.Parameters.AddWithValue("@k", key);
+                    await del.ExecuteNonQueryAsync();
+                }
+                else
+                {
+                    using var upd = new MySqlCommand(@"
+                        INSERT INTO app_settings (setting_key, setting_value)
+                        VALUES (@k, @v)
+                        ON DUPLICATE KEY UPDATE setting_value=VALUES(setting_value)", conn);
+                    upd.Parameters.AddWithValue("@k", key);
+                    upd.Parameters.AddWithValue("@v", originalValue);
+                    await upd.ExecuteNonQueryAsync();
+                }
             }
             catch { }
         }
