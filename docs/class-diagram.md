@@ -112,8 +112,8 @@ classDiagram
         +Submit() IActionResult
         +Result() IActionResult
         +History() IActionResult
-        +CreateQuiz() IActionResult
-        +DeleteQuiz() IActionResult
+        +Create() IActionResult
+        +Delete() IActionResult
     }
 
     class MaterialsController {
@@ -177,8 +177,9 @@ classDiagram
 
     class TranslationService {
         -TranslationRepository repo
+        -SettingsRepository settings
         -IMemoryCache cache
-        -ISession session
+        -IHttpContextAccessor httpContext
         +T(key, fallback) string
     }
 
@@ -235,7 +236,8 @@ classDiagram
     AccountController --> EmailService
     AdminController --> MigrationRunner
     HomeController --> FeatureFlagService
-    TranslationService --> DbHelper
+    TranslationService --> TranslationRepository
+    TranslationService --> SettingsRepository
     CustomUserStore --> DbHelper
     CustomRoleStore --> DbHelper
     MigrationRunner --> DbHelper
@@ -266,7 +268,7 @@ classDiagram
 - **Accesso:** `[Authorize]`; creazione/modifica richiede `courses.teach`
 
 ### `QuizController`
-- **Azioni:** `Take/{id}`, `Submit/{id} (POST)`, `Result/{attemptId}`, `History`, `CreateQuiz (GET/POST)`, `DeleteQuiz/{id} (POST)`
+- **Azioni:** `Take/{id}`, `Submit/{id} (POST)`, `Result/{attemptId}`, `History`, `Create (GET/POST)`, `Delete/{id} (POST)`
 - **Dipendenze:** `QuizRepository`, `EnrollmentRepository`, `IAuditLogger`
 - **Accesso:** `[Authorize]`
 

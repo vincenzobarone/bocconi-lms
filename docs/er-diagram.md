@@ -233,6 +233,18 @@ erDiagram
 
     materials ||--o{ material_versions : "ha versioni (CASCADE)"
     materials ||--o{ lesson_materials : "usato in (CASCADE)"
+
+    schema_migrations {
+        int id PK
+        varchar name
+        datetime applied_at
+    }
+
+    app_settings {
+        varchar setting_key PK
+        text setting_value
+        datetime updated_at
+    }
 ```
 
 ---
@@ -522,6 +534,28 @@ erDiagram
 | name       | VARCHAR(255) | NOT NULL, UNIQUE       | Es. "YouTube", "Moodle"         |
 | sort_order | INT          | NOT NULL DEFAULT 0     |                                 |
 | created_at | DATETIME     | NOT NULL DEFAULT NOW() |                                 |
+
+---
+
+### `schema_migrations`
+| Colonna    | Tipo         | Vincoli                          | Descrizione                                                        |
+|------------|--------------|----------------------------------|--------------------------------------------------------------------|
+| id         | INT          | PK, AUTO_INCREMENT               | Identificativo del record di migrazione                           |
+| name       | VARCHAR(255) | NOT NULL, UNIQUE KEY `uk_name`   | Nome del file di migrazione (es. `001_add_areas.sql`)             |
+| applied_at | DATETIME     | NOT NULL DEFAULT CURRENT_TIMESTAMP | Timestamp di applicazione al DB                                  |
+
+**Uso:** creata/gestita da `MigrationRunner` al boot. Non ha FK verso altre tabelle. Nessuna relazione nel diagramma E-R. Serve a tenere traccia delle migrazioni già eseguite per evitare doppia applicazione.
+
+---
+
+### `app_settings`
+| Colonna       | Tipo         | Vincoli              | Descrizione                                                   |
+|---------------|--------------|----------------------|---------------------------------------------------------------|
+| setting_key   | VARCHAR(100) | PK                   | Chiave univoca dell'impostazione (es. `smtp.from`, `audit.enabled`) |
+| setting_value | TEXT         | NULL                 | Valore stringa dell'impostazione                              |
+| updated_at    | DATETIME     | DEFAULT ON UPDATE    | Aggiornato automaticamente a ogni modifica                   |
+
+**Uso:** creata/gestita da `SettingsRepository` al primo utilizzo. Non ha FK verso altre tabelle. Usata da `FeatureFlagService`, `TranslationService`, `AdminController` (pagina Impostazioni). Le chiavi applicative includono il prefisso del modulo (es. `feature.courses`, `feature.quiz`).
 
 ---
 

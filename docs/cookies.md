@@ -1,20 +1,22 @@
 # Cookie — Didasco LMS (Università Bocconi)
 
-Versione: 1.0 — aggiornata al 2026-04-30  
+Versione: 1.1 — aggiornata al 2026-04-30  
 Riferimento: `Program.cs` (ConfigureApplicationCookie, AddSession), ASP.NET Core Identity
 
 ---
 
 ## Riepilogo cookie prodotti dall'applicazione
 
-| Nome cookie                        | Tipo         | Durata             | HttpOnly | Secure | SameSite | Scopo                                                         |
-|------------------------------------|--------------|-------------------|----------|--------|----------|---------------------------------------------------------------|
-| `.AspNetCore.Identity.Application` | Essenziale   | 8 ore (sliding)   | Sì       | Sì\*  | Lax      | Sessione di autenticazione utente (ASP.NET Identity)          |
-| `.AspNetCore.Session`              | Essenziale   | 8 ore (idle)      | Sì       | Sì\*  | Lax      | Sessione applicativa (dati temporanei di richiesta)           |
-| `.AspNetCore.Antiforgery.*`        | Essenziale   | Sessione browser  | Sì       | Sì\*  | Strict   | Token CSRF anti-forgery per protezione form POST              |
-| `lang`                             | Essenziale   | 1 anno            | No       | Sì\*  | Lax      | Lingua dell'interfaccia utente selezionata (`LanguageController`) |
+| Nome cookie                        | Partito      | Categoria    | Durata             | HttpOnly | Secure | SameSite | Scopo                                                         |
+|------------------------------------|--------------|--------------|-------------------|----------|--------|----------|---------------------------------------------------------------|
+| `.AspNetCore.Identity.Application` | First-party  | Essenziale   | 8 ore (sliding)   | Sì       | Sì\*  | Lax      | Sessione di autenticazione utente (ASP.NET Identity)          |
+| `.AspNetCore.Session`              | First-party  | Essenziale   | 8 ore (idle)      | Sì       | Sì\*  | Lax      | Sessione applicativa (dati temporanei di richiesta)           |
+| `.AspNetCore.Antiforgery.*`        | First-party  | Essenziale   | Sessione browser  | Sì       | Sì\*  | Strict   | Token CSRF anti-forgery per protezione form POST              |
+| `lang`                             | First-party  | Essenziale   | 1 anno            | No       | Sì\*  | Lax      | Lingua dell'interfaccia utente selezionata (`LanguageController`) |
 
 \* Il flag `Secure` è imposto automaticamente da ASP.NET Core quando l'applicazione è servita via HTTPS (produzione). In sviluppo su HTTP non viene impostato.
+
+> **Classificazione partito:** tutti i cookie sono **first-party** — impostati direttamente dal server `didasco.bocconi.it` (o dominio equivalente). L'applicazione non include script di terze parti che impostano cookie (nessun tracker, nessun CDN con cookie). Le librerie front-end (Bootstrap, jQuery, DataTables) vengono caricate da CDN ma **non impostano cookie**.
 
 ---
 
@@ -34,6 +36,7 @@ options.SlidingExpiration = true;
 | Attributo        | Valore                                     |
 |------------------|--------------------------------------------|
 | Nome             | `.AspNetCore.Identity.Application`         |
+| Partito          | First-party                                |
 | Durata           | 8 ore dalla creazione; si rinnova a ogni richiesta (sliding) |
 | Scade a logout   | Sì — eliminato da `Account/Logout`         |
 | HttpOnly         | Sì — non accessibile da JavaScript         |
@@ -59,6 +62,7 @@ options.Cookie.IsEssential = true;
 | Attributo        | Valore                                                       |
 |------------------|--------------------------------------------------------------|
 | Nome             | `.AspNetCore.Session`                                        |
+| Partito          | First-party                                                  |
 | Durata           | 8 ore di inattività (idle timeout); si rinnova a ogni richiesta |
 | HttpOnly         | Sì                                                           |
 | Secure           | Sì (HTTPS) / No (HTTP dev)                                   |
@@ -76,6 +80,7 @@ options.Cookie.IsEssential = true;
 | Attributo        | Valore                                                                   |
 |------------------|--------------------------------------------------------------------------|
 | Nome             | `.AspNetCore.Antiforgery.<hash>` (hash generato all'avvio)               |
+| Partito          | First-party                                                              |
 | Durata           | Sessione browser (eliminato alla chiusura del browser)                   |
 | HttpOnly         | Sì                                                                       |
 | Secure           | Sì (HTTPS) / No (HTTP dev)                                               |
@@ -104,6 +109,7 @@ Response.Cookies.Append("lang", lang, new CookieOptions
 | Attributo        | Valore                                                       |
 |------------------|--------------------------------------------------------------|
 | Nome             | `lang`                                                       |
+| Partito          | First-party                                                  |
 | Durata           | 1 anno dalla data di impostazione                            |
 | HttpOnly         | **No** — accessibile da JavaScript (necessario per eventuale lettura lato client) |
 | Secure           | Sì (HTTPS) / No (HTTP dev)                                   |
