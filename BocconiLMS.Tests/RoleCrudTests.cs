@@ -81,7 +81,7 @@ public class RoleCrudTests : IAsyncLifetime
         var form = new FormUrlEncodedContent(new List<KeyValuePair<string, string>>
         {
             new("Name", roleName),
-            new("CanTeach", "true"),
+            new("permissions", "courses.teach"),
             new("__RequestVerificationToken", token)
         });
         var response = await client.PostAsync("/Admin/CreateRole", form);
@@ -89,8 +89,8 @@ public class RoleCrudTests : IAsyncLifetime
         Assert.Equal(System.Net.HttpStatusCode.Redirect, response.StatusCode);
         Assert.True(await _db.RoleExistsAsync(roleName));
         var (canTeach, canAttend) = await _db.GetRoleFlagsAsync(roleName);
-        Assert.True(canTeach, "CanTeach flag should be stored as true.");
-        Assert.False(canAttend, "CanAttend flag should be stored as false.");
+        Assert.True(canTeach, "courses.teach permission should be stored.");
+        Assert.False(canAttend, "courses.attend permission should not be stored.");
 
         await DeleteRoleByNameAsync(roleName);
     }

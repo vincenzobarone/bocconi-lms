@@ -166,9 +166,14 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(@"
-            SELECT u.role, r.can_teach, r.can_attend
+            SELECT u.role,
+                   EXISTS(SELECT 1 FROM role_permissions rp
+                          JOIN roles r ON r.id = rp.role_id
+                          WHERE r.name = u.role AND rp.permission_key = 'courses.teach') AS can_teach,
+                   EXISTS(SELECT 1 FROM role_permissions rp
+                          JOIN roles r ON r.id = rp.role_id
+                          WHERE r.name = u.role AND rp.permission_key = 'courses.attend') AS can_attend
             FROM users u
-            LEFT JOIN roles r ON r.name = u.role
             WHERE u.id = @id LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@id", user.Id);
         using var r = await cmd.ExecuteReaderAsync(ct);
@@ -176,9 +181,9 @@ public class CustomUserStore :
         var roleName = r.IsDBNull(0) ? "" : r.GetString("role");
         if (string.IsNullOrEmpty(roleName)) return [];
         var roles = new List<string> { roleName };
-        if (!r.IsDBNull(r.GetOrdinal("can_teach")) && r.GetBoolean("can_teach"))
+        if (r.GetBoolean("can_teach"))
             roles.Add("CanTeach");
-        if (!r.IsDBNull(r.GetOrdinal("can_attend")) && r.GetBoolean("can_attend"))
+        if (r.GetBoolean("can_attend"))
             roles.Add("CanAttend");
         return roles;
     }

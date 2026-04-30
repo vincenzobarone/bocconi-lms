@@ -830,7 +830,7 @@ public class AdminController : Controller
             model.Permissions = permissions ?? new List<string>();
             return View(model);
         }
-        var role = new ApplicationRole { Name = name, NormalizedName = name.ToUpperInvariant(), CanTeach = model.CanTeach, CanAttend = model.CanAttend };
+        var role = new ApplicationRole { Name = name, NormalizedName = name.ToUpperInvariant() };
         await _roleManager.CreateAsync(role);
         var created = await _roleManager.FindByNameAsync(name);
         if (created != null)
@@ -858,7 +858,7 @@ public class AdminController : Controller
         }
         var perms = await _rolePerms.GetRolePermissionsAsync(role.Id);
         ViewBag.CoursesEnabled = await _features.IsCoursesEnabledAsync();
-        return View(new RoleFormViewModel { Id = role.Id, Name = role.Name!, Permissions = perms, CanTeach = role.CanTeach, CanAttend = role.CanAttend });
+        return View(new RoleFormViewModel { Id = role.Id, Name = role.Name!, Permissions = perms });
     }
 
     [AllowAnonymous]
@@ -899,8 +899,6 @@ public class AdminController : Controller
         }
         role.Name = model.Name;
         role.NormalizedName = model.Name.ToUpperInvariant();
-        role.CanTeach = model.CanTeach;
-        role.CanAttend = model.CanAttend;
         await _roleManager.UpdateAsync(role);
         await _rolePerms.SetRolePermissionsAsync(role.Id, permissions ?? new());
         TempData["Success"] = string.Format(

@@ -14,13 +14,11 @@ public class CustomRoleStore : IRoleStore<ApplicationRole>
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(@"
-            INSERT IGNORE INTO roles (name, normalized_name, can_teach, can_attend)
-            VALUES (@name, @nn, @ct, @ca);
+            INSERT IGNORE INTO roles (name, normalized_name)
+            VALUES (@name, @nn);
             SELECT LAST_INSERT_ID();", conn);
         cmd.Parameters.AddWithValue("@name", role.Name);
         cmd.Parameters.AddWithValue("@nn", role.NormalizedName ?? role.Name!.ToUpperInvariant());
-        cmd.Parameters.AddWithValue("@ct", role.CanTeach ? 1 : 0);
-        cmd.Parameters.AddWithValue("@ca", role.CanAttend ? 1 : 0);
         role.Id = Convert.ToInt32(await cmd.ExecuteScalarAsync(ct));
         return IdentityResult.Success;
     }
@@ -30,11 +28,9 @@ public class CustomRoleStore : IRoleStore<ApplicationRole>
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(
-            "UPDATE roles SET name=@name, normalized_name=@nn, can_teach=@ct, can_attend=@ca WHERE id=@id", conn);
+            "UPDATE roles SET name=@name, normalized_name=@nn WHERE id=@id", conn);
         cmd.Parameters.AddWithValue("@name", role.Name);
         cmd.Parameters.AddWithValue("@nn", role.NormalizedName ?? role.Name!.ToUpperInvariant());
-        cmd.Parameters.AddWithValue("@ct", role.CanTeach ? 1 : 0);
-        cmd.Parameters.AddWithValue("@ca", role.CanAttend ? 1 : 0);
         cmd.Parameters.AddWithValue("@id", role.Id);
         await cmd.ExecuteNonQueryAsync(ct);
         return IdentityResult.Success;
@@ -56,7 +52,7 @@ public class CustomRoleStore : IRoleStore<ApplicationRole>
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(
-            "SELECT id, name, normalized_name, can_teach, can_attend FROM roles WHERE id=@id LIMIT 1", conn);
+            "SELECT id, name, normalized_name FROM roles WHERE id=@id LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@id", id);
         using var r = await cmd.ExecuteReaderAsync(ct);
         return r.Read() ? MapRole(r) : null;
@@ -67,7 +63,7 @@ public class CustomRoleStore : IRoleStore<ApplicationRole>
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(
-            "SELECT id, name, normalized_name, can_teach, can_attend FROM roles WHERE normalized_name=@nn LIMIT 1", conn);
+            "SELECT id, name, normalized_name FROM roles WHERE normalized_name=@nn LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@nn", normalizedRoleName);
         using var r = await cmd.ExecuteReaderAsync(ct);
         return r.Read() ? MapRole(r) : null;
@@ -98,9 +94,7 @@ public class CustomRoleStore : IRoleStore<ApplicationRole>
     {
         Id = r.GetInt32("id"),
         Name = r.GetString("name"),
-        NormalizedName = r.GetString("normalized_name"),
-        CanTeach = r.GetBoolean("can_teach"),
-        CanAttend = r.GetBoolean("can_attend")
+        NormalizedName = r.GetString("normalized_name")
     };
 
     public void Dispose() { }

@@ -30,19 +30,34 @@ public class DbTestHelper : IAsyncDisposable
         using var conn = GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            INSERT INTO roles (name, normalized_name, can_teach, can_attend)
-            VALUES (@name, @norm, @ct, @ca)
-            ON DUPLICATE KEY UPDATE can_teach=VALUES(can_teach), can_attend=VALUES(can_attend)", conn);
+            INSERT INTO roles (name, normalized_name)
+            VALUES (@name, @norm)
+            ON DUPLICATE KEY UPDATE name=VALUES(name)", conn);
         cmd.Parameters.AddWithValue("@name", name);
         cmd.Parameters.AddWithValue("@norm", name.ToUpperInvariant());
-        cmd.Parameters.AddWithValue("@ct", canTeach ? 1 : 0);
-        cmd.Parameters.AddWithValue("@ca", canAttend ? 1 : 0);
         await cmd.ExecuteNonQueryAsync();
 
         using var selCmd = new MySqlCommand("SELECT id FROM roles WHERE normalized_name=@norm LIMIT 1", conn);
         selCmd.Parameters.AddWithValue("@norm", name.ToUpperInvariant());
         var id = Convert.ToInt32(await selCmd.ExecuteScalarAsync());
         _cleanups.Add(("roles", $"id = {id}"));
+
+        if (canTeach)
+        {
+            using var ctCmd = new MySqlCommand(
+                "INSERT IGNORE INTO role_permissions (role_id, permission_key) VALUES (@id, 'courses.teach')", conn);
+            ctCmd.Parameters.AddWithValue("@id", id);
+            await ctCmd.ExecuteNonQueryAsync();
+            _cleanups.Add(("role_permissions", $"role_id = {id} AND permission_key = 'courses.teach'"));
+        }
+        if (canAttend)
+        {
+            using var caCmd = new MySqlCommand(
+                "INSERT IGNORE INTO role_permissions (role_id, permission_key) VALUES (@id, 'courses.attend')", conn);
+            caCmd.Parameters.AddWithValue("@id", id);
+            await caCmd.ExecuteNonQueryAsync();
+            _cleanups.Add(("role_permissions", $"role_id = {id} AND permission_key = 'courses.attend'"));
+        }
         return name;
     }
 
@@ -275,8 +290,12 @@ public class DbTestHelper : IAsyncDisposable
     {
         using var conn = GetConnection();
         await conn.OpenAsync();
-        using var cmd = new MySqlCommand(
-            "SELECT can_teach, can_attend FROM roles WHERE name=@name LIMIT 1", conn);
+        using var cmd = new MySqlCommand(@"
+            SELECT
+                EXISTS(SELECT 1 FROM role_permissions rp JOIN roles r ON r.id = rp.role_id
+                       WHERE r.name = @name AND rp.permission_key = 'courses.teach') AS can_teach,
+                EXISTS(SELECT 1 FROM role_permissions rp JOIN roles r ON r.id = rp.role_id
+                       WHERE r.name = @name AND rp.permission_key = 'courses.attend') AS can_attend", conn);
         cmd.Parameters.AddWithValue("@name", name);
         using var reader = await cmd.ExecuteReaderAsync();
         if (!await reader.ReadAsync()) return (false, false);

@@ -314,8 +314,6 @@ public class RoleFormViewModel
     [RegularExpression(@"^[a-zA-Z0-9_\s]+$", ErrorMessage = "Solo lettere, numeri, underscore e spazi")]
     public string Name { get; set; } = string.Empty;
 
-    public bool CanTeach { get; set; }
-    public bool CanAttend { get; set; }
     public List<string> Permissions { get; set; } = new();
 }
 

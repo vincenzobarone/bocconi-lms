@@ -10,6 +10,7 @@ public class RolePermissionRepository
     public static readonly (string Key, string TranslationKey, bool CoursesOnly, bool MenuOnly)[] AllPermissions =
     {
         ("courses.teach",                    "perm.courses_teach",                    true,  false),
+        ("courses.attend",                   "perm.courses_attend",                   true,  false),
         ("courses.enroll",                   "perm.courses_enroll",                   true,  false),
         ("menu.materials",                   "perm.menu_materials",                   false, true),
         ("materials.create",                 "perm.materials_create",                 false, true),
