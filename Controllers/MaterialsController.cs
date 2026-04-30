@@ -558,13 +558,13 @@ public class MaterialsController : Controller
             {
                 _logger.LogError(ex, "SaveVersionAsync fallita per materialId={MatId} file={File}", matId, vm.File.FileName);
                 TempData["Warning"] = $"Materiale creato, ma il file non è stato salvato: {ex.Message}";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Details), new { id = matId });
             }
         }
 
         FireMaterialNotification(vm.Title, "created");
         TempData["Success"] = $"Materiale «{vm.Title}» creato con successo.";
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(Details), new { id = matId });
     }
 
     // ── Edit ──────────────────────────────────────────────────────────────
@@ -678,13 +678,13 @@ public class MaterialsController : Controller
                 _logger.LogError(ex, "SaveVersionAsync fallita in Edit per materialId={Id} file={File}", id, vm.File.FileName);
                 FireMaterialNotification(vm.Title, "updated");
                 TempData["Warning"] = $"Materiale aggiornato, ma il file non è stato salvato: {ex.Message}";
-                return RedirectToAction(nameof(Index));
+                return RedirectToAction(nameof(Details), new { id });
             }
         }
 
         FireMaterialNotification(vm.Title, "updated");
         TempData["Success"] = "Materiale aggiornato.";
-        return RedirectToAction(nameof(Index));
+        return RedirectToAction(nameof(Details), new { id });
     }
 
     // ── Upload new version (from Details page) ────────────────────────────

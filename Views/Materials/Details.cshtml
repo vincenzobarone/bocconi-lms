@@ -168,29 +168,18 @@
                     <dd class="col-7">@(string.IsNullOrEmpty(Model.OwnerName) ? "—" : Model.OwnerName)</dd>
                     <dt class="col-5 text-muted">@T["mat.col_status","Status"]</dt>
                     <dd class="col-7"><span class="badge bg-@stCss">@stLabel</span></dd>
-                    @if (Model.Status == "verificato")
+                    @if (Model.ProtocolNumber.HasValue)
                     {
                         <dt class="col-5 text-muted">@T["mat.col_protocol","Protocollo"]</dt>
                         <dd class="col-7">
-                            @if (Model.ProtocolNumber.HasValue)
-                            {
-                                <code class="text-success fw-semibold">@Model.ProtocolNumber</code>
-                            }
-                            else
-                            {
-                                <span class="text-muted fst-italic" style="font-size:.8rem;">—</span>
-                            }
+                            <code class="text-success fw-semibold">@Model.ProtocolNumber</code>
                         </dd>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.FolderName))
+                    {
                         <dt class="col-5 text-muted">@T["mat.label_folder","Cartella"]</dt>
                         <dd class="col-7">
-                            @if (!string.IsNullOrEmpty(Model.FolderName))
-                            {
-                                <span>@Model.FolderName</span>
-                            }
-                            else
-                            {
-                                <span class="text-muted fst-italic" style="font-size:.8rem;">—</span>
-                            }
+                            <span><i class="bi bi-folder me-1 text-muted"></i>@Model.FolderName</span>
                         </dd>
                     }
                     @if (Model.AreaId.HasValue || !string.IsNullOrEmpty(Model.AreaName))
