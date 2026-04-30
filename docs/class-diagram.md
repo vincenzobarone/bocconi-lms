@@ -294,62 +294,95 @@ classDiagram
 
 ```
 ApplicationUser          : IdentityUser<int>
-  + Id : int
-  + Email : string
-  + FirstName : string
-  + LastName : string
-  + Role : string
-  + IsActive : bool
-  + CreatedAt : DateTime
+  + Id          : int
+  + Email       : string
+  + FirstName   : string
+  + LastName    : string
+  + Role        : string
+  + IsActive    : bool
+  + CreatedAt   : DateTime
 
 ApplicationRole          : IdentityRole<int>
-  + Id : int
-  + Name : string
-  + NormalizedName : string
-  + CreatedAt : DateTime
+  + Id              : int
+  + Name            : string
+  + NormalizedName  : string
+  + CreatedAt       : DateTime
 
 Course
-  + Id, Title, Description, Category : string
-  + TeacherId : int
-  + StartDate, EndDate : DateTime?
+  + Id          : int
+  + Title       : string
+  + Description : string
+  + Category    : string
+  + TeacherId   : int
+  + StartDate   : DateTime?
+  + EndDate     : DateTime?
   + IsPublished : bool
 
 Lesson
-  + Id, CourseId, Title, Content : string
-  + SortOrder : int
+  + Id          : int
+  + CourseId    : int
+  + Title       : string
+  + Content     : string?
+  + SortOrder   : int
   + IsPublished : bool
 
 Quiz
-  + Id, LessonId, Title, Description : string
-  + TimeLimitMinutes, PassingScore : int
+  + Id                : int
+  + LessonId          : int
+  + Title             : string
+  + Description       : string?
+  + TimeLimitMinutes  : int
+  + PassingScore      : int
 
 QuizQuestion
-  + Id, QuizId, QuestionText : string
-  + SortOrder : int
+  + Id           : int
+  + QuizId       : int
+  + QuestionText : string
+  + SortOrder    : int
 
 QuizOption
-  + Id, QuestionId, OptionText : string
-  + IsCorrect : bool
+  + Id         : int
+  + QuestionId : int
+  + OptionText : string
+  + IsCorrect  : bool
+  + SortOrder  : int
 
 Enrollment
-  + Id, UserId, CourseId : int
+  + Id         : int
+  + UserId     : int
+  + CourseId   : int
   + EnrolledAt : DateTime
 
 Material
-  + Id, Title, AuthorName, Language, Status : string
-  + OwnerId, DocumentTypeId, FolderId, AreaId, PlatformId : int?
-  + IsPublished, IsPublishable : bool
-  + ProtocolNumber, PageCount : int?
+  + Id                    : int
+  + Title                 : string
+  + AuthorName            : string?
+  + OwnerId               : int?
+  + Language              : string
+  + DocumentTypeId        : int?
+  + Status                : string
+  + FolderId              : int?
+  + AreaId                : int?
+  + PlatformId            : int?
+  + IsPublished           : bool
+  + IsPublishable         : bool
+  + ProtocolNumber        : int?
+  + PageCount             : int?
 
 Area
-  + Id, Name : string
+  + Id        : int
+  + Name      : string
   + SortOrder : int
 
 QuizAttempt
-  + Id, QuizId, UserId, Score : int
-  + TotalQuestions, CorrectAnswers : int
-  + Passed : bool
-  + AttemptedAt : DateTime
+  + Id             : int
+  + QuizId         : int
+  + UserId         : int
+  + Score          : int
+  + TotalQuestions : int
+  + CorrectAnswers : int
+  + Passed         : bool
+  + AttemptedAt    : DateTime
 ```
 
 ---
