@@ -1,8 +1,15 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using BocconiLMS.Models;
 using MySqlConnector;
 
 namespace BocconiLMS.Data;
+
+/// <summary>
+/// Options that control which optional sections are included in the generated script.
+/// </summary>
+public record ScriptOptions(
+    bool IncludeDataDictionary);
 
 /// <summary>
 /// Generates a self-contained SQL script ready to be applied to a fresh
@@ -11,12 +18,14 @@ namespace BocconiLMS.Data;
 ///      if any table already exists with different column names or ordering.
 ///   2. Issues CREATE TABLE IF NOT EXISTS for every application table.
 ///   3. Seeds the Admin role and a temporary admin user (BCrypt hash).
-///   4. Optionally inserts all translation keys.
+///   4. Optionally inserts all areas, platforms, and translation keys (data dictionary).
 /// </summary>
 public class ProductionScriptGenerator
 {
     private readonly DbHelper _db;
     private readonly TranslationRepository _translations;
+    private readonly AreaRepository _areas;
+    private readonly PlatformRepository _platforms;
 
     // Application tables in FK-safe creation order.
     // 'documents' and 'document_versions' are intentionally excluded:
@@ -31,10 +40,16 @@ public class ProductionScriptGenerator
         "schema_migrations", "app_settings",
     ];
 
-    public ProductionScriptGenerator(DbHelper db, TranslationRepository translations)
+    public ProductionScriptGenerator(
+        DbHelper db,
+        TranslationRepository translations,
+        AreaRepository areas,
+        PlatformRepository platforms)
     {
         _db = db;
         _translations = translations;
+        _areas = areas;
+        _platforms = platforms;
     }
 
     // ── Public API ────────────────────────────────────────────────────────────
@@ -42,9 +57,9 @@ public class ProductionScriptGenerator
     /// <summary>
     /// Generates the full production SQL script.
     /// </summary>
-    /// <param name="includeTranslations">When true, appends all translation INSERT statements.</param>
+    /// <param name="options">Flags controlling which optional sections to include.</param>
     /// <returns>The SQL text and the plain-text temporary admin password.</returns>
-    public async Task<(string Sql, string TempPassword)> GenerateAsync(bool includeTranslations)
+    public async Task<(string Sql, string TempPassword)> GenerateAsync(ScriptOptions options)
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
@@ -70,19 +85,27 @@ public class ProductionScriptGenerator
         }
 
         List<TranslationRow> translationRows = [];
-        if (includeTranslations)
+        List<Area> areaRows = [];
+        List<Platform> platformRows = [];
+        if (options.IncludeDataDictionary)
+        {
             translationRows = await _translations.GetAllGroupedAsync();
+            areaRows = await _areas.GetAllAsync();
+            platformRows = await _platforms.GetAllAsync();
+        }
 
         var tempPassword = GenerateTempPassword();
         var hash = BCrypt.Net.BCrypt.HashPassword(tempPassword, workFactor: 11);
 
         var sb = new StringBuilder();
-        AppendHeader(sb, includeTranslations);
+        AppendHeader(sb, options);
         AppendDriftProcedure(sb, colNames);
         AppendCreateTables(sb, createSql);
         AppendSchemaOperationalTables(sb);
         AppendSeedData(sb, hash);
-        if (includeTranslations && translationRows.Count > 0)
+        if (options.IncludeDataDictionary && (areaRows.Count > 0 || platformRows.Count > 0))
+            AppendSeedReferenceData(sb, areaRows, platformRows);
+        if (options.IncludeDataDictionary && translationRows.Count > 0)
             AppendTranslations(sb, translationRows);
         AppendFooter(sb);
 
@@ -158,7 +181,7 @@ public class ProductionScriptGenerator
 
     // ── SQL generation ────────────────────────────────────────────────────────
 
-    private static void AppendHeader(StringBuilder sb, bool includeTranslations)
+    private static void AppendHeader(StringBuilder sb, ScriptOptions options)
     {
         sb.AppendLine("-- =============================================================================");
         sb.AppendLine("-- Didasco LMS — Script di installazione per produzione");
@@ -173,8 +196,8 @@ public class ProductionScriptGenerator
         sb.AppendLine("--   3. La password temporanea dell'utente admin è stata mostrata nel browser");
         sb.AppendLine("--      al momento della generazione. Cambiarla al primo accesso.");
         sb.AppendLine("--      Email admin: admin@bocconi.it");
-        if (includeTranslations)
-            sb.AppendLine("--   4. Le chiavi di traduzione sono incluse in questo script.");
+        if (options.IncludeDataDictionary)
+            sb.AppendLine("--   4. Dati del dizionario inclusi: aree, piattaforme e chiavi di traduzione.");
         sb.AppendLine("--");
         sb.AppendLine("-- CREATE TABLE usa IF NOT EXISTS; INSERT usa INSERT IGNORE / ON DUPLICATE KEY.");
         sb.AppendLine("-- =============================================================================");
@@ -292,6 +315,37 @@ public class ProductionScriptGenerator
         sb.AppendLine("VALUES");
         sb.AppendLine($"    ('admin@bocconi.it', '{escapedHash}', 'Amministratore', 'Bocconi', 'Admin', 1, NOW());");
         sb.AppendLine();
+    }
+
+    private static void AppendSeedReferenceData(StringBuilder sb, List<Area> areas, List<Platform> platforms)
+    {
+        sb.AppendLine("-- =============================================================================");
+        sb.AppendLine("-- SEED: AREE ORGANIZZATIVE E PIATTAFORME DI EROGAZIONE");
+        sb.AppendLine($"-- ({areas.Count} aree, {platforms.Count} piattaforme)");
+        sb.AppendLine("-- =============================================================================");
+        sb.AppendLine();
+
+        if (areas.Count > 0)
+        {
+            sb.AppendLine("-- Aree organizzative");
+            foreach (var area in areas)
+            {
+                var escapedName = area.Name.Replace("'", "''");
+                sb.AppendLine($"INSERT IGNORE INTO `areas` (`name`, `sort_order`) VALUES ('{escapedName}', {area.SortOrder});");
+            }
+            sb.AppendLine();
+        }
+
+        if (platforms.Count > 0)
+        {
+            sb.AppendLine("-- Piattaforme di erogazione");
+            foreach (var platform in platforms)
+            {
+                var escapedName = platform.Name.Replace("'", "''");
+                sb.AppendLine($"INSERT IGNORE INTO `platforms` (`name`, `sort_order`) VALUES ('{escapedName}', {platform.SortOrder});");
+            }
+            sb.AppendLine();
+        }
     }
 
     private static void AppendTranslations(StringBuilder sb, List<TranslationRow> rows)

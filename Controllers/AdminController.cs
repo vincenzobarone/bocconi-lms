@@ -1104,13 +1104,14 @@ public class AdminController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> GenerateProductionScript(bool includeTranslations = false)
+    public async Task<IActionResult> GenerateProductionScript(bool includeDataDictionary = false)
     {
         if (!await CanAccessMenuAsync("menu.users")) return Forbid();
 
         try
         {
-            var (sql, tempPassword) = await _scriptGenerator.GenerateAsync(includeTranslations);
+            var options = new ScriptOptions(includeDataDictionary);
+            var (sql, tempPassword) = await _scriptGenerator.GenerateAsync(options);
 
             // PRG pattern: redirect keeps TempData alive so the password banner
             // is shown once on the GET; JS on the Migrations page auto-triggers download.
@@ -1118,7 +1119,7 @@ public class AdminController : Controller
             TempData["TmpAdminEmail"] = "admin@bocconi.it";
 
             _audit.Log("admin.production_script_generated",
-                $"includeTranslations={includeTranslations}",
+                $"includeDataDictionary={includeDataDictionary}",
                 "success",
                 User.Identity?.Name ?? "unknown",
                 HttpContext.Connection.RemoteIpAddress?.ToString() ?? "");
