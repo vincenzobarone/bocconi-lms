@@ -18,6 +18,7 @@ public class QuizController : Controller
     private readonly EmailService _email;
     private readonly SettingsRepository _settings;
     private readonly ILogger<QuizController> _logger;
+    private readonly IAuditLogger _audit;
 
     public QuizController(
         QuizRepository quizzes,
@@ -27,7 +28,8 @@ public class QuizController : Controller
         UserRepository users,
         EmailService email,
         SettingsRepository settings,
-        ILogger<QuizController> logger)
+        ILogger<QuizController> logger,
+        IAuditLogger audit)
     {
         _quizzes = quizzes;
         _lessons = lessons;
@@ -37,6 +39,7 @@ public class QuizController : Controller
         _email = email;
         _settings = settings;
         _logger = logger;
+        _audit = audit;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -93,6 +96,7 @@ public class QuizController : Controller
         if (access != null) return access;
 
         var attempt = await _quizzes.SubmitAttemptAsync(id, CurrentUserId, answers);
+        _audit.Log("quiz.submit", $"quiz#{id} attempt#{attempt.Id} score={attempt.Score}% passed={attempt.Passed}");
 
         int capturedQuizId = id;
         int capturedAttemptId = attempt.Id;
@@ -240,6 +244,7 @@ public class QuizController : Controller
             };
             await _quizzes.AddQuestionAsync(q);
         }
+        _audit.Log("quiz.create", $"quiz#{quizId} \"{quiz.Title}\" lesson#{model.LessonId}");
         TempData["Success"] = "Quiz creato!";
         return RedirectToAction("Details", "Lesson", new { id = model.LessonId });
     }
@@ -253,6 +258,7 @@ public class QuizController : Controller
         if (quiz == null) return NotFound();
         if (!await IsOwnerOrAdminOfCourseAsync(courseId)) return Forbid();
         await _quizzes.DeleteQuizAsync(id);
+        _audit.Log("quiz.delete", $"quiz#{id} \"{quiz.Title}\" lesson#{quiz.LessonId}");
         TempData["Success"] = "Quiz eliminato.";
         return RedirectToAction("Details", "Lesson", new { id = quiz.LessonId });
     }

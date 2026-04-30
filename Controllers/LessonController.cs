@@ -19,12 +19,14 @@ public class LessonController : Controller
     private readonly ILogger<LessonController> _logger;
     private readonly MaterialRepository _materials;
     private readonly SettingsRepository _settings;
+    private readonly IAuditLogger _audit;
 
     public LessonController(LessonRepository lessons, CourseRepository courses,
         QuizRepository quizzes,
         EnrollmentRepository enrollments, ProgressRepository progress,
         EmailService email, ILogger<LessonController> logger,
-        MaterialRepository materials, SettingsRepository settings)
+        MaterialRepository materials, SettingsRepository settings,
+        IAuditLogger audit)
     {
         _lessons = lessons;
         _courses = courses;
@@ -35,6 +37,7 @@ public class LessonController : Controller
         _logger = logger;
         _materials = materials;
         _settings = settings;
+        _audit = audit;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -108,7 +111,8 @@ public class LessonController : Controller
             SortOrder = model.SortOrder,
             IsPublished = model.IsPublished
         };
-        await _lessons.CreateAsync(lesson);
+        var lessonId = await _lessons.CreateAsync(lesson);
+        _audit.Log("lesson.create", $"lesson#{lessonId} \"{lesson.Title}\" course#{lesson.CourseId}");
 
         if (model.IsPublished)
             await NotifyEnrolledStudentsAsync(model.CourseId, model.Title);
@@ -150,6 +154,7 @@ public class LessonController : Controller
         lesson.SortOrder = model.SortOrder;
         lesson.IsPublished = model.IsPublished;
         await _lessons.UpdateAsync(lesson);
+        _audit.Log("lesson.edit", $"lesson#{id} \"{lesson.Title}\" course#{lesson.CourseId}");
 
         if (!wasPublished && model.IsPublished)
             await NotifyEnrolledStudentsAsync(lesson.CourseId, model.Title);
@@ -197,6 +202,7 @@ public class LessonController : Controller
         if (!await IsOwnerOrAdminAsync(lesson.CourseId)) return Forbid();
         var courseId = lesson.CourseId;
         await _lessons.DeleteAsync(id);
+        _audit.Log("lesson.delete", $"lesson#{id} \"{lesson.Title}\" course#{courseId}");
         TempData["Success"] = "Lezione eliminata.";
         return RedirectToAction("Details", "Course", new { id = courseId });
     }

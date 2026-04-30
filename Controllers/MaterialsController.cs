@@ -27,6 +27,7 @@ public class MaterialsController : Controller
     private readonly EmailService _emailService;
     private readonly FeatureFlagService _features;
     private readonly TranslationService _t;
+    private readonly IAuditLogger _audit;
 
     public MaterialsController(
         MaterialRepository materials,
@@ -40,7 +41,8 @@ public class MaterialsController : Controller
         SettingsRepository settings,
         EmailService emailService,
         FeatureFlagService features,
-        TranslationService t)
+        TranslationService t,
+        IAuditLogger audit)
     {
         _materials    = materials;
         _docTypes     = docTypes;
@@ -54,6 +56,7 @@ public class MaterialsController : Controller
         _emailService = emailService;
         _features     = features;
         _t            = t;
+        _audit        = audit;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -585,6 +588,7 @@ public class MaterialsController : Controller
             }
         }
 
+        _audit.Log("material.create", $"material#{matId} \"{vm.Title}\"");
         FireMaterialNotification(vm.Title, "created");
         TempData["Success"] = string.Format(_t.T("mat.msg_created", "Material \u00ab{0}\u00bb created successfully."), vm.Title);
         return RedirectToAction(nameof(Details), new { id = matId });
@@ -723,6 +727,7 @@ public class MaterialsController : Controller
             }
         }
 
+        _audit.Log("material.edit", $"material#{id} \"{vm.Title}\"");
         FireMaterialNotification(vm.Title, "updated");
         TempData["Success"] = _t.T("mat.msg_updated", "Material updated.");
         return RedirectToAction(nameof(Index));
@@ -922,6 +927,7 @@ public class MaterialsController : Controller
 
         var deletedTitle = material.Title;
         await _materials.DeleteAsync(id);
+        _audit.Log("material.delete", $"material#{id} \"{deletedTitle}\"");
         FireMaterialNotification(deletedTitle, "deleted");
         TempData["Success"] = string.Format(_t.T("mat.msg_deleted", "Material \u00ab{0}\u00bb deleted."), deletedTitle);
         return RedirectToAction(nameof(Index));

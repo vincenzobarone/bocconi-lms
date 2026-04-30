@@ -16,6 +16,7 @@ public class AccountController : Controller
     private readonly EmailService _emailService;
     private readonly ILogger<AccountController> _logger;
     private readonly IConfiguration _config;
+    private readonly IAuditLogger _audit;
 
     public AccountController(
         UserManager<ApplicationUser> userManager,
@@ -23,7 +24,8 @@ public class AccountController : Controller
         DbHelper db,
         EmailService emailService,
         ILogger<AccountController> logger,
-        IConfiguration config)
+        IConfiguration config,
+        IAuditLogger audit)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -31,6 +33,7 @@ public class AccountController : Controller
         _emailService = emailService;
         _logger = logger;
         _config = config;
+        _audit = audit;
     }
 
     [HttpGet]
@@ -51,6 +54,7 @@ public class AccountController : Controller
         var user = await _userManager.FindByEmailAsync(model.Email);
         if (user == null || !user.IsActive)
         {
+            _audit.Log("auth.login", $"user#{model.Email}", "failure");
             ModelState.AddModelError("", "Credenziali non valide o account disattivato.");
             return View(model);
         }
@@ -58,9 +62,12 @@ public class AccountController : Controller
         var result = await _signInManager.PasswordSignInAsync(user, model.Password, isPersistent: false, lockoutOnFailure: false);
         if (!result.Succeeded)
         {
+            _audit.Log("auth.login", $"user#{model.Email}", "failure");
             ModelState.AddModelError("", "Credenziali non valide o account disattivato.");
             return View(model);
         }
+
+        _audit.Log("auth.login", $"user#{user.Id} \"{user.Email}\"", "success");
 
         if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
             return Redirect(returnUrl);
@@ -72,6 +79,7 @@ public class AccountController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
     {
+        _audit.Log("auth.logout", null, "success");
         await _signInManager.SignOutAsync();
         return RedirectToAction("Index", "Home");
     }
@@ -100,6 +108,7 @@ public class AccountController : Controller
         }
 
         await _signInManager.RefreshSignInAsync(user);
+        _audit.Log("auth.password_change", $"user#{user.Id} \"{user.Email}\"", "success");
         TempData["Success"] = "Password aggiornata con successo.";
         return RedirectToAction("Dashboard", "Home");
     }
@@ -225,6 +234,7 @@ public class AccountController : Controller
             var newHash = _userManager.PasswordHasher.HashPassword(user, model.NewPassword);
             user.PasswordHash = newHash;
             await _userManager.UpdateAsync(user);
+            _audit.Log("auth.password_reset", $"user#{user.Id} \"{user.Email}\"", "success");
         }
         catch
         {

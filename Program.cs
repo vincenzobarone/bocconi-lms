@@ -1,5 +1,6 @@
 using System.Text.Json;
 using BocconiLMS.Data;
+using BocconiLMS.Middleware;
 using BocconiLMS.Services;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Identity;
@@ -75,6 +76,7 @@ builder.Services.AddMemoryCache();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<TranslationService>();
 builder.Services.AddSingleton<AppVersionService>();
+builder.Services.AddSingleton<IAuditLogger, AuditLogger>();
 
 builder.Services.AddHealthChecks()
     .AddCheck<MySqlHealthCheck>("database", tags: ["db"]);
@@ -108,6 +110,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
+app.UseMiddleware<HttpAccessLogMiddleware>();
 app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();

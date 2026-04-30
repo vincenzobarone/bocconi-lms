@@ -25,6 +25,7 @@ public class AdminController : Controller
     private readonly PlatformRepository _platforms;
     private readonly RolePermissionRepository _rolePerms;
     private readonly MigrationRunner _migrationRunner;
+    private readonly IAuditLogger _audit;
 
     public AdminController(
         UserRepository users,
@@ -41,7 +42,8 @@ public class AdminController : Controller
         AreaRepository areas,
         PlatformRepository platforms,
         RolePermissionRepository rolePerms,
-        MigrationRunner migrationRunner)
+        MigrationRunner migrationRunner,
+        IAuditLogger audit)
     {
         _users = users;
         _courses = courses;
@@ -58,6 +60,7 @@ public class AdminController : Controller
         _platforms = platforms;
         _rolePerms = rolePerms;
         _migrationRunner = migrationRunner;
+        _audit = audit;
     }
 
     public IActionResult Index()
@@ -136,6 +139,7 @@ public class AdminController : Controller
         var creatorId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
         await _users.SetUserCreatedByAsync(appUser.Id, creatorId);
 
+        _audit.Log("user.create", $"user#{appUser.Id} \"{appUser.Email}\" role={role}");
         TempData["Success"] = string.Format(_translationService.T("admin.msg_user_created", "User {0} created successfully."), appUser.FullName);
         return RedirectToAction("Users");
     }
@@ -239,6 +243,7 @@ public class AdminController : Controller
 
         await _areas.SetUserAreasAsync(model.Id, areaIds ?? new List<int>());
 
+        _audit.Log("user.edit", $"user#{model.Id} \"{user.Email}\" role={user.Role} active={user.IsActive}");
         TempData["Success"] = _translationService.T("admin.msg_user_updated", "User updated.");
         return RedirectToAction("Users");
     }
@@ -397,6 +402,7 @@ public class AdminController : Controller
         if (appUser != null)
             await _userManager.DeleteAsync(appUser);
 
+        _audit.Log("user.delete", $"user#{id} \"{user.Email}\"");
         TempData["Success"] = $"User \"{user.FullName}\" deleted.";
         return RedirectToAction("Users");
     }
@@ -423,6 +429,7 @@ public class AdminController : Controller
 
         user.IsActive = !user.IsActive;
         await _users.UpdateAsync(user);
+        _audit.Log(user.IsActive ? "user.activate" : "user.deactivate", $"user#{id} \"{user.Email}\"");
         TempData["Success"] = user.IsActive
             ? _translationService.T("admin.msg_user_activated", "User activated.")
             : _translationService.T("admin.msg_user_deactivated", "User deactivated.");
@@ -567,6 +574,7 @@ public class AdminController : Controller
             await _settings.SetAsync("Notifications:TeacherOnStudentEnrolled",
                 model.NotifyTeacherOnStudentEnrolled ? "true" : "false");
 
+            _audit.Log("settings.email_saved", $"smtp_host={model.Host} enabled={model.Enabled}");
             TempData["Success"] = _translationService.T("admin.email.saved", "Impostazioni email salvate con successo.");
         }
         catch (Exception ex)
@@ -840,6 +848,7 @@ public class AdminController : Controller
             var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
             await _users.SetRoleCreatedByAsync(created.Id, currentUserId);
         }
+        _audit.Log("role.create", $"role#{created?.Id} \"{name}\" permissions={string.Join(",", permissions ?? new())}");
         TempData["Success"] = string.Format(_translationService.T("admin.msg_role_created", "Role '{0}' created successfully."), name);
         return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }
@@ -901,6 +910,7 @@ public class AdminController : Controller
         role.NormalizedName = model.Name.ToUpperInvariant();
         await _roleManager.UpdateAsync(role);
         await _rolePerms.SetRolePermissionsAsync(role.Id, permissions ?? new());
+        _audit.Log("role.edit", $"role#{role.Id} \"{model.Name}\" permissions={string.Join(",", permissions ?? new())}");
         TempData["Success"] = string.Format(
             _translationService.T("admin.role_updated", "Role updated to '{0}'."),
             model.Name);
@@ -927,6 +937,7 @@ public class AdminController : Controller
             return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
         await _roleManager.DeleteAsync(role);
+        _audit.Log("role.delete", $"role#{id} \"{role.Name}\"");
         TempData["Success"] = string.Format(_translationService.T("admin.msg_role_deleted", "Role '{0}' deleted."), role.Name);
         return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }

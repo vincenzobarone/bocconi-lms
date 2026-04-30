@@ -17,6 +17,7 @@ public class CourseController : Controller
     private readonly EmailService _email;
     private readonly SettingsRepository _settings;
     private readonly ILogger<CourseController> _logger;
+    private readonly IAuditLogger _audit;
 
     public CourseController(
         CourseRepository courses,
@@ -25,7 +26,8 @@ public class CourseController : Controller
         UserRepository users,
         EmailService email,
         SettingsRepository settings,
-        ILogger<CourseController> logger)
+        ILogger<CourseController> logger,
+        IAuditLogger audit)
     {
         _courses = courses;
         _lessons = lessons;
@@ -34,6 +36,7 @@ public class CourseController : Controller
         _email = email;
         _settings = settings;
         _logger = logger;
+        _audit = audit;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -96,6 +99,8 @@ public class CourseController : Controller
 
         bool alreadyEnrolled = await _enrollments.IsEnrolledAsync(CurrentUserId, id);
         await _enrollments.EnrollAsync(CurrentUserId, id);
+        if (!alreadyEnrolled)
+            _audit.Log("course.enroll", $"course#{id} \"{course.Title}\"");
 
         if (!alreadyEnrolled)
         {
@@ -129,6 +134,7 @@ public class CourseController : Controller
         if (!course.IsPublished && !isOwner)
             return NotFound();
         await _enrollments.UnenrollAsync(CurrentUserId, id);
+        _audit.Log("course.unenroll", $"course#{id} \"{course.Title}\"");
         TempData["Success"] = "Disiscrizione completata.";
         return RedirectToAction("Details", new { id });
     }
@@ -169,6 +175,7 @@ public class CourseController : Controller
             CreatedBy   = CurrentUserId
         };
         var id = await _courses.CreateAsync(course);
+        _audit.Log("course.create", $"course#{id} \"{course.Title}\"");
         TempData["Success"] = "Corso creato!";
         return RedirectToAction("Details", new { id });
     }
@@ -225,6 +232,7 @@ public class CourseController : Controller
             course.TeacherId = model.TeacherId.Value;
 
         await _courses.UpdateAsync(course);
+        _audit.Log("course.edit", $"course#{id} \"{course.Title}\"");
         TempData["Success"] = "Corso aggiornato!";
         return RedirectToAction("Details", new { id });
     }
@@ -248,6 +256,7 @@ public class CourseController : Controller
         if (course == null) return NotFound();
         if (CurrentRole != "Admin" && course.TeacherId != CurrentUserId) return Forbid();
         await _courses.DeleteAsync(id);
+        _audit.Log("course.delete", $"course#{id} \"{course.Title}\"");
         TempData["Success"] = "Corso eliminato.";
         return RedirectToAction("Dashboard");
     }
