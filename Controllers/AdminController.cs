@@ -25,6 +25,7 @@ public class AdminController : Controller
     private readonly PlatformRepository _platforms;
     private readonly RolePermissionRepository _rolePerms;
     private readonly MigrationRunner _migrationRunner;
+    private readonly ProductionScriptGenerator _scriptGenerator;
     private readonly IAuditLogger _audit;
 
     public AdminController(
@@ -43,6 +44,7 @@ public class AdminController : Controller
         PlatformRepository platforms,
         RolePermissionRepository rolePerms,
         MigrationRunner migrationRunner,
+        ProductionScriptGenerator scriptGenerator,
         IAuditLogger audit)
     {
         _users = users;
@@ -60,6 +62,7 @@ public class AdminController : Controller
         _platforms = platforms;
         _rolePerms = rolePerms;
         _migrationRunner = migrationRunner;
+        _scriptGenerator = scriptGenerator;
         _audit = audit;
     }
 
@@ -1069,6 +1072,7 @@ public class AdminController : Controller
     {
         if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var status = await _migrationRunner.GetStatusAsync();
+        ViewData["HasPendingScript"] = HttpContext.Session.Get("ProdScript") != null;
         return View(status);
     }
 
@@ -1096,6 +1100,66 @@ public class AdminController : Controller
         }
 
         return RedirectToAction(nameof(Migrations));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> GenerateProductionScript(bool includeTranslations = false)
+    {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
+
+        try
+        {
+            var (sql, tempPassword) = await _scriptGenerator.GenerateAsync(includeTranslations);
+
+            // Store the temp password so the view can display it once.
+            TempData["TmpAdminPassword"] = tempPassword;
+            TempData["TmpAdminEmail"] = "admin@bocconi.it";
+
+            _audit.Log("admin.production_script_generated",
+                $"includeTranslations={includeTranslations}",
+                "success",
+                User.Identity?.Name ?? "unknown",
+                HttpContext.Connection.RemoteIpAddress?.ToString() ?? "");
+
+            var fileName = $"didasco_production_{DateTime.UtcNow:yyyyMMdd}.sql";
+            var bytes = System.Text.Encoding.UTF8.GetBytes(sql);
+
+            // We need the password banner to appear on the Migrations page.
+            // Store the file bytes in TempData so the redirect can serve them,
+            // but TempData has a size limit — instead, store in Session and redirect.
+            HttpContext.Session.Set("ProdScript", bytes);
+            HttpContext.Session.SetString("ProdScriptFileName", fileName);
+
+            return RedirectToAction(nameof(Migrations));
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = _translationService.T(
+                "admin.prod_script_error", "Errore durante la generazione dello script: ") + ex.Message;
+            return RedirectToAction(nameof(Migrations));
+        }
+    }
+
+    public IActionResult DownloadProductionScript()
+    {
+        if (!User.IsInRole("Admin")) return Forbid();
+
+        var bytes = HttpContext.Session.Get("ProdScript");
+        var fileName = HttpContext.Session.GetString("ProdScriptFileName")
+                       ?? $"didasco_production_{DateTime.UtcNow:yyyyMMdd}.sql";
+
+        if (bytes == null || bytes.Length == 0)
+        {
+            TempData["Error"] = _translationService.T(
+                "admin.prod_script_expired", "Script non più disponibile. Rigenerare.");
+            return RedirectToAction(nameof(Migrations));
+        }
+
+        HttpContext.Session.Remove("ProdScript");
+        HttpContext.Session.Remove("ProdScriptFileName");
+
+        return File(bytes, "application/sql", fileName);
     }
 
     private async Task<bool> CanAccessMenuAsync(string permission)
