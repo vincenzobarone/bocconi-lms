@@ -67,7 +67,8 @@
                         @if (isOwner)
                         {
                             <a asp-controller="Lesson" asp-action="Edit" asp-route-id="@l.Id"
-                               class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                               class="btn btn-sm btn-outline-secondary"
+                               aria-label="@T["lesson.edit_aria","Modifica lezione"]"><i class="bi bi-pencil"></i></a>
                         }
                     </div>
                 }
