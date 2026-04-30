@@ -84,16 +84,14 @@ builder.Services.AddSession(options =>
 var app = builder.Build();
 
 // ── Apply all pending database migrations ─────────────────────────────────────
-try
+// Fail-fast: any migration error stops the application from starting.
 {
     using var scope = app.Services.CreateScope();
     var runner = scope.ServiceProvider.GetRequiredService<MigrationRunner>();
-    await runner.RunAsync();
-}
-catch (Exception ex)
-{
-    var logger = app.Services.GetRequiredService<ILogger<Program>>();
-    logger.LogError(ex, "Migration runner failed on startup.");
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Running database migrations...");
+    await runner.RunAsync();   // throws MigrationException on failure → app stops
+    logger.LogInformation("Database migrations complete.");
 }
 
 if (!app.Environment.IsDevelopment())

@@ -1,20 +1,39 @@
--- 004: Add columns to materials table (run once via migration tracker)
-
-ALTER TABLE materials ADD COLUMN author_name VARCHAR(255) NULL AFTER title;
-ALTER TABLE materials ADD COLUMN folder VARCHAR(255) NULL;
-ALTER TABLE materials ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'bozza';
-ALTER TABLE materials ADD COLUMN protocol_number INT NULL;
-ALTER TABLE materials ADD COLUMN area_id INT NULL;
-ALTER TABLE materials ADD COLUMN catalogation_date DATETIME NULL;
-ALTER TABLE materials ADD COLUMN page_count INT NULL;
+-- 004: Add columns to materials table (idempotent via conditional ALTER TABLE)
+-- Uses PREPARE/EXECUTE to skip columns/constraints that already exist.
 
 CREATE TABLE IF NOT EXISTS material_folders (
-    id         INT AUTO_INCREMENT PRIMARY KEY,
+    id         INT          AUTO_INCREMENT PRIMARY KEY,
     name       VARCHAR(255) NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_name (name)
 ) ENGINE=InnoDB;
 
-ALTER TABLE materials ADD COLUMN folder_id INT NULL;
-ALTER TABLE materials ADD CONSTRAINT fk_material_folder FOREIGN KEY (folder_id) REFERENCES material_folders(id) ON DELETE SET NULL;
-ALTER TABLE materials ADD CONSTRAINT fk_mat_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL;
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='materials' AND COLUMN_NAME='author_name')=0,'ALTER TABLE materials ADD COLUMN author_name VARCHAR(255) NULL AFTER title','SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='materials' AND COLUMN_NAME='folder')=0,'ALTER TABLE materials ADD COLUMN folder VARCHAR(255) NULL','SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='materials' AND COLUMN_NAME='status')=0,'ALTER TABLE materials ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT ''bozza''','SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='materials' AND COLUMN_NAME='protocol_number')=0,'ALTER TABLE materials ADD COLUMN protocol_number INT NULL','SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='materials' AND COLUMN_NAME='area_id')=0,'ALTER TABLE materials ADD COLUMN area_id INT NULL','SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='materials' AND COLUMN_NAME='catalogation_date')=0,'ALTER TABLE materials ADD COLUMN catalogation_date DATETIME NULL','SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='materials' AND COLUMN_NAME='page_count')=0,'ALTER TABLE materials ADD COLUMN page_count INT NULL','SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='materials' AND COLUMN_NAME='folder_id')=0,'ALTER TABLE materials ADD COLUMN folder_id INT NULL','SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='materials' AND CONSTRAINT_NAME='fk_material_folder' AND CONSTRAINT_TYPE='FOREIGN KEY')=0,'ALTER TABLE materials ADD CONSTRAINT fk_material_folder FOREIGN KEY (folder_id) REFERENCES material_folders(id) ON DELETE SET NULL','SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+SET @sql = IF((SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='materials' AND CONSTRAINT_NAME='fk_mat_area' AND CONSTRAINT_TYPE='FOREIGN KEY')=0,'ALTER TABLE materials ADD CONSTRAINT fk_mat_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL','SELECT 1');
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;

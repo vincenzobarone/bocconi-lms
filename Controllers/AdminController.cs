@@ -1056,6 +1056,7 @@ public class AdminController : Controller
 
     public async Task<IActionResult> Migrations()
     {
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         var status = await _migrationRunner.GetStatusAsync();
         return View(status);
     }
@@ -1064,22 +1065,23 @@ public class AdminController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> RunPendingMigrations()
     {
-        var results = await _migrationRunner.ApplyPendingAsync();
-        var errors  = results.Where(r => r.Error != null).ToList();
+        if (!await CanAccessMenuAsync("menu.users")) return Forbid();
 
-        if (!errors.Any())
+        var results = await _migrationRunner.ApplyPendingAsync();
+
+        // ApplyPendingAsync stops at first failure, so at most one error entry.
+        var firstError = results.FirstOrDefault(r => r.Error != null);
+
+        if (firstError == default)
         {
             TempData["Success"] = _translationService.T(
                 "admin.migrations_success", "Migrations applied successfully.");
         }
         else
         {
-            foreach (var (name, error) in errors)
-            {
-                TempData["Error"] = string.Format(
-                    _translationService.T("admin.migrations_error", "Error applying migration «{0}»: {1}"),
-                    name, error ?? "");
-            }
+            TempData["Error"] = string.Format(
+                _translationService.T("admin.migrations_error", "Error applying migration «{0}»: {1}"),
+                firstError.Name, firstError.Error ?? "");
         }
 
         return RedirectToAction(nameof(Migrations));

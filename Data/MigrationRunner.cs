@@ -15,21 +15,27 @@ public class MigrationRunner
 
     // ── Public API ────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Called at app startup. Throws if any migration fails (fail-fast).
+    /// </summary>
     public async Task RunAsync()
     {
         using var conn = _dbHelper.GetConnection();
         await conn.OpenAsync();
-
         await EnsureSchemaTable(conn);
         await PreSeedIfExistingDb(conn);
-        await ApplyPending(conn);
+
+        // Execute pending migrations on a connection with AllowUserVariables=true
+        // (needed for conditional ALTER TABLE statements using PREPARE/EXECUTE).
+        using var migConn = _dbHelper.GetConnectionWithUserVariables();
+        await migConn.OpenAsync();
+        await ApplyPendingInternal(migConn, failFast: true);
     }
 
     public async Task<MigrationStatus> GetStatusAsync()
     {
         using var conn = _dbHelper.GetConnection();
         await conn.OpenAsync();
-
         await EnsureSchemaTable(conn);
 
         var allFiles = GetMigrationFiles();
@@ -56,13 +62,16 @@ public class MigrationRunner
         };
     }
 
+    /// <summary>
+    /// Called from the admin UI. Stops at first failure and returns the error.
+    /// Does NOT continue after a failed migration.
+    /// </summary>
     public async Task<List<(string Name, string? Error)>> ApplyPendingAsync()
     {
-        using var conn = _dbHelper.GetConnection();
-        await conn.OpenAsync();
-
-        await EnsureSchemaTable(conn);
-        return await ApplyPending(conn);
+        using var migConn = _dbHelper.GetConnectionWithUserVariables();
+        await migConn.OpenAsync();
+        await EnsureSchemaTable(migConn);
+        return await ApplyPendingInternal(migConn, failFast: false);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
@@ -81,11 +90,10 @@ public class MigrationRunner
 
     // If the DB is already initialised (materials table exists) but schema_migrations
     // is empty, pre-seed all current migration file names as already applied so we
-    // don't re-run schema changes that Program.cs already executed.
+    // don't re-run schema changes on an existing database.
     private async Task PreSeedIfExistingDb(MySqlConnection conn)
     {
-        using var countCmd = new MySqlCommand(
-            "SELECT COUNT(*) FROM schema_migrations;", conn);
+        using var countCmd = new MySqlCommand("SELECT COUNT(*) FROM schema_migrations;", conn);
         var count = Convert.ToInt32(await countCmd.ExecuteScalarAsync());
         if (count > 0) return;
 
@@ -95,7 +103,7 @@ public class MigrationRunner
         var materialsExists = Convert.ToInt32(await checkMat.ExecuteScalarAsync()) > 0;
         if (!materialsExists) return;
 
-        // Existing DB — mark all current files as applied
+        // Existing DB: mark all current migration files as applied (without running them).
         foreach (var file in GetMigrationFiles())
         {
             var name = Path.GetFileName(file);
@@ -106,7 +114,12 @@ public class MigrationRunner
         }
     }
 
-    private async Task<List<(string Name, string? Error)>> ApplyPending(MySqlConnection conn)
+    /// <param name="failFast">
+    /// true  → throws MigrationException on the first failure (startup use).
+    /// false → records the error, stops iteration, returns results (admin UI use).
+    /// </param>
+    private async Task<List<(string Name, string? Error)>> ApplyPendingInternal(
+        MySqlConnection conn, bool failFast)
     {
         var results = new List<(string Name, string? Error)>();
         var applied = await GetAppliedMigrations(conn);
@@ -117,11 +130,8 @@ public class MigrationRunner
             if (applied.ContainsKey(name)) continue;
 
             var sql = await File.ReadAllTextAsync(file);
-            string? error = null;
-
             try
             {
-                // Execute each statement separately (split on semicolons at line ends)
                 foreach (var stmt in SplitStatements(sql))
                 {
                     if (string.IsNullOrWhiteSpace(stmt)) continue;
@@ -129,17 +139,25 @@ public class MigrationRunner
                     await cmd.ExecuteNonQueryAsync();
                 }
 
+                // Record migration as applied only after all statements succeed.
                 using var rec = new MySqlCommand(
                     "INSERT IGNORE INTO schema_migrations (name, applied_at) VALUES (@n, NOW());", conn);
                 rec.Parameters.AddWithValue("@n", name);
                 await rec.ExecuteNonQueryAsync();
+
+                results.Add((name, null));
             }
             catch (Exception ex)
             {
-                error = ex.Message;
-            }
+                var msg = $"Migration '{name}' failed: {ex.Message}";
+                results.Add((name, ex.Message));
 
-            results.Add((name, error));
+                if (failFast)
+                    throw new MigrationException(name, ex);
+
+                // In non-failFast mode (admin UI), stop after first failure.
+                break;
+            }
         }
 
         return results;
@@ -164,11 +182,10 @@ public class MigrationRunner
             .ToList();
     }
 
-    // Split SQL file into individual statements by semicolons that are not inside strings.
-    // Simple approach: split on ";\n" or ";\r\n" boundaries.
+    // Split SQL file into individual statements by semicolons.
+    // Strips single-line -- comments before splitting.
     private static IEnumerable<string> SplitStatements(string sql)
     {
-        // Remove SQL comments (-- ... to end of line)
         var lines = sql.Split('\n');
         var cleaned = string.Join('\n', lines.Select(l =>
         {
@@ -176,10 +193,22 @@ public class MigrationRunner
             return idx >= 0 ? l[..idx] : l;
         }));
 
-        // Split on semicolons
         return cleaned.Split(';', StringSplitOptions.RemoveEmptyEntries)
             .Select(s => s.Trim())
             .Where(s => !string.IsNullOrWhiteSpace(s));
+    }
+}
+
+// ── Custom exception ───────────────────────────────────────────────────────────
+
+public class MigrationException : Exception
+{
+    public string MigrationName { get; }
+
+    public MigrationException(string name, Exception inner)
+        : base($"Migration '{name}' failed: {inner.Message}", inner)
+    {
+        MigrationName = name;
     }
 }
 
