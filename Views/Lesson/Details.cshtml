@@ -105,10 +105,13 @@
                                     {
                                         <a asp-controller="Materials" asp-action="Download"
                                            asp-route-versionId="@m.ActiveVersion.Id"
-                                           class="btn btn-sm btn-bocconi"><i class="bi bi-download"></i></a>
+                                           class="btn btn-sm btn-bocconi"
+                                           aria-label="@T["mat.download_aria","Scarica materiale"]"><i class="bi bi-download"></i></a>
                                     }
                                     <a asp-controller="Materials" asp-action="Details" asp-route-id="@m.Id"
-                                       class="btn btn-sm btn-outline-secondary" title="Dettagli">
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="@T["mat.details_aria","Dettagli materiale"]"
+                                       aria-label="@T["mat.details_aria","Dettagli materiale"]">
                                         <i class="bi bi-info-circle"></i>
                                     </a>
                                     @if (isOwner)
@@ -119,7 +122,8 @@
                                             <input type="hidden" name="materialId" value="@m.Id" />
                                             <button type="submit" class="btn btn-sm btn-outline-warning"
                                                     data-confirm="Rimuovere «@m.Title» da questa lezione?"
-                                                    title="Scollega">
+                                                    title="@T["mat.unlink_aria","Scollega materiale"]"
+                                                    aria-label="@T["mat.unlink_aria","Scollega materiale"]">
                                                 <i class="bi bi-x-circle"></i>
                                             </button>
                                         </form>

@@ -66,6 +66,7 @@ var lblOptions = @Json.Serialize(T["quiz.js.options","Options"]);
 var lblOptionsHint = @Json.Serialize(T["quiz.js.options_hint","(select the circle of the correct answer)"]);
 var lblOptionPlaceholder = @Json.Serialize(T["quiz.js.option_placeholder","Option"]);
 var lblAtLeastOne = @Json.Serialize(T["quiz.js.at_least_one","Please add at least one question to the quiz."]);
+var lblRemoveQuestion = @Json.Serialize(T["quiz.js.remove_question","Rimuovi domanda"]);
 
 function addQuestion() {
     var idx = qCount;
@@ -73,7 +74,7 @@ function addQuestion() {
     var html = '<div class="card mb-3" id="qcard-' + idx + '" data-qidx="' + idx + '">' +
         '<div class="card-header d-flex justify-content-between align-items-center">' +
         '<span class="fw-semibold">' + lblQuestion + ' ' + (idx + 1) + '</span>' +
-        '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestion(' + idx + ')"><i class="bi bi-trash"></i></button>' +
+        '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestion(' + idx + ')" aria-label="' + lblRemoveQuestion + '"><i class="bi bi-trash"></i></button>' +
         '</div><div class="card-body">' +
         '<div class="mb-3"><label class="form-label fw-semibold">' + lblQuestionText + '</label>' +
         '<input type="text" name="questionTexts" class="form-control" placeholder="' + lblQuestionPlaceholder + '" required /></div>' +

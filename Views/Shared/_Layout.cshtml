@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
+<a class="visually-hidden-focusable" href="#main-content">@T["layout.skip_to_content","Salta al contenuto principale"]</a>
 <nav class="navbar navbar-expand-lg navbar-dark bg-bocconi shadow-sm">
     <div class="container">
         <a class="navbar-brand fw-bold fs-4" asp-controller="Home" asp-action="Index">
@@ -150,7 +151,7 @@
     </div>
 </nav>
 
-<main class="py-4">
+<main id="main-content" class="py-4" tabindex="-1">
     <div class="container">
         @if (TempData["Success"] != null)
         {

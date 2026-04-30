@@ -35,8 +35,8 @@
                             <span class="me-2">🇬🇧</span>English (base)
                             <span class="badge bg-secondary ms-1 fw-normal">EN</span>
                         </label>
-                        <input name="En" class="form-control" value="@Model.En"
-                               placeholder="English default value" />
+                        <textarea name="En" class="form-control" rows="3"
+                                  placeholder="English default value">@Model.En</textarea>
                         <div class="form-text">@T["admin.translations.en_hint", "Default English text used as fallback"]</div>
                     </div>
 
@@ -49,8 +49,8 @@
                                 <span class="me-2">🇮🇹</span>Italiano
                                 <span class="badge bg-success ms-1 fw-normal">IT</span>
                             </label>
-                            <input name="It" class="form-control" value="@Model.It"
-                                   placeholder="Traduzione italiana" />
+                            <textarea name="It" class="form-control" rows="3"
+                                      placeholder="Traduzione italiana">@Model.It</textarea>
                         </div>
                     }
                     else
@@ -67,8 +67,8 @@
                                 <span class="me-2">🇪🇸</span>Español
                                 <span class="badge bg-danger ms-1 fw-normal">ES</span>
                             </label>
-                            <input name="Es" class="form-control" value="@Model.Es"
-                                   placeholder="Traducción española" />
+                            <textarea name="Es" class="form-control" rows="3"
+                                      placeholder="Traducción española">@Model.Es</textarea>
                         </div>
                     }
                     else
@@ -85,8 +85,8 @@
                                 <span class="me-2">🇩🇪</span>Deutsch
                                 <span class="badge bg-warning text-dark ms-1 fw-normal">DE</span>
                             </label>
-                            <input name="De" class="form-control" value="@Model.De"
-                                   placeholder="Deutsche Übersetzung" />
+                            <textarea name="De" class="form-control" rows="3"
+                                      placeholder="Deutsche Übersetzung">@Model.De</textarea>
                         </div>
                     }
                     else

@@ -62,7 +62,8 @@
                             <a asp-controller="Course" asp-action="Students" asp-route-id="@c.Id"
                                class="btn btn-sm btn-outline-secondary">@T["course.students","Students"]</a>
                             <a asp-controller="Course" asp-action="Edit" asp-route-id="@c.Id"
-                               class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                               class="btn btn-sm btn-outline-secondary"
+                               aria-label="@T["course.edit_aria","Modifica corso"]"><i class="bi bi-pencil"></i></a>
                         </div>
                     </div>
                 </div>
