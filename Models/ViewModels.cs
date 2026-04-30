@@ -332,7 +332,7 @@ public class MaterialFormViewModel
     [Required(ErrorMessage = "La lingua è obbligatoria")]
     public string Language { get; set; } = "Italiano";
 
-    [Required(ErrorMessage = "Il tipo documento è obbligatorio")]
+    [Required]
     public int? DocumentTypeId { get; set; }
 
     public string Status { get; set; } = "bozza";

@@ -25,6 +25,7 @@ public class MaterialsController : Controller
     private readonly SettingsRepository _settings;
     private readonly EmailService _emailService;
     private readonly FeatureFlagService _features;
+    private readonly TranslationService _t;
 
     public MaterialsController(
         MaterialRepository materials,
@@ -36,7 +37,8 @@ public class MaterialsController : Controller
         RolePermissionRepository rolePerms,
         SettingsRepository settings,
         EmailService emailService,
-        FeatureFlagService features)
+        FeatureFlagService features,
+        TranslationService t)
     {
         _materials    = materials;
         _docTypes     = docTypes;
@@ -48,6 +50,7 @@ public class MaterialsController : Controller
         _settings     = settings;
         _emailService = emailService;
         _features     = features;
+        _t            = t;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -162,6 +165,23 @@ public class MaterialsController : Controller
 
     private string? CurrentUserFullName() =>
         User.FindFirstValue("FullName") ?? User.Identity?.Name;
+
+    /// <summary>
+    /// Replaces the DataAnnotation-generated [Required] error on DocumentTypeId
+    /// with the translated version from the translation system.
+    /// </summary>
+    private void TranslateDocTypeError(string fieldName, int? value)
+    {
+        if (ModelState.ContainsKey(fieldName))
+        {
+            ModelState.Remove(fieldName);
+        }
+        if (!value.HasValue || value == 0)
+        {
+            ModelState.AddModelError(fieldName,
+                _t.T("mat.doctype_required", "Il tipo documento è obbligatorio"));
+        }
+    }
 
     private static async Task<string?> TryExtractAuthorAsync(IFormFile file)
     {
@@ -452,10 +472,12 @@ public class MaterialsController : Controller
         }
 
         if (string.IsNullOrWhiteSpace(vm.AuthorName))
-            ModelState.AddModelError(nameof(vm.AuthorName), "L'autore è obbligatorio.");
+            ModelState.AddModelError(nameof(vm.AuthorName), _t.T("mat.author_required", "L'autore è obbligatorio."));
 
         if (vm.File == null || vm.File.Length == 0)
-            ModelState.AddModelError(nameof(vm.File), "Il file è obbligatorio.");
+            ModelState.AddModelError(nameof(vm.File), _t.T("mat.file_required", "Il file è obbligatorio."));
+
+        TranslateDocTypeError(nameof(vm.DocumentTypeId), vm.DocumentTypeId);
 
         if (!ModelState.IsValid)
         {
@@ -467,7 +489,7 @@ public class MaterialsController : Controller
 
         if (await _materials.TitleExistsAsync(vm.Title))
         {
-            ModelState.AddModelError(nameof(vm.Title), "Esiste già un materiale con questo titolo.");
+            ModelState.AddModelError(nameof(vm.Title), _t.T("mat.title_duplicate", "Esiste già un materiale con questo titolo."));
             ViewBag.CurrentUserFullName = CurrentUserFullName();
             ViewBag.CanSetStatus = await CanSetStatusAsync("create");
             await PopulateDropdownsAsync();
@@ -555,7 +577,9 @@ public class MaterialsController : Controller
         }
 
         if (string.IsNullOrWhiteSpace(vm.AuthorName))
-            ModelState.AddModelError(nameof(vm.AuthorName), "L'autore è obbligatorio.");
+            ModelState.AddModelError(nameof(vm.AuthorName), _t.T("mat.author_required", "L'autore è obbligatorio."));
+
+        TranslateDocTypeError(nameof(vm.DocumentTypeId), vm.DocumentTypeId);
 
         if (!ModelState.IsValid)
         {
@@ -568,7 +592,7 @@ public class MaterialsController : Controller
 
         if (await _materials.TitleExistsAsync(vm.Title, id))
         {
-            ModelState.AddModelError(nameof(vm.Title), "Esiste già un materiale con questo titolo.");
+            ModelState.AddModelError(nameof(vm.Title), _t.T("mat.title_duplicate", "Esiste già un materiale con questo titolo."));
             var mat = await _materials.GetByIdAsync(id);
             ViewBag.Material = mat;
             ViewBag.CanSetStatus = await CanSetStatusAsync("edit");
