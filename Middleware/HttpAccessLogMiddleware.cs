@@ -29,19 +29,25 @@ public sealed class HttpAccessLogMiddleware
         }
 
         var sw = Stopwatch.StartNew();
-        await _next(context);
-        sw.Stop();
+        try
+        {
+            await _next(context);
+        }
+        finally
+        {
+            sw.Stop();
 
-        var user = context.User?.FindFirstValue(ClaimTypes.Email)
-                ?? context.User?.Identity?.Name
-                ?? "anonymous";
-        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "-";
-        var method = context.Request.Method;
-        var status = context.Response.StatusCode;
-        var ms = (int)sw.ElapsedMilliseconds;
+            var user = context.User?.FindFirstValue(ClaimTypes.Email)
+                    ?? context.User?.Identity?.Name
+                    ?? "anonymous";
+            var ip = context.Connection.RemoteIpAddress?.ToString() ?? "-";
+            var method = context.Request.Method;
+            var status = context.Response.StatusCode;
+            var ms = (int)sw.ElapsedMilliseconds;
 
-        _logger.LogInformation(
-            $"{Tag} {{Method}} {{Path}} {{Status}} | user={{User}} | ip={{Ip}} | duration_ms={{Ms}}",
-            method, path, status, user, ip, ms);
+            _logger.LogInformation(
+                $"{Tag} {{Method}} {{Path}} {{Status}} | user={{User}} | ip={{Ip}} | duration_ms={{Ms}}",
+                method, path, status, user, ip, ms);
+        }
     }
 }
