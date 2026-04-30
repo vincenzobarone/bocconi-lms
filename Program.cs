@@ -33,6 +33,7 @@ builder.Services.AddScoped<TranslationRepository>();
 builder.Services.AddScoped<MaterialRepository>();
 builder.Services.AddScoped<DocumentTypeRepository>();
 builder.Services.AddScoped<AreaRepository>();
+builder.Services.AddScoped<PlatformRepository>();
 builder.Services.AddScoped<RolePermissionRepository>();
 builder.Services.AddScoped<FeatureFlagService>();
 
@@ -2067,6 +2068,161 @@ try
         ('es','admin.role_can_attend_hint','Puede inscribirse y asistir a cursos como estudiante.'),
         ('de','admin.role_can_attend_hint','Kann sich als Lernender einschreiben und Kurse besuchen.')
         ON DUPLICATE KEY UPDATE label_value = VALUES(label_value);", conn);
+    await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Migrate: create platforms table ──────────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var cmd = new MySqlConnector.MySqlCommand(@"
+        CREATE TABLE IF NOT EXISTS platforms (
+            id         INT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
+            name       VARCHAR(255) NOT NULL,
+            sort_order INT          NOT NULL DEFAULT 0,
+            created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_platform_name (name)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;", conn);
+    await cmd.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Migrate: add is_publishable to materials ──────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var cmd = new MySqlConnector.MySqlCommand(
+        "ALTER TABLE materials ADD COLUMN is_publishable TINYINT(1) NOT NULL DEFAULT 0;", conn);
+    await cmd.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Migrate: add external_protocol_code to materials ─────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var cmd = new MySqlConnector.MySqlCommand(
+        "ALTER TABLE materials ADD COLUMN external_protocol_code VARCHAR(100) NULL;", conn);
+    await cmd.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Migrate: add platform_id to materials ─────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var cmd = new MySqlConnector.MySqlCommand(
+        "ALTER TABLE materials ADD COLUMN platform_id INT NULL;", conn);
+    await cmd.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Migrate: add FK materials.platform_id → platforms ────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var cmd = new MySqlConnector.MySqlCommand(
+        "ALTER TABLE materials ADD CONSTRAINT fk_mat_platform FOREIGN KEY (platform_id) REFERENCES platforms(id) ON DELETE SET NULL;", conn);
+    await cmd.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Migrate: add is_published to materials ────────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var cmd = new MySqlConnector.MySqlCommand(
+        "ALTER TABLE materials ADD COLUMN is_published TINYINT(1) NOT NULL DEFAULT 0;", conn);
+    await cmd.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Migrate: add external_link to materials ───────────────────────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var cmd = new MySqlConnector.MySqlCommand(
+        "ALTER TABLE materials ADD COLUMN external_link VARCHAR(500) NULL;", conn);
+    await cmd.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Seed translations: publish fields + platform dictionary ───────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var ins = new MySqlConnector.MySqlCommand(@"
+        INSERT INTO translations (language_code, label_key, label_value) VALUES
+        ('en','mat.publish_section','Publication'),
+        ('it','mat.publish_section','Pubblicazione'),
+        ('es','mat.publish_section','Publicación'),
+        ('de','mat.publish_section','Veröffentlichung'),
+        ('en','mat.label_publishable','Publishable'),
+        ('it','mat.label_publishable','Pubblicabile'),
+        ('es','mat.label_publishable','Publicable'),
+        ('de','mat.label_publishable','Veröffentlichbar'),
+        ('en','mat.label_ext_protocol','External protocol code'),
+        ('it','mat.label_ext_protocol','Codice protocollo esterno'),
+        ('es','mat.label_ext_protocol','Código de protocolo externo'),
+        ('de','mat.label_ext_protocol','Externer Protokollcode'),
+        ('en','mat.label_platform','Platform'),
+        ('it','mat.label_platform','Piattaforma'),
+        ('es','mat.label_platform','Plataforma'),
+        ('de','mat.label_platform','Plattform'),
+        ('en','mat.select_platform','— Select platform —'),
+        ('it','mat.select_platform','— Seleziona piattaforma —'),
+        ('es','mat.select_platform','— Seleccionar plataforma —'),
+        ('de','mat.select_platform','— Plattform wählen —'),
+        ('en','mat.label_published','Published'),
+        ('it','mat.label_published','Pubblicato'),
+        ('es','mat.label_published','Publicado'),
+        ('de','mat.label_published','Veröffentlicht'),
+        ('en','mat.label_ext_link','External link'),
+        ('it','mat.label_ext_link','Link esterno'),
+        ('es','mat.label_ext_link','Enlace externo'),
+        ('de','mat.label_ext_link','Externer Link'),
+        ('en','mat.badge_publishable','Publishable'),
+        ('it','mat.badge_publishable','Pubblicabile'),
+        ('es','mat.badge_publishable','Publicable'),
+        ('de','mat.badge_publishable','Veröffentlichbar'),
+        ('en','mat.badge_published','Published'),
+        ('it','mat.badge_published','Pubblicato'),
+        ('es','mat.badge_published','Pubblicato'),
+        ('de','mat.badge_published','Veröffentlicht'),
+        ('en','admin.platforms_tab','Platforms'),
+        ('it','admin.platforms_tab','Piattaforme'),
+        ('es','admin.platforms_tab','Plataformas'),
+        ('de','admin.platforms_tab','Plattformen'),
+        ('en','admin.platform_add','Add platform'),
+        ('it','admin.platform_add','Aggiungi piattaforma'),
+        ('es','admin.platform_add','Añadir plataforma'),
+        ('de','admin.platform_add','Plattform hinzufügen'),
+        ('en','admin.platform_name','Platform name'),
+        ('it','admin.platform_name','Nome piattaforma'),
+        ('es','admin.platform_name','Nombre de plataforma'),
+        ('de','admin.platform_name','Plattformname'),
+        ('en','perm.materials_publish','Publish Materials'),
+        ('it','perm.materials_publish','Pubblica Materiali'),
+        ('es','perm.materials_publish','Publicar Materiales'),
+        ('de','perm.materials_publish','Materialien veröffentlichen')
+        ON DUPLICATE KEY UPDATE label_value = label_value;", conn);
     await ins.ExecuteNonQueryAsync();
 }
 catch { }

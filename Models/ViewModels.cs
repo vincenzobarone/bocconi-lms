@@ -355,6 +355,14 @@ public class MaterialFormViewModel
     public int? FolderId { get; set; }
     [MaxLength(255)]
     public string? FolderName { get; set; }
+
+    // ── Publish fields ────────────────────────────────────────────────────
+    public bool IsPublishable { get; set; }
+    [MaxLength(100)]
+    public string? ExternalProtocolCode { get; set; }
+    public int? PlatformId { get; set; }
+    [MaxLength(500)]
+    public string? ExternalLink { get; set; }
 }
 
 public class DocumentTypeFormViewModel

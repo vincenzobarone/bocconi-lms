@@ -8,6 +8,14 @@ public class DocumentType
     public int MaterialCount { get; set; }
 }
 
+public class Platform
+{
+    public int Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public int SortOrder { get; set; }
+    public int MaterialCount { get; set; }
+}
+
 public class MaterialFolder
 {
     public int Id { get; set; }
@@ -35,6 +43,14 @@ public class Material
     public string AreaName { get; set; } = string.Empty;
     public DateTime? CatalogationDate { get; set; }
     public int? PageCount { get; set; }
+
+    // ── Publish fields ────────────────────────────────────────────────────
+    public bool IsPublishable { get; set; }
+    public string? ExternalProtocolCode { get; set; }
+    public int? PlatformId { get; set; }
+    public string PlatformName { get; set; } = string.Empty;
+    public bool IsPublished { get; set; }
+    public string? ExternalLink { get; set; }
 
     public int CurrentVersion { get; set; }
     public MaterialVersion? ActiveVersion { get; set; }

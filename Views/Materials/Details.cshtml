@@ -207,6 +207,50 @@
                 </a>
             </div>
         </div>
+
+        @* ── Publish block ──────────────────────────────────────────── *@
+        @if (Model.IsPublishable)
+        {
+            <div class="card mt-3 border-primary">
+                <div class="card-header bg-primary bg-opacity-10 fw-semibold text-primary py-2">
+                    <i class="bi bi-send me-1"></i>@T["mat.publish_section","Publication"]
+                </div>
+                <div class="card-body small">
+                    <dl class="row mb-0">
+                        <dt class="col-5 text-muted">@T["mat.label_publishable","Pubblicabile"]</dt>
+                        <dd class="col-7">
+                            <span class="badge bg-primary">@T["mat.badge_publishable","Pubblicabile"]</span>
+                        </dd>
+                        @if (Model.IsPublished)
+                        {
+                            <dt class="col-5 text-muted">@T["mat.label_published","Pubblicato"]</dt>
+                            <dd class="col-7">
+                                <span class="badge bg-success"><i class="bi bi-check2 me-1"></i>@T["mat.badge_published","Pubblicato"]</span>
+                            </dd>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ExternalProtocolCode))
+                        {
+                            <dt class="col-5 text-muted">@T["mat.label_ext_protocol","Codice protocollo esterno"]</dt>
+                            <dd class="col-7"><code class="text-primary fw-semibold">@Model.ExternalProtocolCode</code></dd>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.PlatformName))
+                        {
+                            <dt class="col-5 text-muted">@T["mat.label_platform","Piattaforma"]</dt>
+                            <dd class="col-7">@Model.PlatformName</dd>
+                        }
+                        @if (!string.IsNullOrEmpty(Model.ExternalLink))
+                        {
+                            <dt class="col-5 text-muted">@T["mat.label_ext_link","Link esterno"]</dt>
+                            <dd class="col-7">
+                                <a href="@Model.ExternalLink" target="_blank" rel="noopener" class="text-truncate d-inline-block" style="max-width:160px;">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>@T["mat.label_ext_link","Link"]
+                                </a>
+                            </dd>
+                        }
+                    </dl>
+                </div>
+            </div>
+        }
     </div>
 </div>
 

@@ -9,6 +9,7 @@
     int totalMissing    = missing.Where(kv => enabledLangs.Contains(kv.Key)).Sum(kv => kv.Value);
     var docTypes        = ViewBag.DocTypes as List<BocconiLMS.Models.DocumentType> ?? new();
     var areas           = ViewBag.Areas as List<BocconiLMS.Models.Area> ?? new();
+    var platforms       = ViewBag.Platforms as List<BocconiLMS.Models.Platform> ?? new();
     var activeTab       = ViewBag.ActiveTab as string ?? "translations";
 }
 
@@ -44,6 +45,14 @@
                 data-bs-target="#panel-aree" type="button" role="tab">
             <i class="bi bi-diagram-3 me-1"></i>@T["admin.areas_tab","Areas"]
             <span class="badge bg-secondary ms-1">@areas.Count</span>
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link @(activeTab == "piattaforme" ? "active" : "")"
+                id="tab-piattaforme" data-bs-toggle="tab"
+                data-bs-target="#panel-piattaforme" type="button" role="tab">
+            <i class="bi bi-send me-1"></i>@T["admin.platforms_tab","Piattaforme"]
+            <span class="badge bg-secondary ms-1">@platforms.Count</span>
         </button>
     </li>
 </ul>
@@ -296,6 +305,67 @@
             </div>
         </div>
     </div>
+
+    @* ── TAB 4: PIATTAFORME ─────────────────────────────────────────── *@
+    <div class="tab-pane fade @(activeTab == "piattaforme" ? "show active" : "")"
+         id="panel-piattaforme" role="tabpanel">
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                <span class="fw-semibold"><i class="bi bi-send me-2 text-bocconi"></i>@T["admin.platforms_tab","Piattaforme"]</span>
+                <button type="button" class="btn btn-sm btn-bocconi"
+                        data-bs-toggle="modal" data-bs-target="#createPlatformModal">
+                    <i class="bi bi-plus me-1"></i>@T["admin.create_platform","Crea piattaforma"]
+                </button>
+            </div>
+            <div class="card-body p-0">
+                @if (!platforms.Any())
+                {
+                    <p class="text-muted p-4">@T["admin.no_platforms","Nessuna piattaforma definita."]</p>
+                }
+                else
+                {
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-3">@T["common.name","Name"]</th>
+                                <th style="width:110px"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var pl in platforms)
+                            {
+                                <tr>
+                                    <td class="ps-3 fw-semibold">@pl.Name</td>
+                                    <td class="pe-3 text-end">
+                                        <div class="d-flex gap-1 justify-content-end">
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-secondary btn-edit-platform"
+                                                    data-platform-id="@pl.Id"
+                                                    data-platform-name="@pl.Name"
+                                                    title="@T["common.edit","Edit"]">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+                                            <form asp-action="DeletePlatform" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@pl.Id" />
+                                                <button type="submit"
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        title="@T["admin.delete_platform","Elimina piattaforma"]"
+                                                        data-confirm="@T["admin.delete_platform_confirm","Eliminare la piattaforma"] '@pl.Name'?">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+    </div>
 </div>
 
 @* ── Modale Crea Tipo Documento ───────────────────────────────────── *@
@@ -379,6 +449,60 @@
     </div>
 </div>
 
+@* ── Modali Piattaforme ────────────────────────────────────────────── *@
+<div class="modal fade" id="createPlatformModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-send me-2"></i>@T["admin.create_platform","Crea piattaforma"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="CreatePlatform" method="post">
+                @Html.AntiForgeryToken()
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
+                    <input type="text" name="name" id="createPlatformName" class="form-control"
+                           placeholder="@T["admin.platform_name_placeholder","Nome piattaforma…"]"
+                           maxlength="255" autocomplete="off" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                    <button type="submit" class="btn btn-bocconi">
+                        <i class="bi bi-plus me-1"></i>@T["admin.create_platform","Crea piattaforma"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editPlatformModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>@T["admin.edit_platform","Modifica piattaforma"]</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="EditPlatform" method="post">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="editPlatformId" value="" />
+                <div class="modal-body">
+                    <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
+                    <input type="text" name="name" id="editPlatformName" class="form-control"
+                           placeholder="@T["admin.platform_name_placeholder","Nome piattaforma…"]"
+                           maxlength="255" autocomplete="off" required />
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                    <button type="submit" class="btn btn-bocconi">
+                        <i class="bi bi-check-lg me-1"></i>@T["common.save","Save"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
     <script>
         $(document).ready(function () {
@@ -415,6 +539,31 @@
                 editAreaModal.addEventListener('shown.bs.modal', function () {
                     document.getElementById('editAreaName').focus();
                     document.getElementById('editAreaName').select();
+                });
+            }
+
+            // ── Modali Piattaforme ────────────────────────────────
+            var createPlatformModal = document.getElementById('createPlatformModal');
+            if (createPlatformModal) {
+                createPlatformModal.addEventListener('shown.bs.modal', function () {
+                    document.getElementById('createPlatformName').focus();
+                });
+                createPlatformModal.addEventListener('hidden.bs.modal', function () {
+                    document.getElementById('createPlatformName').value = '';
+                });
+            }
+            document.addEventListener('click', function (e) {
+                var btn = e.target.closest('.btn-edit-platform');
+                if (!btn) return;
+                document.getElementById('editPlatformId').value   = btn.dataset.platformId;
+                document.getElementById('editPlatformName').value = btn.dataset.platformName;
+                bootstrap.Modal.getOrCreateInstance(document.getElementById('editPlatformModal')).show();
+            });
+            var editPlatformModal = document.getElementById('editPlatformModal');
+            if (editPlatformModal) {
+                editPlatformModal.addEventListener('shown.bs.modal', function () {
+                    document.getElementById('editPlatformName').focus();
+                    document.getElementById('editPlatformName').select();
                 });
             }
 

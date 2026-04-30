@@ -94,9 +94,12 @@ public class MaterialRepository
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
                    m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
                    m.area_id, m.catalogation_date, m.page_count,
+                   m.is_publishable, m.external_protocol_code, m.platform_id,
+                   m.is_published, m.external_link,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
+                   p.name AS platform_name,
                    COALESCE(mv.version_number,0) AS current_version,
                    mv.id AS ver_id, mv.file_name, mv.file_path,
                    mv.file_type, mv.file_size_bytes, mv.uploaded_at
@@ -105,6 +108,7 @@ public class MaterialRepository
             LEFT JOIN document_types dt ON dt.id = m.document_type_id
             LEFT JOIN areas a ON a.id = m.area_id
             LEFT JOIN material_folders mf ON mf.id = m.folder_id
+            LEFT JOIN platforms p ON p.id = m.platform_id
             LEFT JOIN material_versions mv ON mv.material_id = m.id AND mv.is_active = 1
             {(where.Count > 0 ? "WHERE " + string.Join(" AND ", where) : "")}
             ORDER BY m.title";
@@ -139,9 +143,12 @@ public class MaterialRepository
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
                    m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
                    m.area_id, m.catalogation_date, m.page_count,
+                   m.is_publishable, m.external_protocol_code, m.platform_id,
+                   m.is_published, m.external_link,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
+                   p.name AS platform_name,
                    COALESCE(mv.version_number,0) AS current_version,
                    mv.id AS ver_id, mv.file_name, mv.file_path,
                    mv.file_type, mv.file_size_bytes, mv.uploaded_at
@@ -150,6 +157,7 @@ public class MaterialRepository
             LEFT JOIN document_types dt ON dt.id = m.document_type_id
             LEFT JOIN areas a ON a.id = m.area_id
             LEFT JOIN material_folders mf ON mf.id = m.folder_id
+            LEFT JOIN platforms p ON p.id = m.platform_id
             LEFT JOIN material_versions mv ON mv.material_id = m.id AND mv.is_active = 1
             WHERE m.id = @id", conn);
         cmd.Parameters.AddWithValue("@id", id);
@@ -187,17 +195,22 @@ public class MaterialRepository
         string title, string? authorName, int? ownerId, string language,
         int? documentTypeId, string status = "bozza",
         int? folderId = null, int? areaId = null, DateTime? catalogationDate = null,
-        int? protocolNumber = null, int? pageCount = null)
+        int? protocolNumber = null, int? pageCount = null,
+        bool isPublishable = false, string? externalProtocolCode = null,
+        int? platformId = null, string? externalLink = null)
     {
+        bool isPublished = isPublishable && !string.IsNullOrWhiteSpace(externalProtocolCode);
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             INSERT INTO materials
                 (title, author_name, owner_id, language, document_type_id,
-                 status, folder_id, area_id, catalogation_date, protocol_number, page_count)
+                 status, folder_id, area_id, catalogation_date, protocol_number, page_count,
+                 is_publishable, external_protocol_code, platform_id, is_published, external_link)
             VALUES
                 (@title, @authorName, @ownerId, @lang, @typeId,
-                 @status, @folderId, @areaId, @catDate, @proto, @pageCount)", conn);
+                 @status, @folderId, @areaId, @catDate, @proto, @pageCount,
+                 @isPublishable, @extProto, @platformId, @isPublished, @extLink)", conn);
         cmd.Parameters.AddWithValue("@title", title.Trim());
         cmd.Parameters.AddWithValue("@authorName", (object?)authorName?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@ownerId", (object?)ownerId ?? DBNull.Value);
@@ -209,6 +222,11 @@ public class MaterialRepository
         cmd.Parameters.AddWithValue("@catDate", (object?)catalogationDate ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@proto", (object?)protocolNumber ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@pageCount", (object?)pageCount ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@isPublishable", isPublishable);
+        cmd.Parameters.AddWithValue("@extProto", (object?)externalProtocolCode?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@platformId", (object?)platformId ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@isPublished", isPublished);
+        cmd.Parameters.AddWithValue("@extLink", (object?)externalLink?.Trim() ?? DBNull.Value);
         await cmd.ExecuteNonQueryAsync();
         return await DbHelper.GetLastInsertIdAsync(conn);
     }
@@ -217,30 +235,32 @@ public class MaterialRepository
         int id, string title, string? authorName, int? ownerId, string language,
         int? documentTypeId, string status,
         int? folderId = null, int? areaId = null, DateTime? catalogationDate = null,
-        int? protocolNumber = null, int? pageCount = null)
+        int? protocolNumber = null, int? pageCount = null,
+        bool isPublishable = false, string? externalProtocolCode = null,
+        int? platformId = null, string? externalLink = null)
     {
+        bool isPublished = isPublishable && !string.IsNullOrWhiteSpace(externalProtocolCode);
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
 
         using var cmd = new MySqlCommand(@"
             UPDATE materials SET
-                title            = @title,
-                author_name      = @authorName,
-                owner_id         = @ownerId,
-                language         = @lang,
-                document_type_id = @typeId,
-                status           = @status,
-                folder_id        = CASE WHEN @folderId IS NOT NULL THEN @folderId ELSE folder_id END,
-                area_id          = @areaId,
-                catalogation_date = @catDate,
-                protocol_number  = CASE
-                    WHEN @proto IS NOT NULL THEN @proto
-                    ELSE protocol_number
-                END,
-                page_count       = CASE
-                    WHEN @pageCount IS NOT NULL THEN @pageCount
-                    ELSE page_count
-                END
+                title                  = @title,
+                author_name            = @authorName,
+                owner_id               = @ownerId,
+                language               = @lang,
+                document_type_id       = @typeId,
+                status                 = @status,
+                folder_id              = CASE WHEN @folderId IS NOT NULL THEN @folderId ELSE folder_id END,
+                area_id                = @areaId,
+                catalogation_date      = @catDate,
+                protocol_number        = CASE WHEN @proto IS NOT NULL THEN @proto ELSE protocol_number END,
+                page_count             = CASE WHEN @pageCount IS NOT NULL THEN @pageCount ELSE page_count END,
+                is_publishable         = @isPublishable,
+                external_protocol_code = @extProto,
+                platform_id            = @platformId,
+                is_published           = @isPublished,
+                external_link          = @extLink
             WHERE id = @id", conn);
         cmd.Parameters.AddWithValue("@title", title.Trim());
         cmd.Parameters.AddWithValue("@authorName", (object?)authorName?.Trim() ?? DBNull.Value);
@@ -253,6 +273,11 @@ public class MaterialRepository
         cmd.Parameters.AddWithValue("@catDate", (object?)catalogationDate ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@proto", (object?)protocolNumber ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@pageCount", (object?)pageCount ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@isPublishable", isPublishable);
+        cmd.Parameters.AddWithValue("@extProto", (object?)externalProtocolCode?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@platformId", (object?)platformId ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@isPublished", isPublished);
+        cmd.Parameters.AddWithValue("@extLink", (object?)externalLink?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@id", id);
         await cmd.ExecuteNonQueryAsync();
     }
@@ -382,9 +407,12 @@ public class MaterialRepository
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
                    m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
                    m.area_id, m.catalogation_date, m.page_count,
+                   m.is_publishable, m.external_protocol_code, m.platform_id,
+                   m.is_published, m.external_link,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
+                   p.name AS platform_name,
                    COALESCE(mv.version_number,0) AS current_version,
                    mv.id AS ver_id, mv.file_name, mv.file_path,
                    mv.file_type, mv.file_size_bytes, mv.uploaded_at
@@ -394,6 +422,7 @@ public class MaterialRepository
             LEFT JOIN document_types dt ON dt.id = m.document_type_id
             LEFT JOIN areas a ON a.id = m.area_id
             LEFT JOIN material_folders mf ON mf.id = m.folder_id
+            LEFT JOIN platforms p ON p.id = m.platform_id
             LEFT JOIN material_versions mv ON mv.material_id = m.id AND mv.is_active = 1
             WHERE lm.lesson_id = @lid
             ORDER BY m.title", conn);
@@ -437,9 +466,12 @@ public class MaterialRepository
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
                    m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
                    m.area_id, m.catalogation_date, m.page_count,
+                   m.is_publishable, m.external_protocol_code, m.platform_id,
+                   m.is_published, m.external_link,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
+                   p.name AS platform_name,
                    COALESCE(mv.version_number,0) AS current_version,
                    mv.id AS ver_id, mv.file_name, mv.file_path,
                    mv.file_type, mv.file_size_bytes, mv.uploaded_at
@@ -448,6 +480,7 @@ public class MaterialRepository
             LEFT JOIN document_types dt ON dt.id = m.document_type_id
             LEFT JOIN areas a ON a.id = m.area_id
             LEFT JOIN material_folders mf ON mf.id = m.folder_id
+            LEFT JOIN platforms p ON p.id = m.platform_id
             LEFT JOIN material_versions mv ON mv.material_id = m.id AND mv.is_active = 1
             WHERE m.id NOT IN (
                 SELECT material_id FROM lesson_materials WHERE lesson_id = @lid
@@ -499,6 +532,12 @@ public class MaterialRepository
             AreaName = r.IsDBNull(r.GetOrdinal("area_name")) ? "" : r.GetString("area_name"),
             CatalogationDate = r.IsDBNull(r.GetOrdinal("catalogation_date")) ? null : r.GetDateTime("catalogation_date"),
             PageCount = r.IsDBNull(r.GetOrdinal("page_count")) ? null : r.GetInt32("page_count"),
+            IsPublishable = !r.IsDBNull(r.GetOrdinal("is_publishable")) && r.GetBoolean("is_publishable"),
+            ExternalProtocolCode = r.IsDBNull(r.GetOrdinal("external_protocol_code")) ? null : r.GetString("external_protocol_code"),
+            PlatformId = r.IsDBNull(r.GetOrdinal("platform_id")) ? null : r.GetInt32("platform_id"),
+            PlatformName = r.IsDBNull(r.GetOrdinal("platform_name")) ? "" : r.GetString("platform_name"),
+            IsPublished = !r.IsDBNull(r.GetOrdinal("is_published")) && r.GetBoolean("is_published"),
+            ExternalLink = r.IsDBNull(r.GetOrdinal("external_link")) ? null : r.GetString("external_link"),
             CurrentVersion = r.GetInt32("current_version")
         };
         if (!r.IsDBNull(r.GetOrdinal("ver_id")))

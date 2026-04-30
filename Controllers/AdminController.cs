@@ -22,6 +22,7 @@ public class AdminController : Controller
     private readonly DocumentTypeRepository _docTypes;
     private readonly FeatureFlagService _features;
     private readonly AreaRepository _areas;
+    private readonly PlatformRepository _platforms;
     private readonly RolePermissionRepository _rolePerms;
 
     public AdminController(
@@ -37,6 +38,7 @@ public class AdminController : Controller
         DocumentTypeRepository docTypes,
         FeatureFlagService features,
         AreaRepository areas,
+        PlatformRepository platforms,
         RolePermissionRepository rolePerms)
     {
         _users = users;
@@ -51,6 +53,7 @@ public class AdminController : Controller
         _docTypes = docTypes;
         _features = features;
         _areas = areas;
+        _platforms = platforms;
         _rolePerms = rolePerms;
     }
 
@@ -297,6 +300,67 @@ public class AdminController : Controller
         await _areas.DeleteAsync(id);
         TempData["Success"] = "Area eliminata.";
         return RedirectToAction("Dictionary", new { tab = "aree" });
+    }
+
+    // ── Platform CRUD ──────────────────────────────────────────────────────
+
+    [AllowAnonymous]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreatePlatform(string name)
+    {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
+        {
+            TempData["Error"] = "Nome piattaforma non valido.";
+            return RedirectToAction("Dictionary", new { tab = "piattaforme" });
+        }
+        if (await _platforms.NameExistsAsync(name))
+        {
+            TempData["Error"] = $"Una piattaforma con il nome «{name}» esiste già.";
+            return RedirectToAction("Dictionary", new { tab = "piattaforme" });
+        }
+        await _platforms.CreateAsync(name);
+        TempData["Success"] = $"Piattaforma «{name.Trim()}» creata.";
+        return RedirectToAction("Dictionary", new { tab = "piattaforme" });
+    }
+
+    [AllowAnonymous]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EditPlatform(int id, string name)
+    {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
+        if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
+        {
+            TempData["Error"] = "Nome piattaforma non valido.";
+            return RedirectToAction("Dictionary", new { tab = "piattaforme" });
+        }
+        if (await _platforms.NameExistsAsync(name, excludeId: id))
+        {
+            TempData["Error"] = $"Una piattaforma con il nome «{name.Trim()}» esiste già.";
+            return RedirectToAction("Dictionary", new { tab = "piattaforme" });
+        }
+        await _platforms.RenameAsync(id, name);
+        TempData["Success"] = $"Piattaforma rinominata in «{name.Trim()}».";
+        return RedirectToAction("Dictionary", new { tab = "piattaforme" });
+    }
+
+    [AllowAnonymous]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeletePlatform(int id)
+    {
+        if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
+        var count = await _platforms.CountMaterialsAsync(id);
+        if (count > 0)
+        {
+            TempData["Error"] = $"Impossibile eliminare: {count} materiale/i usa questa piattaforma.";
+            return RedirectToAction("Dictionary", new { tab = "piattaforme" });
+        }
+        await _platforms.DeleteAsync(id);
+        TempData["Success"] = "Piattaforma eliminata.";
+        return RedirectToAction("Dictionary", new { tab = "piattaforme" });
     }
 
     [AllowAnonymous]
@@ -647,7 +711,8 @@ public class AdminController : Controller
         ViewBag.MissingCounts     = await _translations.GetMissingCountsAsync();
         ViewBag.DocTypes          = await _docTypes.GetAllAsync();
         ViewBag.Areas             = await _areas.GetAllAsync();
-        ViewBag.ActiveTab         = tab is "doctypes" or "aree" ? tab : "translations";
+        ViewBag.Platforms         = await _platforms.GetAllAsync();
+        ViewBag.ActiveTab         = tab is "doctypes" or "aree" or "piattaforme" ? tab : "translations";
         return View(rows);
     }
 

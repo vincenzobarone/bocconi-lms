@@ -16,6 +16,7 @@ public class RolePermissionRepository
         ("materials.create.setstatus",       "perm.materials_create_setstatus",       false, true),
         ("materials.edit",                   "perm.materials_edit",                   false, true),
         ("materials.edit.setstatus",         "perm.materials_edit_setstatus",         false, true),
+        ("materials.publish",                "perm.materials_publish",                false, true),
         ("menu.users",                       "perm.menu_users",                       false, true),
         ("menu.translations",                "perm.menu_translations",                false, true),
     };

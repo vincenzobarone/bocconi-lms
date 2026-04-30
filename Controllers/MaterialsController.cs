@@ -21,6 +21,7 @@ public class MaterialsController : Controller
     private readonly IWebHostEnvironment _env;
     private readonly ILogger<MaterialsController> _logger;
     private readonly AreaRepository _areas;
+    private readonly PlatformRepository _platforms;
     private readonly RolePermissionRepository _rolePerms;
     private readonly SettingsRepository _settings;
     private readonly EmailService _emailService;
@@ -34,6 +35,7 @@ public class MaterialsController : Controller
         IWebHostEnvironment env,
         ILogger<MaterialsController> logger,
         AreaRepository areas,
+        PlatformRepository platforms,
         RolePermissionRepository rolePerms,
         SettingsRepository settings,
         EmailService emailService,
@@ -46,6 +48,7 @@ public class MaterialsController : Controller
         _env          = env;
         _logger       = logger;
         _areas        = areas;
+        _platforms    = platforms;
         _rolePerms    = rolePerms;
         _settings     = settings;
         _emailService = emailService;
@@ -116,6 +119,12 @@ public class MaterialsController : Controller
         return await _rolePerms.HasMenuPermissionAsync(CurrentRoleName(), "materials.edit");
     }
 
+    private async Task<bool> CanPublishMaterialAsync()
+    {
+        if (User.IsInRole("Admin")) return true;
+        return await _rolePerms.HasMenuPermissionAsync(CurrentRoleName(), "materials.publish");
+    }
+
     private async Task PopulateDropdownsAsync()
     {
         ViewBag.DocumentTypes   = await _docTypes.GetAllAsync();
@@ -123,6 +132,7 @@ public class MaterialsController : Controller
         ViewBag.AvailableOwners = await _users.GetTeachersAndAdminsAsync();
         ViewBag.ExistingAuthors = await _materials.GetDistinctAuthorsAsync();
         ViewBag.ExistingFolders = await _materials.GetAllFoldersAsync();
+        ViewBag.Platforms       = await _platforms.GetAllAsync();
         // Areas: Admin sees all, Teacher sees only their assigned areas
         ViewBag.AvailableAreas = User.IsInRole("Admin")
             ? await _areas.GetAllAsync()
@@ -476,7 +486,8 @@ public class MaterialsController : Controller
         if (!await CanCreateMaterialAsync()) return Forbid();
         await PopulateDropdownsAsync();
         ViewBag.CurrentUserFullName = CurrentUserFullName();
-        ViewBag.CanSetStatus = await CanSetStatusAsync("create");
+        ViewBag.CanSetStatus  = await CanSetStatusAsync("create");
+        ViewBag.CanPublish    = await CanPublishMaterialAsync();
         var vm = new MaterialFormViewModel { Language = "Italiano", CatalogationDate = DateTime.Today };
         return View(vm);
     }
@@ -517,6 +528,7 @@ public class MaterialsController : Controller
         {
             ViewBag.CurrentUserFullName = CurrentUserFullName();
             ViewBag.CanSetStatus = await CanSetStatusAsync("create");
+            ViewBag.CanPublish   = await CanPublishMaterialAsync();
             await PopulateDropdownsAsync();
             return View(vm);
         }
@@ -526,6 +538,7 @@ public class MaterialsController : Controller
             ModelState.AddModelError(nameof(vm.Title), _t.T("mat.title_duplicate", "Esiste già un materiale con questo titolo."));
             ViewBag.CurrentUserFullName = CurrentUserFullName();
             ViewBag.CanSetStatus = await CanSetStatusAsync("create");
+            ViewBag.CanPublish   = await CanPublishMaterialAsync();
             await PopulateDropdownsAsync();
             return View(vm);
         }
@@ -533,6 +546,16 @@ public class MaterialsController : Controller
         // Enforce status permission: se l'utente non può cambiare stato, forza "in_revisione"
         if (!await CanSetStatusAsync("create"))
             vm.Status = "in_revisione";
+
+        // Enforce publish permission: se l'utente non può pubblicare, azzera i campi publish
+        bool canPublish = await CanPublishMaterialAsync();
+        if (!canPublish)
+        {
+            vm.IsPublishable = false;
+            vm.ExternalProtocolCode = null;
+            vm.PlatformId = null;
+            vm.ExternalLink = null;
+        }
 
         // Resolve folder and assign protocol when status = verificato
         int? resolvedFolderId = null;
@@ -546,7 +569,7 @@ public class MaterialsController : Controller
             assignedProtocol = await _materials.GetNextProtocolNumberAsync();
         }
 
-        var matId = await _materials.CreateAsync(vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, assignedProtocol, vm.PageCount);
+        var matId = await _materials.CreateAsync(vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, assignedProtocol, vm.PageCount, vm.IsPublishable, vm.ExternalProtocolCode, vm.PlatformId, vm.ExternalLink);
 
         if (vm.File != null && vm.File.Length > 0)
         {
@@ -586,13 +609,18 @@ public class MaterialsController : Controller
             Language         = material.Language,
             DocumentTypeId   = material.DocumentTypeId,
             Status           = material.Status,
-            FolderId         = material.FolderId,
-            FolderName       = material.FolderName,
-            AreaId           = material.AreaId,
-            CatalogationDate = material.CatalogationDate ?? DateTime.Today
+            FolderId              = material.FolderId,
+            FolderName            = material.FolderName,
+            AreaId                = material.AreaId,
+            CatalogationDate      = material.CatalogationDate ?? DateTime.Today,
+            IsPublishable         = material.IsPublishable,
+            ExternalProtocolCode  = material.ExternalProtocolCode,
+            PlatformId            = material.PlatformId,
+            ExternalLink          = material.ExternalLink
         };
-        ViewBag.Material = material;
+        ViewBag.Material     = material;
         ViewBag.CanSetStatus = await CanSetStatusAsync("edit");
+        ViewBag.CanPublish   = await CanPublishMaterialAsync();
         return View(vm);
     }
 
@@ -625,8 +653,9 @@ public class MaterialsController : Controller
         if (!ModelState.IsValid)
         {
             var mat = await _materials.GetByIdAsync(id);
-            ViewBag.Material = mat;
+            ViewBag.Material     = mat;
             ViewBag.CanSetStatus = await CanSetStatusAsync("edit");
+            ViewBag.CanPublish   = await CanPublishMaterialAsync();
             await PopulateDropdownsAsync();
             return View(vm);
         }
@@ -635,8 +664,9 @@ public class MaterialsController : Controller
         {
             ModelState.AddModelError(nameof(vm.Title), _t.T("mat.title_duplicate", "Esiste già un materiale con questo titolo."));
             var mat = await _materials.GetByIdAsync(id);
-            ViewBag.Material = mat;
+            ViewBag.Material     = mat;
             ViewBag.CanSetStatus = await CanSetStatusAsync("edit");
+            ViewBag.CanPublish   = await CanPublishMaterialAsync();
             await PopulateDropdownsAsync();
             return View(vm);
         }
@@ -648,6 +678,17 @@ public class MaterialsController : Controller
             var current = await _materials.GetByIdAsync(id);
             var currentStatus = current?.Status ?? "bozza";
             vm.Status = currentStatus == "bozza" ? "in_revisione" : currentStatus;
+        }
+
+        // Enforce publish permission: se l'utente non può pubblicare, preserva i valori attuali del DB
+        bool canPublish = await CanPublishMaterialAsync();
+        if (!canPublish)
+        {
+            var current = await _materials.GetByIdAsync(id);
+            vm.IsPublishable        = current?.IsPublishable ?? false;
+            vm.ExternalProtocolCode = current?.ExternalProtocolCode;
+            vm.PlatformId           = current?.PlatformId;
+            vm.ExternalLink         = current?.ExternalLink;
         }
 
         // Resolve folder and assign protocol if transitioning to verificato without them
@@ -665,7 +706,7 @@ public class MaterialsController : Controller
                 assignedProtocol = await _materials.GetNextProtocolNumberAsync();
         }
 
-        await _materials.UpdateAsync(id, vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, assignedProtocol, vm.PageCount);
+        await _materials.UpdateAsync(id, vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, assignedProtocol, vm.PageCount, vm.IsPublishable, vm.ExternalProtocolCode, vm.PlatformId, vm.ExternalLink);
 
         if (vm.File != null && vm.File.Length > 0)
         {

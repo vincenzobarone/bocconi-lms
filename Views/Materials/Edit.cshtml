@@ -6,9 +6,11 @@
     var languages = ViewBag.Languages as string[] ?? BocconiLMS.Models.Material.Languages;
     var owners = ViewBag.AvailableOwners as List<BocconiLMS.Models.User> ?? new();
     var existingAuthors = ViewBag.ExistingAuthors as List<string> ?? new();
-    var availableAreas = ViewBag.AvailableAreas as List<BocconiLMS.Models.Area> ?? new();
+    var availableAreas  = ViewBag.AvailableAreas as List<BocconiLMS.Models.Area> ?? new();
     var existingFolders = ViewBag.ExistingFolders as List<BocconiLMS.Models.MaterialFolder> ?? new();
-    bool canSetStatus = ViewBag.CanSetStatus == true;
+    var platforms       = ViewBag.Platforms as List<BocconiLMS.Models.Platform> ?? new();
+    bool canSetStatus   = ViewBag.CanSetStatus == true;
+    bool canPublish     = ViewBag.CanPublish == true;
 
     bool hasProtocol = material?.ProtocolNumber != null;
     bool hasFolder   = material?.FolderId != null;
@@ -172,6 +174,71 @@
                     }
 
                     <hr />
+
+                    @* ── Publish section ─────────────────────────────────── *@
+                    @if (canPublish)
+                    {
+                        <div class="border border-primary rounded p-3 mb-3 bg-primary bg-opacity-10" id="publishSection">
+                            <h6 class="fw-semibold text-primary mb-3">
+                                <i class="bi bi-send me-1"></i>@T["mat.publish_section","Publication"]
+                            </h6>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input asp-for="IsPublishable" class="form-check-input" id="isPublishableCheck"
+                                           onchange="togglePublishFields()" />
+                                    <label class="form-check-label fw-semibold" for="isPublishableCheck">
+                                        @T["mat.label_publishable","Pubblicabile"]
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="publishFields" style="@(Model.IsPublishable ? "" : "display:none;")">
+                                <div class="row g-2 mb-2">
+                                    <div class="col-md-6">
+                                        <label asp-for="ExternalProtocolCode" class="form-label fw-semibold">
+                                            @T["mat.label_ext_protocol","Codice protocollo esterno"]
+                                        </label>
+                                        <input asp-for="ExternalProtocolCode" class="form-control" id="extProtocolInput"
+                                               oninput="updatePublishedState()" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="PlatformId" class="form-label fw-semibold">
+                                            @T["mat.label_platform","Piattaforma"]
+                                        </label>
+                                        <select asp-for="PlatformId" class="form-select">
+                                            <option value="">@T["mat.select_platform","— Seleziona piattaforma —"]</option>
+                                            @foreach (var pl in platforms)
+                                            {
+                                                <option value="@pl.Id" selected="@(Model.PlatformId == pl.Id ? "selected" : null)">@pl.Name</option>
+                                            }
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row g-2 mb-2">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold">@T["mat.label_published","Pubblicato"]</label>
+                                        <div class="form-control bg-light" id="publishedDisplay">
+                                            @if (!string.IsNullOrEmpty(Model.ExternalProtocolCode))
+                                            {
+                                                <span class="badge bg-success"><i class="bi bi-check2 me-1"></i>@T["mat.badge_published","Pubblicato"]</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">@T["mat.badge_publishable","Pubblicabile"]</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label asp-for="ExternalLink" class="form-label fw-semibold">
+                                            @T["mat.label_ext_link","Link esterno"]
+                                        </label>
+                                        <input asp-for="ExternalLink" type="url" class="form-control"
+                                               placeholder="https://..." />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
                     <h6 class="text-muted mb-3">
                         <i class="bi bi-upload me-1"></i>@T["mat.upload_new_section","Upload new version file (optional)"]
                     </h6>
@@ -656,5 +723,29 @@
                 } else if (e.key === 'Escape') { drop.style.display='none'; inp.focus(); }
             });
         })();
+
+        // ── Publish section toggle ────────────────────────────────────────
+        function togglePublishFields() {
+            var checked = document.getElementById('isPublishableCheck')?.checked;
+            var fields  = document.getElementById('publishFields');
+            if (fields) fields.style.display = checked ? '' : 'none';
+            if (!checked) {
+                var inp = document.getElementById('extProtocolInput');
+                if (inp) inp.value = '';
+                updatePublishedState();
+            }
+        }
+        function updatePublishedState() {
+            var inp = document.getElementById('extProtocolInput');
+            var disp = document.getElementById('publishedDisplay');
+            if (!inp || !disp) return;
+            var publishedLabel = @Json.Serialize(T["mat.badge_published","Pubblicato"]);
+            var publishableLabel = @Json.Serialize(T["mat.badge_publishable","Pubblicabile"]);
+            if (inp.value.trim() !== '') {
+                disp.innerHTML = '<span class="badge bg-success"><i class="bi bi-check2 me-1"></i>' + publishedLabel + '</span>';
+            } else {
+                disp.innerHTML = '<span class="text-muted">' + publishableLabel + '</span>';
+            }
+        }
     </script>
 }
