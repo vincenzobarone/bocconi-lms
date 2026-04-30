@@ -61,7 +61,7 @@ public class ProductionScriptGenerator
         var hash = BCrypt.Net.BCrypt.HashPassword(tempPassword, workFactor: 11);
 
         var sb = new StringBuilder();
-        AppendHeader(sb, includeTranslations, tempPassword);
+        AppendHeader(sb, includeTranslations);
         AppendDriftProcedure(sb, colNames);
         AppendCreateTables(sb, createSql);
         AppendSchemaOperationalTables(sb);
@@ -142,7 +142,7 @@ public class ProductionScriptGenerator
 
     // ── SQL generation ────────────────────────────────────────────────────────
 
-    private static void AppendHeader(StringBuilder sb, bool includeTranslations, string tempPassword)
+    private static void AppendHeader(StringBuilder sb, bool includeTranslations)
     {
         sb.AppendLine("-- =============================================================================");
         sb.AppendLine("-- Didasco LMS — Script di installazione per produzione");
@@ -154,9 +154,9 @@ public class ProductionScriptGenerator
         sb.AppendLine("--        mysql -u<user> -p <db_name> < questo_file.sql");
         sb.AppendLine("--   2. Il blocco di drift detection blocca lo script se trova tabelle");
         sb.AppendLine("--      con colonne diverse da quelle attese — verificare manualmente.");
-        sb.AppendLine("--   3. PASSWORD TEMPORANEA ADMIN (cambiare al primo accesso):");
-        sb.AppendLine($"--        Email:    admin@bocconi.it");
-        sb.AppendLine($"--        Password: {tempPassword}");
+        sb.AppendLine("--   3. La password temporanea dell'utente admin è stata mostrata nel browser");
+        sb.AppendLine("--      al momento della generazione. Cambiarla al primo accesso.");
+        sb.AppendLine("--      Email admin: admin@bocconi.it");
         if (includeTranslations)
             sb.AppendLine("--   4. Le chiavi di traduzione sono incluse in questo script.");
         sb.AppendLine("--");
