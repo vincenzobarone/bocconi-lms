@@ -51,7 +51,7 @@
         <button class="nav-link @(activeTab == "piattaforme" ? "active" : "")"
                 id="tab-piattaforme" data-bs-toggle="tab"
                 data-bs-target="#panel-piattaforme" type="button" role="tab">
-            <i class="bi bi-send me-1"></i>@T["admin.platforms_tab","Piattaforme"]
+            <i class="bi bi-send me-1"></i>@T["admin.platforms_tab","Platforms"]
             <span class="badge bg-secondary ms-1">@platforms.Count</span>
         </button>
     </li>
@@ -312,16 +312,16 @@
 
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                <span class="fw-semibold"><i class="bi bi-send me-2 text-bocconi"></i>@T["admin.platforms_tab","Piattaforme"]</span>
+                <span class="fw-semibold"><i class="bi bi-send me-2 text-bocconi"></i>@T["admin.platforms_tab","Platforms"]</span>
                 <button type="button" class="btn btn-sm btn-bocconi"
                         data-bs-toggle="modal" data-bs-target="#createPlatformModal">
-                    <i class="bi bi-plus me-1"></i>@T["admin.create_platform","Crea piattaforma"]
+                    <i class="bi bi-plus me-1"></i>@T["admin.create_platform","Create platform"]
                 </button>
             </div>
             <div class="card-body p-0">
                 @if (!platforms.Any())
                 {
-                    <p class="text-muted p-4">@T["admin.no_platforms","Nessuna piattaforma definita."]</p>
+                    <p class="text-muted p-4">@T["admin.no_platforms","No platforms defined yet."]</p>
                 }
                 else
                 {
@@ -351,8 +351,8 @@
                                                 <input type="hidden" name="id" value="@pl.Id" />
                                                 <button type="submit"
                                                         class="btn btn-sm btn-outline-danger"
-                                                        title="@T["admin.delete_platform","Elimina piattaforma"]"
-                                                        data-confirm="@T["admin.delete_platform_confirm","Eliminare la piattaforma"] '@pl.Name'?">
+                                                        title="@T["admin.delete_platform","Delete platform"]"
+                                                        data-confirm="@T["admin.delete_platform_confirm","Delete platform"] '@pl.Name'?">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
@@ -454,7 +454,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-send me-2"></i>@T["admin.create_platform","Crea piattaforma"]</h5>
+                <h5 class="modal-title"><i class="bi bi-send me-2"></i>@T["admin.create_platform","Create platform"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="CreatePlatform" method="post">
@@ -462,13 +462,13 @@
                 <div class="modal-body">
                     <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
                     <input type="text" name="name" id="createPlatformName" class="form-control"
-                           placeholder="@T["admin.platform_name_placeholder","Nome piattaforma…"]"
+                           placeholder="@T["admin.platform_name_placeholder","Platform name…"]"
                            maxlength="255" autocomplete="off" required />
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
                     <button type="submit" class="btn btn-bocconi">
-                        <i class="bi bi-plus me-1"></i>@T["admin.create_platform","Crea piattaforma"]
+                        <i class="bi bi-plus me-1"></i>@T["admin.create_platform","Create platform"]
                     </button>
                 </div>
             </form>
@@ -480,7 +480,7 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>@T["admin.edit_platform","Modifica piattaforma"]</h5>
+                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>@T["admin.edit_platform","Edit platform"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="EditPlatform" method="post">
@@ -489,7 +489,7 @@
                 <div class="modal-body">
                     <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
                     <input type="text" name="name" id="editPlatformName" class="form-control"
-                           placeholder="@T["admin.platform_name_placeholder","Nome piattaforma…"]"
+                           placeholder="@T["admin.platform_name_placeholder","Platform name…"]"
                            maxlength="255" autocomplete="off" required />
                 </div>
                 <div class="modal-footer">
