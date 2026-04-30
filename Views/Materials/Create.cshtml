@@ -471,6 +471,15 @@
             document.getElementById('pageCountDisplay').textContent = '';
             document.getElementById('hidPageCount').value = '';
             hideSimilarTitles();
+            // Azzera i campi auto-popolati dal file
+            var tInp  = document.getElementById('matTitle');
+            var tSpan = document.querySelector('span[data-valmsg-for="Title"]');
+            var aInp  = document.querySelector('input[name="AuthorName"]');
+            var aSpan = document.querySelector('span[data-valmsg-for="AuthorName"]');
+            if (tInp)  tInp.value  = '';
+            if (aInp)  aInp.value  = '';
+            clearFieldError(tInp, tSpan);
+            clearFieldError(aInp, aSpan);
             // Se i campi erano già compilati (ritorno da POST), non li blocchiamo
             if (!NEEDS_REUPLOAD) lockForm();
         });
