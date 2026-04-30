@@ -12,7 +12,7 @@
 3. [Setup locale da riga di comando](#3-setup-locale-da-riga-di-comando)
 4. [Struttura del progetto](#4-struttura-del-progetto)
 5. [Architettura dell'applicazione](#5-architettura-dellapplicazione)
-6. [Database: schema e migrazioni](#6-database-schema-e-migrazioni)
+6. [Database: schema](#6-database-schema)
 7. [Sistema multilingua](#7-sistema-multilingua)
 8. [Configurazione email SMTP](#8-configurazione-email-smtp)
 9. [Gestione utenti e permessi](#9-gestione-utenti-e-permessi)
@@ -216,7 +216,7 @@ artifacts/bocconi-lms/
 │   └── TECHNICAL.md               # Questa guida
 ├── schema.sql                     # DDL completo + seed iniziale
 ├── appsettings.json               # Configurazione base (SMTP placeholder)
-├── Program.cs                     # Entry point, DI, migrazioni runtime
+├── Program.cs                     # Entry point, DI, configurazione startup
 └── BocconiLMS.csproj              # File progetto VS2026 (.NET 9)
 ```
 
@@ -277,7 +277,7 @@ Usata solo per il quiz in esecuzione (risposte parziali salvate in `HttpContext.
 
 ---
 
-## 6. Database: schema e migrazioni
+## 6. Database: schema
 
 ### Tabelle principali
 
@@ -303,32 +303,15 @@ Usata solo per il quiz in esecuzione (risposte parziali salvate in `HttpContext.
 | `settings` | Chiave/valore runtime (SMTP, lingue abilitate, feature flag) |
 | `translations` | Traduzioni UI per 4 lingue (en/it/es/de) |
 
-### Migrazioni runtime in Program.cs
+### Modifiche allo schema
 
-Il progetto non usa un migration runner formale. Le modifiche strutturali vengono applicate all'avvio tramite blocchi `try/catch` in `Program.cs`, usando il pattern:
-
-```csharp
-// Controlla se la colonna esiste prima di aggiungerla
-var chk = new MySqlCommand(@"
-    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
-    WHERE TABLE_SCHEMA = DATABASE()
-      AND TABLE_NAME   = 'materials'
-      AND COLUMN_NAME  = 'area_id'", conn);
-if (Convert.ToInt32(await chk.ExecuteScalarAsync()) == 0)
-{
-    var alter = new MySqlCommand(
-        "ALTER TABLE materials ADD COLUMN area_id INT NULL ...", conn);
-    await alter.ExecuteNonQueryAsync();
-}
-```
-
-> **Nota:** Non usare `ADD COLUMN IF NOT EXISTS` (non supportato da MySQL 8). Usare sempre il controllo via `INFORMATION_SCHEMA`.
-
-### Eseguire una modifica manuale sul DB di produzione
+Lo schema non usa un migration runner automatico. Eventuali modifiche strutturali vanno applicate manualmente via MySQL client:
 
 ```bash
-mysql -h HOST -u UTENTE -p DB_NAME -e "ALTER TABLE materials ADD COLUMN ..."
+mysql -h HOST -u UTENTE -p DB_NAME < script.sql
 ```
+
+Per generare uno script SQL completo dello schema attuale (DDL + dati di seed) usare la pagina **Admin → Database → Genera script di produzione**.
 
 ### Nota sul campo `username`
 
