@@ -159,6 +159,11 @@
                     <dd class="col-7">@Model.Language</dd>
                     <dt class="col-5 text-muted">@T["mat.col_author","Author"]</dt>
                     <dd class="col-7">@(string.IsNullOrEmpty(Model.AuthorName) ? "—" : Model.AuthorName)</dd>
+                    @if (Model.PageCount.HasValue)
+                    {
+                        <dt class="col-5 text-muted">@T["mat.page_count","Pages"]</dt>
+                        <dd class="col-7">@Model.PageCount</dd>
+                    }
                     <dt class="col-5 text-muted">@T["mat.label_owner","Responsible (system)"]</dt>
                     <dd class="col-7">@(string.IsNullOrEmpty(Model.OwnerName) ? "—" : Model.OwnerName)</dd>
                     <dt class="col-5 text-muted">@T["mat.col_status","Status"]</dt>

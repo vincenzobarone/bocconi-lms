@@ -32,6 +32,7 @@
                     @Html.AntiForgeryToken()
                     <input type="hidden" asp-for="FolderId" id="hidFolderId" />
                     <input type="hidden" asp-for="FolderName" id="hidFolderName" />
+                    <input type="hidden" asp-for="PageCount" id="hidPageCount" />
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" id="valSummary"></div>
 
                     @* ── SEZIONE FILE (sempre attiva) ─────────────────────── *@
@@ -467,6 +468,8 @@
             document.getElementById('hasFileState').classList.add('d-none');
             document.getElementById('convertPdfBox').classList.add('d-none');
             document.getElementById('ConvertToPdf').checked = false;
+            document.getElementById('pageCountDisplay').textContent = '';
+            document.getElementById('hidPageCount').value = '';
             hideSimilarTitles();
             // Se i campi erano già compilati (ritorno da POST), non li blocchiamo
             if (!NEEDS_REUPLOAD) lockForm();
@@ -524,8 +527,14 @@
         }
 
         function extractPageCount(file) {
-            if (typeof JSZip === 'undefined') return Promise.resolve(null);
             var ext = file.name.split('.').pop().toLowerCase();
+            if (ext === 'pdf') {
+                return extractPdfMetadata(file).then(function(meta) {
+                    if (!meta || !meta.pageCount) return null;
+                    return { count: meta.pageCount, unit: _t.pages };
+                });
+            }
+            if (typeof JSZip === 'undefined') return Promise.resolve(null);
             if (['docx','pptx'].indexOf(ext) === -1) return Promise.resolve(null);
             return JSZip.loadAsync(file).then(function(zip) {
                 var entry = zip.file('docProps/app.xml');
@@ -538,6 +547,42 @@
                     return null;
                 });
             }).catch(function() { return null; });
+        }
+
+        function extractPdfMetadata(file) {
+            return new Promise(function(resolve) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        var text = e.target.result;
+                        // Author: PDF info dict /Author (...)
+                        var author = null;
+                        var mAuth = text.match(/\/Author\s*\(([^)\\]*(?:\\.[^)\\]*)*)\)/);
+                        if (mAuth && mAuth[1].trim()) author = mAuth[1].trim();
+                        if (!author) {
+                            // XMP metadata <dc:creator>...<rdf:li>...</rdf:li>
+                            var mXmp = text.match(/<dc:creator[\s\S]{0,200}?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/);
+                            if (mXmp && mXmp[1].trim()) author = mXmp[1].trim();
+                        }
+                        // Page count: find /Type /Pages ... /Count N
+                        var pageCount = null;
+                        var mPg = text.match(/\/Type\s*\/Pages[\s\S]{0,300}?\/Count\s+(\d+)/);
+                        if (mPg) {
+                            pageCount = parseInt(mPg[1]);
+                        } else {
+                            // Fallback: largest /Count value
+                            var all = [];
+                            var re = /\/Count\s+(\d+)/g, mc;
+                            while ((mc = re.exec(text)) !== null) all.push(parseInt(mc[1]));
+                            if (all.length) pageCount = Math.max.apply(null, all);
+                        }
+                        resolve({ author: author, pageCount: pageCount });
+                    } catch(err) { resolve(null); }
+                };
+                reader.onerror = function() { resolve(null); };
+                // Read first 64 KB as windows-1252 (closest to Latin-1 for ASCII metadata)
+                reader.readAsText(file.slice(0, 65536), 'windows-1252');
+            });
         }
 
         function formatBytes(bytes) {
@@ -591,20 +636,31 @@
                 titleInp.value = nameNoExt;
             }
 
-            // Estrai autore da metadati Office
+            // Estrai autore da metadati
             var authorInp = document.getElementById('AuthorName');
-            if (authorInp && authorInp.value.trim() === '' && ZIP_EXTS.indexOf(ext) !== -1) {
-                extractOfficeAuthor(file).then(function(author) {
-                    if (author && authorInp.value.trim() === '')
-                        authorInp.value = author;
-                });
+            if (authorInp && authorInp.value.trim() === '') {
+                if (ZIP_EXTS.indexOf(ext) !== -1) {
+                    extractOfficeAuthor(file).then(function(author) {
+                        if (author && authorInp.value.trim() === '')
+                            authorInp.value = author;
+                    });
+                } else if (ext === 'pdf') {
+                    extractPdfMetadata(file).then(function(meta) {
+                        if (meta && meta.author && authorInp.value.trim() === '')
+                            authorInp.value = meta.author;
+                    });
+                }
             }
 
-            // Estrai numero pagine/slide
+            // Estrai numero pagine/slide e imposta campo nascosto
             extractPageCount(file).then(function(result) {
+                var pgHid = document.getElementById('hidPageCount');
                 if (result) {
                     document.getElementById('pageCountDisplay').textContent =
                         result.count + ' ' + result.unit;
+                    if (pgHid) pgHid.value = result.count;
+                } else {
+                    if (pgHid) pgHid.value = '';
                 }
             });
 

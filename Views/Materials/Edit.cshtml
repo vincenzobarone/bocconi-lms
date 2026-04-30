@@ -39,6 +39,7 @@
                     <input type="hidden" asp-for="OwnerId" />
                     <input type="hidden" asp-for="FolderId" id="hidFolderId" />
                     <input type="hidden" asp-for="FolderName" id="hidFolderName" />
+                    <input type="hidden" asp-for="PageCount" id="hidPageCount" />
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" id="valSummary"></div>
 
                     <div class="row mb-3 g-2 align-items-start">
@@ -192,7 +193,10 @@
                             <input asp-for="File" type="file" class="d-none" id="File"
                                    onchange="matFileChanged(this)" />
                         </div>
-                        <div class="form-text">@T["mat.file_hint","Leave empty to not update the file."]</div>
+                        <div class="form-text d-flex align-items-center gap-2">
+                            @T["mat.file_hint","Leave empty to not update the file."]
+                            <span id="pageCountDisplay" class="text-muted fst-italic small"></span>
+                        </div>
                     </div>
 
                     <div id="convertPdfBox" class="alert alert-warning d-none py-2 mb-3">
@@ -397,11 +401,44 @@
             }).catch(function () { return null; });
         }
 
+        function extractPdfMetadata(file) {
+            return new Promise(function(resolve) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        var text = e.target.result;
+                        var author = null;
+                        var mAuth = text.match(/\/Author\s*\(([^)\\]*(?:\\.[^)\\]*)*)\)/);
+                        if (mAuth && mAuth[1].trim()) author = mAuth[1].trim();
+                        if (!author) {
+                            var mXmp = text.match(/<dc:creator[\s\S]{0,200}?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/);
+                            if (mXmp && mXmp[1].trim()) author = mXmp[1].trim();
+                        }
+                        var pageCount = null;
+                        var mPg = text.match(/\/Type\s*\/Pages[\s\S]{0,300}?\/Count\s+(\d+)/);
+                        if (mPg) {
+                            pageCount = parseInt(mPg[1]);
+                        } else {
+                            var all = [];
+                            var re = /\/Count\s+(\d+)/g, mc;
+                            while ((mc = re.exec(text)) !== null) all.push(parseInt(mc[1]));
+                            if (all.length) pageCount = Math.max.apply(null, all);
+                        }
+                        resolve({ author: author, pageCount: pageCount });
+                    } catch(err) { resolve(null); }
+                };
+                reader.onerror = function() { resolve(null); };
+                reader.readAsText(file.slice(0, 65536), 'windows-1252');
+            });
+        }
+
         function matFileChanged(inp) {
             var span      = document.getElementById('fileName_File');
             var pdfBox    = document.getElementById('convertPdfBox');
             var titleInp  = document.getElementById('matTitle');
             var authorInp = document.getElementById('AuthorName');
+            var pgHid     = document.getElementById('hidPageCount');
+            var pgDisp    = document.getElementById('pageCountDisplay');
 
             if (!inp.files || inp.files.length === 0) {
                 if (span) span.textContent = span.dataset.placeholder || '';
@@ -414,6 +451,8 @@
 
             var ext       = file.name.split('.').pop().toLowerCase();
             var nameNoExt = file.name.replace(/\.[^.]+$/, '');
+            var _tPages   = @Json.Serialize(T["mat.pages","pagine"]);
+            var _tSlides  = @Json.Serialize(T["mat.slides","diapositive"]);
 
             if (titleInp && titleInp.value.trim() === '') {
                 titleInp.value = nameNoExt;
@@ -427,12 +466,52 @@
                 if (cb) cb.checked = false;
             }
 
-            if (authorInp && authorInp.value.trim() === '' && ZIP_EXTS.indexOf(ext) !== -1) {
-                extractOfficeAuthor(file).then(function (author) {
-                    if (author && authorInp.value.trim() === '') {
-                        authorInp.value = author;
+            // Estrai autore da metadati
+            if (authorInp && authorInp.value.trim() === '') {
+                if (ZIP_EXTS.indexOf(ext) !== -1) {
+                    extractOfficeAuthor(file).then(function (author) {
+                        if (author && authorInp.value.trim() === '')
+                            authorInp.value = author;
+                    });
+                } else if (ext === 'pdf') {
+                    extractPdfMetadata(file).then(function(meta) {
+                        if (meta && meta.author && authorInp.value.trim() === '')
+                            authorInp.value = meta.author;
+                    });
+                }
+            }
+
+            // Numero di pagine/slide
+            if (ext === 'pdf') {
+                extractPdfMetadata(file).then(function(meta) {
+                    if (meta && meta.pageCount) {
+                        if (pgDisp) pgDisp.textContent = meta.pageCount + ' ' + _tPages;
+                        if (pgHid) pgHid.value = meta.pageCount;
+                    } else {
+                        if (pgDisp) pgDisp.textContent = '';
+                        if (pgHid) pgHid.value = '';
                     }
                 });
+            } else if (typeof JSZip !== 'undefined' && ZIP_EXTS.indexOf(ext) !== -1) {
+                JSZip.loadAsync(file).then(function(zip) {
+                    var entry = zip.file('docProps/app.xml');
+                    if (!entry) return null;
+                    return entry.async('string').then(function(xml) {
+                        var mp = xml.match(/<Pages>(\d+)<\/Pages>/);
+                        if (mp) return { count: parseInt(mp[1]), unit: _tPages };
+                        var ms = xml.match(/<Slides>(\d+)<\/Slides>/);
+                        if (ms) return { count: parseInt(ms[1]), unit: _tSlides };
+                        return null;
+                    });
+                }).then(function(result) {
+                    if (result) {
+                        if (pgDisp) pgDisp.textContent = result.count + ' ' + result.unit;
+                        if (pgHid) pgHid.value = result.count;
+                    } else {
+                        if (pgDisp) pgDisp.textContent = '';
+                        if (pgHid) pgHid.value = '';
+                    }
+                }).catch(function() {});
             }
         }
     </script>

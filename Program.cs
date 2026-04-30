@@ -1131,6 +1131,16 @@ try
             "ALTER TABLE materials ADD COLUMN catalogation_date DATETIME NULL;", conn);
         await addCat.ExecuteNonQueryAsync();
     }
+
+    using var chkPgCnt = new MySqlConnector.MySqlCommand(@"
+        SELECT COUNT(*) FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'materials' AND COLUMN_NAME = 'page_count';", conn);
+    if (Convert.ToInt32(await chkPgCnt.ExecuteScalarAsync()) == 0)
+    {
+        using var addPgCnt = new MySqlConnector.MySqlCommand(
+            "ALTER TABLE materials ADD COLUMN page_count INT NULL;", conn);
+        await addPgCnt.ExecuteNonQueryAsync();
+    }
 }
 catch { }
 
@@ -1648,7 +1658,11 @@ try
         ('it','mat.slides','slide'),
         ('en','mat.slides','slides'),
         ('es','mat.slides','diapositivas'),
-        ('de','mat.slides','Folien');", conn);
+        ('de','mat.slides','Folien'),
+        ('it','mat.page_count','Pagine'),
+        ('en','mat.page_count','Pages'),
+        ('es','mat.page_count','Páginas'),
+        ('de','mat.page_count','Seiten');", conn);
     await ins.ExecuteNonQueryAsync();
 }
 catch { }

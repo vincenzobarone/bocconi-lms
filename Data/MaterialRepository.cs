@@ -93,7 +93,7 @@ public class MaterialRepository
         var sql = $@"
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
                    m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
-                   m.area_id, m.catalogation_date,
+                   m.area_id, m.catalogation_date, m.page_count,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
@@ -138,7 +138,7 @@ public class MaterialRepository
         using var cmd = new MySqlCommand(@"
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
                    m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
-                   m.area_id, m.catalogation_date,
+                   m.area_id, m.catalogation_date, m.page_count,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
@@ -187,17 +187,17 @@ public class MaterialRepository
         string title, string? authorName, int? ownerId, string language,
         int? documentTypeId, string status = "bozza",
         int? folderId = null, int? areaId = null, DateTime? catalogationDate = null,
-        int? protocolNumber = null)
+        int? protocolNumber = null, int? pageCount = null)
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             INSERT INTO materials
                 (title, author_name, owner_id, language, document_type_id,
-                 status, folder_id, area_id, catalogation_date, protocol_number)
+                 status, folder_id, area_id, catalogation_date, protocol_number, page_count)
             VALUES
                 (@title, @authorName, @ownerId, @lang, @typeId,
-                 @status, @folderId, @areaId, @catDate, @proto)", conn);
+                 @status, @folderId, @areaId, @catDate, @proto, @pageCount)", conn);
         cmd.Parameters.AddWithValue("@title", title.Trim());
         cmd.Parameters.AddWithValue("@authorName", (object?)authorName?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@ownerId", (object?)ownerId ?? DBNull.Value);
@@ -208,6 +208,7 @@ public class MaterialRepository
         cmd.Parameters.AddWithValue("@areaId", (object?)areaId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@catDate", (object?)catalogationDate ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@proto", (object?)protocolNumber ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@pageCount", (object?)pageCount ?? DBNull.Value);
         await cmd.ExecuteNonQueryAsync();
         return await DbHelper.GetLastInsertIdAsync(conn);
     }
@@ -216,7 +217,7 @@ public class MaterialRepository
         int id, string title, string? authorName, int? ownerId, string language,
         int? documentTypeId, string status,
         int? folderId = null, int? areaId = null, DateTime? catalogationDate = null,
-        int? protocolNumber = null)
+        int? protocolNumber = null, int? pageCount = null)
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
@@ -235,6 +236,10 @@ public class MaterialRepository
                 protocol_number  = CASE
                     WHEN @proto IS NOT NULL THEN @proto
                     ELSE protocol_number
+                END,
+                page_count       = CASE
+                    WHEN @pageCount IS NOT NULL THEN @pageCount
+                    ELSE page_count
                 END
             WHERE id = @id", conn);
         cmd.Parameters.AddWithValue("@title", title.Trim());
@@ -247,6 +252,7 @@ public class MaterialRepository
         cmd.Parameters.AddWithValue("@areaId", (object?)areaId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@catDate", (object?)catalogationDate ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@proto", (object?)protocolNumber ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@pageCount", (object?)pageCount ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@id", id);
         await cmd.ExecuteNonQueryAsync();
     }
@@ -375,7 +381,7 @@ public class MaterialRepository
         using var cmd = new MySqlCommand(@"
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
                    m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
-                   m.area_id, m.catalogation_date,
+                   m.area_id, m.catalogation_date, m.page_count,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
@@ -430,7 +436,7 @@ public class MaterialRepository
         using var cmd = new MySqlCommand(@"
             SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
                    m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
-                   m.area_id, m.catalogation_date,
+                   m.area_id, m.catalogation_date, m.page_count,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
@@ -492,6 +498,7 @@ public class MaterialRepository
             AreaId = r.IsDBNull(r.GetOrdinal("area_id")) ? null : r.GetInt32("area_id"),
             AreaName = r.IsDBNull(r.GetOrdinal("area_name")) ? "" : r.GetString("area_name"),
             CatalogationDate = r.IsDBNull(r.GetOrdinal("catalogation_date")) ? null : r.GetDateTime("catalogation_date"),
+            PageCount = r.IsDBNull(r.GetOrdinal("page_count")) ? null : r.GetInt32("page_count"),
             CurrentVersion = r.GetInt32("current_version")
         };
         if (!r.IsDBNull(r.GetOrdinal("ver_id")))

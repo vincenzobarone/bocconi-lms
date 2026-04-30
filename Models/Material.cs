@@ -34,6 +34,7 @@ public class Material
     public int? AreaId { get; set; }
     public string AreaName { get; set; } = string.Empty;
     public DateTime? CatalogationDate { get; set; }
+    public int? PageCount { get; set; }
 
     public int CurrentVersion { get; set; }
     public MaterialVersion? ActiveVersion { get; set; }

@@ -347,6 +347,8 @@ public class MaterialFormViewModel
 
     public DateTime? CatalogationDate { get; set; }
 
+    public int? PageCount { get; set; }
+
     // ── Verified fields (set via modal) ──────────────────────────────────
     public int? FolderId { get; set; }
     [MaxLength(255)]

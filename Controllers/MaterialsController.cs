@@ -209,11 +209,38 @@ public class MaterialsController : Controller
                 using var ms = new MemoryStream();
                 await file.CopyToAsync(ms);
                 var bytes = ms.ToArray();
-                var text = System.Text.Encoding.Latin1.GetString(bytes, 0, Math.Min(bytes.Length, 8192));
-                var m = System.Text.RegularExpressions.Regex.Match(text, @"/Author\s*\(([^)]+)\)");
+                var text = System.Text.Encoding.Latin1.GetString(bytes, 0, Math.Min(bytes.Length, 65536));
+                // PDF 1.x info dict: /Author (John Doe)
+                var m = System.Text.RegularExpressions.Regex.Match(text, @"/Author\s*\(([^)\\]*(?:\\.[^)\\]*)*)\)");
                 if (m.Success && !string.IsNullOrWhiteSpace(m.Groups[1].Value))
                     return m.Groups[1].Value.Trim();
+                // XMP metadata: <dc:creator><rdf:Bag><rdf:li>author</rdf:li>
+                var mXmp = System.Text.RegularExpressions.Regex.Match(text, @"<dc:creator[\s\S]*?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>");
+                if (mXmp.Success && !string.IsNullOrWhiteSpace(mXmp.Groups[1].Value))
+                    return mXmp.Groups[1].Value.Trim();
             }
+        }
+        catch { }
+        return null;
+    }
+
+    private static async Task<int?> TryExtractPageCountFromPdfAsync(IFormFile file)
+    {
+        try
+        {
+            using var ms = new MemoryStream();
+            await file.CopyToAsync(ms);
+            var bytes = ms.ToArray();
+            var text = System.Text.Encoding.Latin1.GetString(bytes, 0, Math.Min(bytes.Length, 65536));
+            // Look for /Type /Pages ... /Count N (pages tree root)
+            var mPages = System.Text.RegularExpressions.Regex.Match(text,
+                @"/Type\s*/Pages[\s\S]{0,200}?/Count\s+(\d+)");
+            if (mPages.Success) return int.Parse(mPages.Groups[1].Value);
+            // Fallback: find all /Count values, take the largest (root pages node)
+            var allCounts = System.Text.RegularExpressions.Regex.Matches(text, @"/Count\s+(\d+)");
+            if (allCounts.Count > 0)
+                return allCounts.Cast<System.Text.RegularExpressions.Match>()
+                                .Max(c => int.Parse(c.Groups[1].Value));
         }
         catch { }
         return null;
@@ -471,6 +498,13 @@ public class MaterialsController : Controller
                 ModelState.Remove(nameof(vm.AuthorName));
         }
 
+        // Try to extract page count server-side from PDF when JS didn't provide it
+        if (!vm.PageCount.HasValue && vm.File != null &&
+            Path.GetExtension(vm.File.FileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            vm.PageCount = await TryExtractPageCountFromPdfAsync(vm.File);
+        }
+
         if (string.IsNullOrWhiteSpace(vm.AuthorName))
             ModelState.AddModelError(nameof(vm.AuthorName), _t.T("mat.author_required", "L'autore è obbligatorio."));
 
@@ -512,7 +546,7 @@ public class MaterialsController : Controller
             assignedProtocol = await _materials.GetNextProtocolNumberAsync();
         }
 
-        var matId = await _materials.CreateAsync(vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, assignedProtocol);
+        var matId = await _materials.CreateAsync(vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, assignedProtocol, vm.PageCount);
 
         if (vm.File != null && vm.File.Length > 0)
         {
@@ -576,6 +610,13 @@ public class MaterialsController : Controller
                 ModelState.Remove(nameof(vm.AuthorName));
         }
 
+        // Try to extract page count from new PDF file if JS didn't provide it
+        if (!vm.PageCount.HasValue && vm.File != null &&
+            Path.GetExtension(vm.File.FileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            vm.PageCount = await TryExtractPageCountFromPdfAsync(vm.File);
+        }
+
         if (string.IsNullOrWhiteSpace(vm.AuthorName))
             ModelState.AddModelError(nameof(vm.AuthorName), _t.T("mat.author_required", "L'autore è obbligatorio."));
 
@@ -624,7 +665,7 @@ public class MaterialsController : Controller
                 assignedProtocol = await _materials.GetNextProtocolNumberAsync();
         }
 
-        await _materials.UpdateAsync(id, vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, assignedProtocol);
+        await _materials.UpdateAsync(id, vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, assignedProtocol, vm.PageCount);
 
         if (vm.File != null && vm.File.Length > 0)
         {
