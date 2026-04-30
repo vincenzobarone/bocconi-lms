@@ -1884,19 +1884,39 @@ try
 }
 catch { }
 
-// ── Migrate: add can_teach / can_attend to roles; seed Teacher & Student ───
+// ── Migrate: add can_teach / can_attend to roles ──────────────────────────
 try
 {
     var dbHelper = app.Services.GetRequiredService<DbHelper>();
     using var conn = dbHelper.GetConnection();
     await conn.OpenAsync();
 
-    using var addCols = new MySqlConnector.MySqlCommand(@"
-        ALTER TABLE roles
-            ADD COLUMN IF NOT EXISTS can_teach  TINYINT(1) NOT NULL DEFAULT 0,
-            ADD COLUMN IF NOT EXISTS can_attend TINYINT(1) NOT NULL DEFAULT 0;", conn);
-    await addCols.ExecuteNonQueryAsync();
+    using var chkTeach = new MySqlConnector.MySqlCommand(
+        "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='roles' AND COLUMN_NAME='can_teach'", conn);
+    if (Convert.ToInt32(await chkTeach.ExecuteScalarAsync()) == 0)
+    {
+        using var addTeach = new MySqlConnector.MySqlCommand(
+            "ALTER TABLE roles ADD COLUMN can_teach TINYINT(1) NOT NULL DEFAULT 0;", conn);
+        await addTeach.ExecuteNonQueryAsync();
+    }
 
+    using var chkAttend = new MySqlConnector.MySqlCommand(
+        "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='roles' AND COLUMN_NAME='can_attend'", conn);
+    if (Convert.ToInt32(await chkAttend.ExecuteScalarAsync()) == 0)
+    {
+        using var addAttend = new MySqlConnector.MySqlCommand(
+            "ALTER TABLE roles ADD COLUMN can_attend TINYINT(1) NOT NULL DEFAULT 0;", conn);
+        await addAttend.ExecuteNonQueryAsync();
+    }
+}
+catch { }
+
+// ── Seed default Teacher / Student roles with capability flags ─────────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
     using var seedRoles = new MySqlConnector.MySqlCommand(@"
         INSERT INTO roles (name, normalized_name, can_teach, can_attend)
         VALUES ('Teacher', 'TEACHER', 1, 0),
