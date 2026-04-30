@@ -264,9 +264,13 @@
                     <div id="folderList"
                          class="overflow-auto border rounded bg-white"
                          style="max-height:180px; min-height:38px"></div>
-                    <input type="text" id="newFolderInput" class="form-control form-control-sm mt-1 d-none"
-                           placeholder="@T["mat.folder_new_placeholder","es. IT – DOCUMENTI VARI"]"
-                           maxlength="120" autocomplete="off" />
+                    <div id="newFolderInputGroup" class="input-group input-group-sm mt-1 d-none">
+                        <span class="input-group-text fw-bold text-secondary" id="folderPrefixBadge" style="min-width:3rem;justify-content:center">IT</span>
+                        <span class="input-group-text border-start-0 px-1 text-muted">–</span>
+                        <input type="text" id="newFolderInput" class="form-control"
+                               placeholder="@T["mat.folder_new_placeholder","DOCUMENTI VARI"]"
+                               maxlength="120" autocomplete="off" />
+                    </div>
                     <div id="folderError" class="text-danger small d-none mt-1">
                         @T["mat.folder_required","Seleziona una cartella o inserisci il nome della nuova."]
                     </div>
@@ -340,7 +344,7 @@
                     _selectedFolderId   = f.Id;
                     _selectedFolderName = f.Name;
                     _selectedIsNew      = false;
-                    document.getElementById('newFolderInput').classList.add('d-none');
+                    document.getElementById('newFolderInputGroup').classList.add('d-none');
                     document.getElementById('newFolderInput').value = '';
                     document.getElementById('folderError').classList.add('d-none');
                     folderListBuild(document.getElementById('folderSearch').value);
@@ -356,7 +360,7 @@
                 _selectedFolderId   = null;
                 _selectedFolderName = null;
                 _selectedIsNew      = true;
-                document.getElementById('newFolderInput').classList.remove('d-none');
+                document.getElementById('newFolderInputGroup').classList.remove('d-none');
                 document.getElementById('newFolderInput').focus();
                 document.getElementById('folderError').classList.add('d-none');
                 folderListBuild(document.getElementById('folderSearch').value);
@@ -389,9 +393,10 @@
             _selectedFolderName = null;
             _selectedIsNew      = false;
             document.getElementById('folderSearch').value = '';
-            document.getElementById('newFolderInput').classList.add('d-none');
+            document.getElementById('newFolderInputGroup').classList.add('d-none');
             document.getElementById('newFolderInput').value = '';
             document.getElementById('folderError').classList.add('d-none');
+            document.getElementById('folderPrefixBadge').textContent = langPrefix();
             folderListBuild('');
             verifiedModal.show();
             setTimeout(function() { document.getElementById('folderSearch').focus(); }, 300);
@@ -419,8 +424,9 @@
                     document.getElementById('newFolderInput').focus();
                     return;
                 }
+                var prefix = langPrefix();
                 document.getElementById('hidFolderId').value = '';
-                document.getElementById('hidFolderName').value = newName;
+                document.getElementById('hidFolderName').value = prefix + ' \u2013 ' + newName;
             } else {
                 errEl.classList.remove('d-none');
                 return;

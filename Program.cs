@@ -1679,34 +1679,58 @@ try
 }
 catch { }
 
-// ── Force-update Italian modal translations (fix INSERT IGNORE stale values) ─
+// ── Force-update modal translations for IT + EN (fix INSERT IGNORE stale values) ─
 try
 {
     var dbHelper = app.Services.GetRequiredService<DbHelper>();
     using var conn = dbHelper.GetConnection();
     await conn.OpenAsync();
-    var itFixes = new Dictionary<string, string>
+
+    var langFixes = new Dictionary<string, Dictionary<string, string>>
     {
-        ["mat.protocol_number"]    = "Numero di protocollo",
-        ["mat.protocol_auto"]      = "Assegnato automaticamente — sola lettura",
-        ["mat.verified_modal_title"]= "Verifica completata",
-        ["mat.verified_modal_hint"] = "Completa i dati di registrazione prima di salvare come Verificato.",
-        ["mat.label_folder"]        = "Cartella",
-        ["mat.folder_hint"]         = "Raggruppamento logico del documento. Inizia con il prefisso della lingua (es. IT, EN).",
-        ["mat.folder_required"]     = "Seleziona una cartella o inserisci il nome della nuova.",
-        ["mat.folder_filter"]       = "Filtra cartelle…",
-        ["mat.folder_new"]          = "+ Nuova cartella",
-        ["mat.folder_new_placeholder"] = "es. IT – DOCUMENTI VARI",
-        ["mat.modal_confirm"]       = "Conferma e salva",
-        ["common.cancel"]           = "Annulla",
+        ["it"] = new()
+        {
+            ["mat.protocol_number"]       = "Numero di protocollo",
+            ["mat.protocol_auto"]         = "Assegnato automaticamente — sola lettura",
+            ["mat.verified_modal_title"]  = "Verifica completata",
+            ["mat.verified_modal_hint"]   = "Completa i dati di registrazione prima di salvare come Verificato.",
+            ["mat.label_folder"]          = "Cartella",
+            ["mat.folder_hint"]           = "Raggruppamento logico del documento. Il prefisso lingua (IT, EN…) viene aggiunto automaticamente.",
+            ["mat.folder_required"]       = "Seleziona una cartella o inserisci il nome della nuova.",
+            ["mat.folder_filter"]         = "Filtra cartelle…",
+            ["mat.folder_new"]            = "+ Nuova cartella",
+            ["mat.folder_new_placeholder"]= "es. DOCUMENTI VARI",
+            ["mat.modal_confirm"]         = "Conferma e salva",
+            ["common.cancel"]             = "Annulla",
+        },
+        ["en"] = new()
+        {
+            ["mat.protocol_number"]       = "Protocol number",
+            ["mat.protocol_auto"]         = "Assigned automatically on verification",
+            ["mat.verified_modal_title"]  = "Verification complete",
+            ["mat.verified_modal_hint"]   = "Complete the registration data before saving as Verified.",
+            ["mat.label_folder"]          = "Folder",
+            ["mat.folder_hint"]           = "Logical grouping of the document. The language prefix (IT, EN…) is added automatically.",
+            ["mat.folder_required"]       = "Select a folder or enter the name of the new one.",
+            ["mat.folder_filter"]         = "Filter folders…",
+            ["mat.folder_new"]            = "+ New folder",
+            ["mat.folder_new_placeholder"]= "e.g. MISC DOCUMENTS",
+            ["mat.modal_confirm"]         = "Confirm and save",
+            ["common.cancel"]             = "Cancel",
+        },
     };
-    foreach (var kv in itFixes)
+
+    foreach (var (lang, fixes) in langFixes)
     {
-        using var upd = new MySqlConnector.MySqlCommand(
-            "UPDATE translations SET label_value = @v WHERE language_code = 'it' AND label_key = @k;", conn);
-        upd.Parameters.AddWithValue("@k", kv.Key);
-        upd.Parameters.AddWithValue("@v", kv.Value);
-        await upd.ExecuteNonQueryAsync();
+        foreach (var kv in fixes)
+        {
+            using var upd = new MySqlConnector.MySqlCommand(
+                "UPDATE translations SET label_value = @v WHERE language_code = @lang AND label_key = @k;", conn);
+            upd.Parameters.AddWithValue("@lang", lang);
+            upd.Parameters.AddWithValue("@k", kv.Key);
+            upd.Parameters.AddWithValue("@v", kv.Value);
+            await upd.ExecuteNonQueryAsync();
+        }
     }
 }
 catch { }
