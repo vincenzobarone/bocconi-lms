@@ -1112,7 +1112,14 @@ public class AdminController : Controller
         {
             var (sql, tempPassword) = await _scriptGenerator.GenerateAsync(includeTranslations);
 
-            // Store the temp password so the view can display it once.
+            // Design note: we intentionally use the PRG (Post-Redirect-Get) pattern rather
+            // than returning FileContentResult directly from the POST.  The reason is that we
+            // need to surface the one-time temp password in TempData — which is only consumed
+            // on the subsequent GET request.  Returning File() from POST would keep the browser
+            // on the same page with no mechanism to render the password banner.
+            // The trade-off (session state + auto-triggered JS download) is explicitly accepted.
+            // SQL scripts are typically ≤ 500 KB so session memory pressure is negligible;
+            // the payload is cleared immediately after download or on next visit.
             TempData["TmpAdminPassword"] = tempPassword;
             TempData["TmpAdminEmail"] = "admin@bocconi.it";
 
@@ -1125,9 +1132,6 @@ public class AdminController : Controller
             var fileName = $"didasco_production_{DateTime.UtcNow:yyyyMMdd}.sql";
             var bytes = System.Text.Encoding.UTF8.GetBytes(sql);
 
-            // We need the password banner to appear on the Migrations page.
-            // Store the file bytes in TempData so the redirect can serve them,
-            // but TempData has a size limit — instead, store in Session and redirect.
             HttpContext.Session.Set("ProdScript", bytes);
             HttpContext.Session.SetString("ProdScriptFileName", fileName);
 

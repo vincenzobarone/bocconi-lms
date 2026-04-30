@@ -344,7 +344,10 @@ public class ProductionScriptGenerator
 
     private static string GenerateTempPassword()
     {
-        var raw = Guid.NewGuid().ToString("N");
-        return "Tmp" + raw[..8] + "!";
+        // 20-char password: 3 prefix + 16 random hex + 1 special char.
+        // Satisfies typical password complexity policies while remaining
+        // easy to copy-paste from the one-time UI banner.
+        var raw = Guid.NewGuid().ToString("N"); // 32 hex chars
+        return "Tmp" + raw[..16] + "!";
     }
 }
