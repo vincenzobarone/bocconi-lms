@@ -330,7 +330,7 @@ try
             ('en','mat.label_doctype','Document type'),
             ('en','mat.select_type','— Select a type —'),
             ('en','mat.label_language','Language'),
-            ('en','mat.label_owner','Author / Owner'),
+            ('en','mat.label_owner','Owner'),
             ('en','mat.no_owner','— None —'),
             ('en','mat.owner_hint','Who is responsible for the material.'),
             ('en','mat.choose_file','Choose file'),
@@ -387,7 +387,7 @@ try
             ('it','mat.label_doctype','Tipo documento'),
             ('it','mat.select_type','— Seleziona un tipo —'),
             ('it','mat.label_language','Lingua'),
-            ('it','mat.label_owner','Autore / Responsabile'),
+            ('it','mat.label_owner','Responsabile'),
             ('it','mat.no_owner','— Nessuno —'),
             ('it','mat.owner_hint','Chi è responsabile del materiale.'),
             ('it','mat.choose_file','Scegli file'),
@@ -716,10 +716,10 @@ try
         ('it','mat.author_placeholder','Nome completo dell''autore del contenuto'),
         ('es','mat.author_placeholder','Nombre completo del autor del contenido'),
         ('de','mat.author_placeholder','Vollständiger Name des Inhaltsautors'),
-        ('en','mat.label_owner','Responsible (system)'),
-        ('it','mat.label_owner','Responsabile (sistema)'),
-        ('es','mat.label_owner','Responsable (sistema)'),
-        ('de','mat.label_owner','Verantwortlicher (System)'),
+        ('en','mat.label_owner','Owner'),
+        ('it','mat.label_owner','Responsabile'),
+        ('es','mat.label_owner','Responsable'),
+        ('de','mat.label_owner','Verantwortlicher'),
         ('en','mat.owner_hint','Person responsible for managing this material in the system.'),
         ('it','mat.owner_hint','Persona responsabile della gestione di questo materiale nel sistema.'),
         ('es','mat.owner_hint','Persona responsable de gestionar este material en el sistema.'),
@@ -2224,6 +2224,25 @@ try
         ('de','perm.materials_publish','Materialien veröffentlichen')
         ON DUPLICATE KEY UPDATE label_value = label_value;", conn);
     await ins.ExecuteNonQueryAsync();
+}
+catch { }
+
+// ── Fix mat.label_owner: rinominato da "Author / Owner" a "Owner" ──────────
+try
+{
+    var dbHelper = app.Services.GetRequiredService<DbHelper>();
+    using var conn = dbHelper.GetConnection();
+    await conn.OpenAsync();
+    using var upd = new MySqlConnector.MySqlCommand(@"
+        UPDATE translations SET label_value = CASE language_code
+            WHEN 'en' THEN 'Owner'
+            WHEN 'it' THEN 'Responsabile'
+            WHEN 'es' THEN 'Responsable'
+            WHEN 'de' THEN 'Verantwortlicher'
+        END
+        WHERE label_key = 'mat.label_owner'
+          AND label_value IN ('Author / Owner','Autore / Responsabile','Autor / Responsable','Autor / Verantwortlicher');", conn);
+    await upd.ExecuteNonQueryAsync();
 }
 catch { }
 
