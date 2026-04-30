@@ -37,7 +37,7 @@ public class ProductionScriptGenerator
         "quiz_options", "enrollments", "lesson_progress", "quiz_attempts",
         "password_reset_tokens", "user_areas", "translations", "materials",
         "material_versions", "lesson_materials", "role_permissions",
-        "schema_migrations", "app_settings",
+        "app_settings",
     ];
 
     public ProductionScriptGenerator(
@@ -71,7 +71,7 @@ public class ProductionScriptGenerator
         // Fail fast: every application table (excluding operational tables with fixed DDL)
         // must be present in the source DB.  A missing table means migrations have not been
         // fully applied and the generated script would be incomplete.
-        var operationalTables = new HashSet<string>(["schema_migrations", "app_settings"],
+        var operationalTables = new HashSet<string>(["app_settings"],
             StringComparer.OrdinalIgnoreCase);
         var missingTables = AppTables
             .Where(t => !operationalTables.Contains(t) && !createSql.ContainsKey(t))
@@ -139,7 +139,7 @@ public class ProductionScriptGenerator
 
     /// <summary>
     /// Returns SHOW CREATE TABLE text for tables that actually exist in the DB,
-    /// keyed by table name.  'schema_migrations' and 'app_settings' are skipped
+    /// keyed by table name.  'app_settings' is skipped
     /// (emitted separately with a fixed DDL).
     /// </summary>
     private static async Task<Dictionary<string, string>> GetCreateStatementsAsync(
@@ -149,7 +149,7 @@ public class ProductionScriptGenerator
 
         foreach (var tbl in existingTables)
         {
-            if (tbl is "schema_migrations" or "app_settings") continue;
+            if (tbl is "app_settings") continue;
 
             using var cmd = new MySqlCommand($"SHOW CREATE TABLE `{tbl}`", conn);
             using var reader = await cmd.ExecuteReaderAsync();
@@ -259,7 +259,7 @@ public class ProductionScriptGenerator
 
         foreach (var tbl in AppTables)
         {
-            if (tbl is "schema_migrations" or "app_settings") continue;
+            if (tbl is "app_settings") continue;
             if (!createSql.TryGetValue(tbl, out var stmt)) continue;
 
             sb.AppendLine($"-- Tabella: {tbl}");
@@ -273,15 +273,6 @@ public class ProductionScriptGenerator
         sb.AppendLine("-- =============================================================================");
         sb.AppendLine("-- TABELLE OPERATIVE (create al boot dall'applicazione)");
         sb.AppendLine("-- =============================================================================");
-        sb.AppendLine();
-
-        sb.AppendLine("-- Tabella: schema_migrations");
-        sb.AppendLine(@"CREATE TABLE IF NOT EXISTS `schema_migrations` (
-    `id`         INT          NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `name`       VARCHAR(255) NOT NULL,
-    `applied_at` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY `uk_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
         sb.AppendLine();
 
         sb.AppendLine("-- Tabella: app_settings");

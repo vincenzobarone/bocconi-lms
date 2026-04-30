@@ -40,7 +40,6 @@ builder.Services.AddScoped<AreaRepository>();
 builder.Services.AddScoped<PlatformRepository>();
 builder.Services.AddScoped<RolePermissionRepository>();
 builder.Services.AddScoped<FeatureFlagService>();
-builder.Services.AddScoped<MigrationRunner>();
 builder.Services.AddScoped<ProductionScriptGenerator>();
 
 builder.Services.AddScoped<IUserStore<ApplicationUser>, CustomUserStore>();

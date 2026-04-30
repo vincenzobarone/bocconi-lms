@@ -24,7 +24,6 @@ public class AdminController : Controller
     private readonly AreaRepository _areas;
     private readonly PlatformRepository _platforms;
     private readonly RolePermissionRepository _rolePerms;
-    private readonly MigrationRunner _migrationRunner;
     private readonly ProductionScriptGenerator _scriptGenerator;
     private readonly IAuditLogger _audit;
 
@@ -43,7 +42,6 @@ public class AdminController : Controller
         AreaRepository areas,
         PlatformRepository platforms,
         RolePermissionRepository rolePerms,
-        MigrationRunner migrationRunner,
         ProductionScriptGenerator scriptGenerator,
         IAuditLogger audit)
     {
@@ -61,7 +59,6 @@ public class AdminController : Controller
         _areas = areas;
         _platforms = platforms;
         _rolePerms = rolePerms;
-        _migrationRunner = migrationRunner;
         _scriptGenerator = scriptGenerator;
         _audit = audit;
     }
@@ -1074,7 +1071,7 @@ public class AdminController : Controller
     {
         if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         ViewData["HasPendingScript"] = HttpContext.Session.Get("ProdScript") != null;
-        return View("Migrations", new MigrationStatus());
+        return View("Migrations");
     }
 
     [HttpPost]
