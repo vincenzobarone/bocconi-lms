@@ -182,7 +182,9 @@
                     {
                         <div class="row mb-3 g-2">
                             <div class="col-md-6">
-                                <label asp-for="AreaId" class="form-label fw-semibold">@T["mat.label_area","Area"]</label>
+                                <label asp-for="AreaId" class="form-label fw-semibold">
+                                    @T["mat.label_area","Area"] <span class="text-danger">*</span>
+                                </label>
                                 <select asp-for="AreaId" class="form-select" data-lockable>
                                     <option value="">@T["mat.select_area","— Nessuna area —"]</option>
                                     @foreach (var ar in availableAreas)
@@ -190,12 +192,16 @@
                                         <option value="@ar.Id">@ar.Name</option>
                                     }
                                 </select>
+                                <span asp-validation-for="AreaId" class="text-danger small"></span>
                             </div>
                             <div class="col-md-6">
-                                <label asp-for="CatalogationDate" class="form-label fw-semibold">@T["mat.label_cat_date","Data catalogazione"]</label>
+                                <label asp-for="CatalogationDate" class="form-label fw-semibold">
+                                    @T["mat.label_cat_date","Data catalogazione"] <span class="text-danger">*</span>
+                                </label>
                                 <input asp-for="CatalogationDate" type="date" class="form-control"
                                        value="@(Model.CatalogationDate.HasValue ? Model.CatalogationDate.Value.ToString("yyyy-MM-dd") : "")"
                                        data-lockable />
+                                <span asp-validation-for="CatalogationDate" class="text-danger small"></span>
                             </div>
                         </div>
                     }

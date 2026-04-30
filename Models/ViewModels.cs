@@ -343,8 +343,10 @@ public class MaterialFormViewModel
 
     public bool ConvertToPdf { get; set; }
 
+    [Required(ErrorMessage = "L'area è obbligatoria.")]
     public int? AreaId { get; set; }
 
+    [Required(ErrorMessage = "La data di catalogazione è obbligatoria.")]
     public DateTime? CatalogationDate { get; set; }
 
     public int? PageCount { get; set; }

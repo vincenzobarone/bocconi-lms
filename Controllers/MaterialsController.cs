@@ -477,7 +477,7 @@ public class MaterialsController : Controller
         await PopulateDropdownsAsync();
         ViewBag.CurrentUserFullName = CurrentUserFullName();
         ViewBag.CanSetStatus = await CanSetStatusAsync("create");
-        var vm = new MaterialFormViewModel { Language = "Italiano" };
+        var vm = new MaterialFormViewModel { Language = "Italiano", CatalogationDate = DateTime.Today };
         return View(vm);
     }
 
@@ -589,7 +589,7 @@ public class MaterialsController : Controller
             FolderId         = material.FolderId,
             FolderName       = material.FolderName,
             AreaId           = material.AreaId,
-            CatalogationDate = material.CatalogationDate
+            CatalogationDate = material.CatalogationDate ?? DateTime.Today
         };
         ViewBag.Material = material;
         ViewBag.CanSetStatus = await CanSetStatusAsync("edit");
