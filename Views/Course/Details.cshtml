@@ -4,12 +4,12 @@
     var lessons = ViewBag.Lessons as List<Lesson> ?? new List<Lesson>();
     var isEnrolled = (bool)(ViewBag.IsEnrolled ?? false);
     var isOwner = (bool)(ViewBag.IsOwner ?? false);
-    var deleteMsg = T["course.confirm_delete","Delete this course? This action cannot be undone."];
+    var deleteMsg = T["course.confirm_delete"];
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Index">@T["nav.courses","Courses"]</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Index">@T["nav.courses"]</a></li>
         <li class="breadcrumb-item active">@Model.Title</li>
     </ol>
 </nav>
@@ -23,23 +23,23 @@
                 <p class="text-muted"><i class="bi bi-person me-1"></i>@Model.TeacherName</p>
                 @if (!string.IsNullOrEmpty(Model.CreatedByName))
                 {
-                    <p class="text-muted small"><i class="bi bi-person-plus me-1"></i>@T["course.created_by","Creato da"] @Model.CreatedByName</p>
+                    <p class="text-muted small"><i class="bi bi-person-plus me-1"></i>@T["course.created_by"] @Model.CreatedByName</p>
                 }
             </div>
             @if (isOwner)
             {
                 <div class="d-flex gap-2">
                     <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-pencil me-1"></i>@T["common.edit","Edit"]
+                        <i class="bi bi-pencil me-1"></i>@T["common.edit"]
                     </a>
                     <a asp-controller="Lesson" asp-action="Create" asp-route-courseId="@Model.Id"
-                       class="btn btn-sm btn-bocconi"><i class="bi bi-plus-lg me-1"></i>@T["common.lesson","Lesson"]</a>
+                       class="btn btn-sm btn-bocconi"><i class="bi bi-plus-lg me-1"></i>@T["common.lesson"]</a>
                 </div>
             }
         </div>
         <p class="lead mb-4">@Model.Description</p>
 
-        <h4 class="fw-semibold mb-3">@T["course.lessons","Lessons"] (@lessons.Count)</h4>
+        <h4 class="fw-semibold mb-3">@T["course.lessons"] (@lessons.Count)</h4>
         @if (lessons.Any())
         {
             <div class="list-group mb-4">
@@ -60,7 +60,7 @@
                                    class="fw-semibold text-decoration-none">@l.Title</a>
                                 @if (!l.IsPublished)
                                 {
-                                    <span class="badge bg-secondary ms-2">@T["common.draft","Draft"]</span>
+                                    <span class="badge bg-secondary ms-2">@T["common.draft"]</span>
                                 }
                             </div>
                         </div>
@@ -68,7 +68,7 @@
                         {
                             <a asp-controller="Lesson" asp-action="Edit" asp-route-id="@l.Id"
                                class="btn btn-sm btn-outline-secondary"
-                               aria-label="@T["lesson.edit_aria","Modifica lezione"]"><i class="bi bi-pencil"></i></a>
+                               aria-label="@T["lesson.edit_aria"]"><i class="bi bi-pencil"></i></a>
                         }
                     </div>
                 }
@@ -76,7 +76,7 @@
         }
         else
         {
-            <p class="text-muted">@T["course.no_lessons","No lessons available yet."]</p>
+            <p class="text-muted">@T["course.no_lessons"]</p>
         }
     </div>
 
@@ -84,26 +84,26 @@
         <div class="card sticky-top" style="top:80px;">
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-3">
-                    <span class="text-muted"><i class="bi bi-people me-1"></i>@Model.EnrolledCount @T["course.enrolled_count","enrolled"]</span>
-                    <span class="text-muted"><i class="bi bi-book me-1"></i>@Model.LessonCount @T["course.lessons_count","lessons"]</span>
+                    <span class="text-muted"><i class="bi bi-people me-1"></i>@Model.EnrolledCount @T["course.enrolled_count"]</span>
+                    <span class="text-muted"><i class="bi bi-book me-1"></i>@Model.LessonCount @T["course.lessons_count"]</span>
                 </div>
                 @if (Model.StartDate.HasValue)
                 {
                     <div class="mb-2 small text-muted">
                         <i class="bi bi-calendar me-1"></i>
-                        @Model.StartDate.Value.ToString("dd/MM/yyyy") — @(Model.EndDate?.ToString("dd/MM/yyyy") ?? T["common.open","open"])
+                        @Model.StartDate.Value.ToString("dd/MM/yyyy") — @(Model.EndDate?.ToString("dd/MM/yyyy") ?? T["common.open"])
                     </div>
                 }
                 @if (User.Identity!.IsAuthenticated && !isOwner)
                 {
                     if (isEnrolled)
                     {
-                        <div class="alert alert-success small mb-3"><i class="bi bi-check-circle me-1"></i>@T["course.enrolled_msg","You are enrolled in this course"]</div>
+                        <div class="alert alert-success small mb-3"><i class="bi bi-check-circle me-1"></i>@T["course.enrolled_msg"]</div>
                         <form asp-action="Unenroll" asp-route-id="@Model.Id" method="post">
                             @Html.AntiForgeryToken()
                             <button type="submit" class="btn btn-outline-danger w-100"
-                                    data-confirm="@T["course.confirm_unenroll","Unenroll from this course?"]">
-                                @T["course.unenroll","Unenroll"]
+                                    data-confirm="@T["course.confirm_unenroll"]">
+                                @T["course.unenroll"]
                             </button>
                         </form>
                     }
@@ -112,7 +112,7 @@
                         <form asp-action="Enroll" asp-route-id="@Model.Id" method="post">
                             @Html.AntiForgeryToken()
                             <button type="submit" class="btn btn-bocconi w-100 py-2 fw-semibold">
-                                <i class="bi bi-plus-circle me-2"></i>@T["course.enroll","Enroll in course"]
+                                <i class="bi bi-plus-circle me-2"></i>@T["course.enroll"]
                             </button>
                         </form>
                     }
@@ -120,7 +120,7 @@
                 else if (!User.Identity.IsAuthenticated)
                 {
                     <a asp-controller="Account" asp-action="Login" class="btn btn-bocconi w-100">
-                        @T["course.login_to_enroll","Log in to enroll"]
+                        @T["course.login_to_enroll"]
                     </a>
                 }
 
@@ -128,13 +128,13 @@
                 {
                     <hr />
                     <a asp-action="Students" asp-route-id="@Model.Id" class="btn btn-outline-secondary w-100 mb-2">
-                        <i class="bi bi-people me-1"></i>@T["course.view_students","View students"]
+                        <i class="bi bi-people me-1"></i>@T["course.view_students"]
                     </a>
                     <form asp-action="Delete" asp-route-id="@Model.Id" method="post">
                         @Html.AntiForgeryToken()
                         <button type="submit" class="btn btn-outline-danger w-100 btn-sm"
                                 data-confirm="@deleteMsg">
-                            @T["course.delete","Delete course"]
+                            @T["course.delete"]
                         </button>
                     </form>
                 }

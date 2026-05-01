@@ -1,16 +1,16 @@
 @model MaterialsIndexViewModel
 @{
-    ViewData["Title"] = T["mat.page_title","Materials Library"];
+    ViewData["Title"] = T["mat.page_title"];
     var docTypes = Model.DocumentTypes;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold mb-0"><i class="bi bi-collection me-2"></i>@T["mat.page_title","Materials Library"]</h2>
+    <h2 class="fw-bold mb-0"><i class="bi bi-collection me-2"></i>@T["mat.page_title"]</h2>
     <div class="d-flex gap-2">
         @if ((bool)(ViewBag.CanCreate ?? false))
         {
             <a asp-action="Create" class="btn btn-bocconi">
-                <i class="bi bi-plus-lg me-1"></i>@T["mat.new_btn","New material"]
+                <i class="bi bi-plus-lg me-1"></i>@T["mat.new_btn"]
             </a>
         }
     </div>
@@ -19,7 +19,7 @@
 {
     <div class="alert alert-info d-flex align-items-center gap-2 mb-3 py-2">
         <i class="bi bi-info-circle"></i>
-        <span>@T["mat.student_readonly","You can browse and download materials. For changes or uploads, contact your teacher."]</span>
+        <span>@T["mat.student_readonly"]</span>
     </div>
 }
 
@@ -28,14 +28,14 @@
         <form method="get" class="row g-2 align-items-end">
             @* ── Riga 1: filtri originali ──────────────────────────────── *@
             <div class="col-md-4">
-                <label class="form-label small fw-semibold">@T["mat.filter_title","Title"]</label>
+                <label class="form-label small fw-semibold">@T["mat.filter_title"]</label>
                 <input type="text" name="q" value="@Model.SearchTitle" class="form-control form-control-sm"
-                       placeholder="@T["mat.search_placeholder","Search by title…"]" />
+                       placeholder="@T["mat.search_placeholder"]" />
             </div>
             <div class="col-md-3">
-                <label class="form-label small fw-semibold">@T["mat.filter_lang","Language"]</label>
+                <label class="form-label small fw-semibold">@T["mat.filter_lang"]</label>
                 <select name="lang" class="form-select form-select-sm">
-                    <option value="">@T["mat.all_langs","— All —"]</option>
+                    <option value="">@T["mat.all_langs"]</option>
                     @foreach (var l in BocconiLMS.Models.Material.Languages)
                     {
                         <option value="@l" selected="@(Model.FilterLanguage == l ? "selected" : null)">@l</option>
@@ -43,9 +43,9 @@
                 </select>
             </div>
             <div class="col-md-3">
-                <label class="form-label small fw-semibold">@T["mat.filter_type","Document type"]</label>
+                <label class="form-label small fw-semibold">@T["mat.filter_type"]</label>
                 <select name="typeId" class="form-select form-select-sm">
-                    <option value="">@T["mat.all_types","— All —"]</option>
+                    <option value="">@T["mat.all_types"]</option>
                     @foreach (var t in docTypes)
                     {
                         <option value="@t.Id" selected="@(Model.FilterTypeId == t.Id ? "selected" : null)">@t.Name</option>
@@ -54,31 +54,31 @@
             </div>
             <div class="col-md-2 d-flex gap-2">
                 <button type="submit" class="btn btn-bocconi btn-sm flex-grow-1">
-                    <i class="bi bi-search me-1"></i>@T["common.filter","Filter"]
+                    <i class="bi bi-search me-1"></i>@T["common.filter"]
                 </button>
-                <a asp-action="Index" class="btn btn-outline-secondary btn-sm" title="@T["common.reset","Reset"]">
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm" title="@T["common.reset"]">
                     <i class="bi bi-x-lg"></i>
                 </a>
             </div>
 
             @* ── Riga 2: nuovi filtri ───────────────────────────────────── *@
             <div class="col-md-2">
-                <label class="form-label small fw-semibold">@T["mat.filter_cat_year","Anno catalogazione"]</label>
+                <label class="form-label small fw-semibold">@T["mat.filter_cat_year"]</label>
                 <input type="number" name="catYear" value="@Model.FilterCatalogationYear"
                        class="form-control form-control-sm" placeholder="es. 2024" min="2000" max="2099" />
             </div>
             <div class="col-md-2">
-                <label class="form-label small fw-semibold">@T["mat.filter_mod_year","Anno modifica"]</label>
+                <label class="form-label small fw-semibold">@T["mat.filter_mod_year"]</label>
                 <input type="number" name="modYear" value="@Model.FilterModifiedYear"
                        class="form-control form-control-sm" placeholder="es. 2024" min="2000" max="2099" />
             </div>
             <div class="col-md-4">
-                <label class="form-label small fw-semibold">@T["mat.filter_folder_name","Nome cartella"]</label>
+                <label class="form-label small fw-semibold">@T["mat.filter_folder_name"]</label>
                 <input type="text" name="folderName" value="@Model.FilterFolderName"
-                       class="form-control form-control-sm" placeholder="@T["mat.filter_folder_name_ph","Cerca per nome cartella…"]" />
+                       class="form-control form-control-sm" placeholder="@T["mat.filter_folder_name_ph"]" />
             </div>
             <div class="col-md-2">
-                <label class="form-label small fw-semibold">@T["mat.filter_folder_id","ID cartella"]</label>
+                <label class="form-label small fw-semibold">@T["mat.filter_folder_id"]</label>
                 <input type="number" name="folderId" value="@Model.FilterFolderId"
                        class="form-control form-control-sm" placeholder="es. 42" min="1" />
             </div>
@@ -103,18 +103,18 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <span class="text-muted small">
         <i class="bi bi-list-ul me-1"></i>
-        @Model.Materials.Count @T["mat.results_count","risultati trovati"]
+        @Model.Materials.Count @T["mat.results_count"]
     </span>
     <div class="d-flex gap-2">
         <a href="@Url.Action("ExportExcel","Materials")@qs"
            class="btn btn-outline-success btn-sm"
-           title="@T["mat.export_excel_hint","Esporta i risultati in Excel"]">
-            <i class="bi bi-file-earmark-spreadsheet me-1"></i>@T["mat.export_excel","Export Excel"]
+           title="@T["mat.export_excel_hint"]">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>@T["mat.export_excel"]
         </a>
         <a href="@Url.Action("ExportPdf","Materials")@qs"
            class="btn btn-outline-danger btn-sm"
-           title="@T["mat.export_pdf_hint","Esporta i risultati in PDF"]">
-            <i class="bi bi-file-earmark-pdf me-1"></i>@T["mat.export_pdf","Export PDF"]
+           title="@T["mat.export_pdf_hint"]">
+            <i class="bi bi-file-earmark-pdf me-1"></i>@T["mat.export_pdf"]
         </a>
     </div>
 </div>
@@ -125,11 +125,11 @@
         <i class="bi bi-collection display-4 d-block mb-3"></i>
         @if ((bool)(ViewBag.CanCreate ?? false))
         {
-            <p>@T["mat.no_results","No materials found."] <a asp-action="Create">@T["mat.create_first","Create the first material"]</a>.</p>
+            <p>@T["mat.no_results"] <a asp-action="Create">@T["mat.create_first"]</a>.</p>
         }
         else
         {
-            <p>@T["mat.no_results_student","No materials available at the moment."]</p>
+            <p>@T["mat.no_results_student"]</p>
         }
     </div>
 }
@@ -141,13 +141,13 @@ else
         @* ── Barra selezione (nascosta finché non si seleziona almeno un elemento) *@
         <div id="bulkBar" class="d-none mb-3">
             <div class="alert alert-primary d-flex align-items-center justify-content-between py-2 mb-0">
-                <span><i class="bi bi-check2-square me-2"></i><strong id="bulkCount">0</strong> @T["mat.selected","selezionati"]</span>
+                <span><i class="bi bi-check2-square me-2"></i><strong id="bulkCount">0</strong> @T["mat.selected"]</span>
                 <div class="d-flex gap-2">
                     <button type="button" id="deselectAll" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-x-lg me-1"></i>@T["mat.deselect_all","Deseleziona tutti"]
+                        <i class="bi bi-x-lg me-1"></i>@T["mat.deselect_all"]
                     </button>
                     <button type="submit" class="btn btn-sm btn-primary">
-                        <i class="bi bi-file-zip me-1"></i>@T["mat.bulk_download","Scarica ZIP"]
+                        <i class="bi bi-file-zip me-1"></i>@T["mat.bulk_download"]
                     </button>
                 </div>
             </div>
@@ -158,15 +158,15 @@ else
                 <thead class="table-light">
                     <tr>
                         <th scope="col" style="width:38px;">
-                            <input type="checkbox" id="selectAll" class="form-check-input" title="Seleziona tutti" />
+                            <input type="checkbox" id="selectAll" class="form-check-input" title="@T["mat.select_all"]" />
                         </th>
-                        <th scope="col">@T["mat.filter_title","Title"]</th>
-                        <th scope="col">@T["mat.col_type","Type"]</th>
-                        <th scope="col">@T["mat.filter_lang","Language"]</th>
-                        <th scope="col">@T["mat.col_author","Author"]</th>
-                        <th scope="col" class="text-center">@T["mat.col_status","Status"]</th>
-                        <th scope="col" class="text-center">@T["mat.col_version","Ver."]</th>
-                        <th scope="col" class="text-end">@T["common.actions","Actions"]</th>
+                        <th scope="col">@T["mat.filter_title"]</th>
+                        <th scope="col">@T["mat.col_type"]</th>
+                        <th scope="col">@T["mat.filter_lang"]</th>
+                        <th scope="col">@T["mat.col_author"]</th>
+                        <th scope="col" class="text-center">@T["mat.col_status"]</th>
+                        <th scope="col" class="text-center">@T["mat.col_version"]</th>
+                        <th scope="col" class="text-end">@T["common.actions"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -195,9 +195,9 @@ else
                             <td class="text-center">
                                 @{
                                     var (statusCss, statusLabel) = m.Status switch {
-                                        "verificato"   => ("success",   T["mat.status_verificato","Verified"]),
-                                        "in_revisione" => ("warning",   T["mat.status_in_revisione","In review"]),
-                                        _              => ("secondary", T["mat.status_bozza","Draft"])
+                                        "verificato"   => ("success",   T["mat.status_verificato"]),
+                                        "in_revisione" => ("warning",   T["mat.status_in_revisione"]),
+                                        _              => ("secondary", T["mat.status_bozza"])
                                     };
                                 }
                                 <span class="badge bg-@statusCss" style="font-size:.7rem;">@statusLabel</span>
@@ -207,7 +207,7 @@ else
                                 {
                                     <a asp-action="Details" asp-route-id="@m.Id"
                                        class="version-badge text-decoration-none"
-                                       title="@T["mat.details_btn","Details / carica nuova versione"]">v@(m.CurrentVersion)</a>
+                                       title="@T["mat.details_btn"]">v@(m.CurrentVersion)</a>
                                 }
                                 else
                                 {
@@ -224,14 +224,14 @@ else
                                                 data-file-type="@m.ActiveVersion.FileType"
                                                 data-file-name="@m.ActiveVersion.FileName"
                                                 data-material-id="@m.Id"
-                                                title="@T["mat.preview_btn","Anteprima"]">
+                                                title="@T["mat.preview_btn"]">
                                             <i class="bi bi-eye"></i>
                                         </button>
                                     }
                                     else
                                     {
                                         <a asp-action="Details" asp-route-id="@m.Id" class="btn btn-sm btn-outline-info"
-                                           title="@T["mat.details_btn","Details"]">
+                                           title="@T["mat.details_btn"]">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                     }
@@ -239,13 +239,13 @@ else
                                     {
                                         <a asp-action="Edit" asp-route-id="@m.Id"
                                            class="btn btn-sm btn-outline-secondary"
-                                           title="@T["common.edit","Edit"]">
+                                           title="@T["common.edit"]">
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         <button type="button" class="btn btn-sm btn-outline-danger"
-                                                data-confirm="@T["common.delete","Delete"] «@m.Title»?"
+                                                data-confirm="@T["common.delete"] «@m.Title»?"
                                                 data-delete-url="@Url.Action("Delete", "Materials", new { id = m.Id })"
-                                                title="@T["common.delete","Delete"]">
+                                                title="@T["common.delete"]">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     }

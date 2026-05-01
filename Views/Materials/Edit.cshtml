@@ -1,6 +1,6 @@
 @model MaterialFormViewModel
 @{
-    ViewData["Title"] = T["mat.edit_title","Edit material"];
+    ViewData["Title"] = T["mat.edit_title"];
     var material = ViewBag.Material as BocconiLMS.Models.Material;
     var docTypes = ViewBag.DocumentTypes as List<BocconiLMS.Models.DocumentType> ?? new();
     var languages = ViewBag.Languages as string[] ?? BocconiLMS.Models.Material.Languages;
@@ -18,12 +18,12 @@
 
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-action="Index">@T["mat.nav","Materials"]</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">@T["mat.nav"]</a></li>
         @if (material != null)
         {
             <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@material.Id">@material.Title</a></li>
         }
-        <li class="breadcrumb-item active">@T["mat.edit_breadcrumb","Edit"]</li>
+        <li class="breadcrumb-item active">@T["mat.edit_breadcrumb"]</li>
     </ol>
 </nav>
 
@@ -31,7 +31,7 @@
     <div class="col-lg-8">
         <div class="card shadow-sm">
             <div class="card-header bg-bocconi text-white">
-                <h5 class="mb-0"><i class="bi bi-pencil me-2"></i>@T["mat.edit_title","Edit material"]</h5>
+                <h5 class="mb-0"><i class="bi bi-pencil me-2"></i>@T["mat.edit_title"]</h5>
             </div>
             <div class="card-body">
                 <form id="matForm" asp-action="Edit" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data"
@@ -47,11 +47,11 @@
                     <div class="row mb-3 g-2 align-items-start">
                         <div class="col-md-4">
                             <label asp-for="AuthorName" class="form-label fw-semibold">
-                                @T["mat.label_author","Autore"] <span class="text-danger">*</span>
+                                @T["mat.label_author"] <span class="text-danger">*</span>
                             </label>
                             <div class="position-relative">
                                 <input asp-for="AuthorName" id="authorInput" class="form-control"
-                                       placeholder="@T["mat.author_placeholder","Nome autore"]"
+                                       placeholder="@T["mat.author_placeholder"]"
                                        autocomplete="off" />
                                 <ul id="authorDropdown"
                                     class="dropdown-menu w-100 shadow-sm py-1"
@@ -61,7 +61,7 @@
                         </div>
                         <div class="col-md-8">
                             <label asp-for="Title" class="form-label fw-semibold">
-                                @T["mat.label_title","Titolo"] <span class="text-danger">*</span>
+                                @T["mat.label_title"] <span class="text-danger">*</span>
                             </label>
                             <input asp-for="Title" id="matTitle" class="form-control" />
                             <span asp-validation-for="Title" class="text-danger small"></span>
@@ -71,10 +71,10 @@
                     <div class="row mb-3 g-2 align-items-start">
                         <div class="col-md-8">
                             <label asp-for="DocumentTypeId" class="form-label fw-semibold">
-                                @T["mat.label_doctype","Document type"] <span class="text-danger">*</span>
+                                @T["mat.label_doctype"] <span class="text-danger">*</span>
                             </label>
                             <select asp-for="DocumentTypeId" class="form-select">
-                                <option value="">@T["mat.select_type","— Select a type —"]</option>
+                                <option value="">@T["mat.select_type"]</option>
                                 @foreach (var t in docTypes)
                                 {
                                     <option value="@t.Id" selected="@(Model.DocumentTypeId == t.Id ? "selected" : null)">@t.Name</option>
@@ -84,7 +84,7 @@
                         </div>
                         <div class="col-md-4">
                             <label asp-for="Language" class="form-label fw-semibold">
-                                @T["mat.label_language","Language"] <span class="text-danger">*</span>
+                                @T["mat.label_language"] <span class="text-danger">*</span>
                             </label>
                             <select asp-for="Language" id="langSelect" class="form-select">
                                 @foreach (var l in languages)
@@ -97,13 +97,13 @@
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Status" class="form-label fw-semibold">@T["mat.label_status","Status"]</label>
+                        <label asp-for="Status" class="form-label fw-semibold">@T["mat.label_status"]</label>
                         @if (canSetStatus)
                         {
                             <select asp-for="Status" id="statusSelect" class="form-select">
-                                <option value="bozza"        selected="@(Model.Status=="bozza"?"selected":null)">@T["mat.status_bozza","Draft"]</option>
-                                <option value="in_revisione" selected="@(Model.Status=="in_revisione"?"selected":null)">@T["mat.status_in_revisione","In review"]</option>
-                                <option value="verificato"   selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato","Verified"]</option>
+                                <option value="bozza"        selected="@(Model.Status=="bozza"?"selected":null)">@T["mat.status_bozza"]</option>
+                                <option value="in_revisione" selected="@(Model.Status=="in_revisione"?"selected":null)">@T["mat.status_in_revisione"]</option>
+                                <option value="verificato"   selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato"]</option>
                             </select>
                         }
                         else
@@ -111,9 +111,9 @@
                             @* Utenti senza flag: preserva lo stato attuale del materiale *@
                             <input type="hidden" id="statusSelect" name="Status" value="@Model.Status" />
                             <input type="text" class="form-control bg-light" readonly
-                                   value="@(Model.Status == "verificato" ? T["mat.status_verificato","Verified"] : Model.Status == "in_revisione" ? T["mat.status_in_revisione","In review"] : T["mat.status_bozza","Draft"])" />
+                                   value="@(Model.Status == "verificato" ? T["mat.status_verificato"] : Model.Status == "in_revisione" ? T["mat.status_in_revisione"] : T["mat.status_bozza"])" />
                             <div class="form-text">
-                                <i class="bi bi-lock me-1"></i>@T["mat.status_locked_edit","Lo stato non è modificabile con il tuo ruolo."]
+                                <i class="bi bi-lock me-1"></i>@T["mat.status_locked_edit"]
                             </div>
                         }
                     </div>
@@ -123,21 +123,21 @@
                     {
                         <div class="card border-success mb-3">
                             <div class="card-header bg-success bg-opacity-10 text-success fw-semibold py-2">
-                                <i class="bi bi-shield-check me-1"></i>@T["mat.verified_fields","Dati verifica"]
+                                <i class="bi bi-shield-check me-1"></i>@T["mat.verified_fields"]
                             </div>
                             <div class="card-body">
                                 <div class="row g-3">
                                     @if (hasProtocol)
                                     {
                                         <div class="col-md-6">
-                                            <label class="form-label fw-semibold">@T["mat.protocol_number","Numero di protocollo"]</label>
+                                            <label class="form-label fw-semibold">@T["mat.protocol_number"]</label>
                                             <input type="text" class="form-control" readonly value="@material!.ProtocolNumber" />
                                         </div>
                                     }
                                     @if (hasFolder)
                                     {
                                         <div class="col-md-6">
-                                            <label class="form-label fw-semibold">@T["mat.label_folder","Cartella"]</label>
+                                            <label class="form-label fw-semibold">@T["mat.label_folder"]</label>
                                             <input type="text" class="form-control" readonly value="@material!.FolderName" />
                                         </div>
                                     }
@@ -151,10 +151,10 @@
                         <div class="row mb-3 g-2">
                             <div class="col-md-6">
                                 <label asp-for="AreaId" class="form-label fw-semibold">
-                                    @T["mat.label_area","Area"] <span class="text-danger">*</span>
+                                    @T["mat.label_area"] <span class="text-danger">*</span>
                                 </label>
                                 <select asp-for="AreaId" class="form-select">
-                                    <option value="">@T["mat.select_area","— Nessuna area —"]</option>
+                                    <option value="">@T["mat.select_area"]</option>
                                     @foreach (var ar in availableAreas)
                                     {
                                         <option value="@ar.Id" selected="@(Model.AreaId == ar.Id ? "selected" : null)">@ar.Name</option>
@@ -164,7 +164,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label asp-for="CatalogationDate" class="form-label fw-semibold">
-                                    @T["mat.label_cat_date","Data catalogazione"] <span class="text-danger">*</span>
+                                    @T["mat.label_cat_date"] <span class="text-danger">*</span>
                                 </label>
                                 <input asp-for="CatalogationDate" type="date" class="form-control"
                                        value="@(Model.CatalogationDate.HasValue ? Model.CatalogationDate.Value.ToString("yyyy-MM-dd") : "")" />
@@ -180,14 +180,14 @@
                     {
                         <div class="border border-primary rounded p-3 mb-3 bg-primary bg-opacity-10" id="publishSection">
                             <h6 class="fw-semibold text-primary mb-3">
-                                <i class="bi bi-send me-1"></i>@T["mat.publish_section","Publication"]
+                                <i class="bi bi-send me-1"></i>@T["mat.publish_section"]
                             </h6>
                             <div class="mb-3">
                                 <div class="form-check">
                                     <input asp-for="IsPublishable" class="form-check-input" id="isPublishableCheck"
                                            onchange="togglePublishFields()" />
                                     <label class="form-check-label fw-semibold" for="isPublishableCheck">
-                                        @T["mat.label_publishable","Pubblicabile"]
+                                        @T["mat.label_publishable"]
                                     </label>
                                 </div>
                             </div>
@@ -195,17 +195,17 @@
                                 <div class="row g-2 mb-2">
                                     <div class="col-md-6">
                                         <label asp-for="ExternalProtocolCode" class="form-label fw-semibold">
-                                            @T["mat.label_ext_protocol","Codice protocollo esterno"]
+                                            @T["mat.label_ext_protocol"]
                                         </label>
                                         <input asp-for="ExternalProtocolCode" class="form-control" id="extProtocolInput"
                                                oninput="updatePublishedState()" />
                                     </div>
                                     <div class="col-md-6">
                                         <label asp-for="PlatformId" class="form-label fw-semibold">
-                                            @T["mat.label_platform","Piattaforma"]
+                                            @T["mat.label_platform"]
                                         </label>
                                         <select asp-for="PlatformId" class="form-select">
-                                            <option value="">@T["mat.select_platform","— Seleziona piattaforma —"]</option>
+                                            <option value="">@T["mat.select_platform"]</option>
                                             @foreach (var pl in platforms)
                                             {
                                                 <option value="@pl.Id" selected="@(Model.PlatformId == pl.Id ? "selected" : null)">@pl.Name</option>
@@ -215,21 +215,21 @@
                                 </div>
                                 <div class="row g-2 mb-2">
                                     <div class="col-md-6">
-                                        <label class="form-label fw-semibold">@T["mat.label_published","Pubblicato"]</label>
+                                        <label class="form-label fw-semibold">@T["mat.label_published"]</label>
                                         <div class="form-control bg-light" id="publishedDisplay">
                                             @if (!string.IsNullOrEmpty(Model.ExternalProtocolCode))
                                             {
-                                                <span class="badge bg-success"><i class="bi bi-check2 me-1"></i>@T["mat.badge_published","Pubblicato"]</span>
+                                                <span class="badge bg-success"><i class="bi bi-check2 me-1"></i>@T["mat.badge_published"]</span>
                                             }
                                             else
                                             {
-                                                <span class="text-muted">@T["mat.badge_publishable","Pubblicabile"]</span>
+                                                <span class="text-muted">@T["mat.badge_publishable"]</span>
                                             }
                                         </div>
                                     </div>
                                     <div class="col-md-6">
                                         <label asp-for="ExternalLink" class="form-label fw-semibold">
-                                            @T["mat.label_ext_link","Link esterno"]
+                                            @T["mat.label_ext_link"]
                                         </label>
                                         <input asp-for="ExternalLink" type="url" class="form-control"
                                                placeholder="https://..." />
@@ -240,32 +240,32 @@
                     }
 
                     <h6 class="text-muted mb-3">
-                        <i class="bi bi-upload me-1"></i>@T["mat.upload_new_section","Upload new version file (optional)"]
+                        <i class="bi bi-upload me-1"></i>@T["mat.upload_new_section"]
                     </h6>
                     @if (material?.ActiveVersion != null)
                     {
                         <div class="alert alert-info py-2 mb-3">
                             <i class="bi bi-info-circle me-1"></i>
-                            @T["mat.active_version_label","Active version:"]
+                            @T["mat.active_version_label"]
                             <strong>v@(material.CurrentVersion)</strong> — @material.ActiveVersion.FileName
                             (@material.ActiveVersion.FileSizeFormatted)
                         </div>
                     }
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">@T["mat.new_file","New file"]</label>
+                        <label class="form-label fw-semibold">@T["mat.new_file"]</label>
                         <div class="input-group">
                             <label for="File" class="btn btn-outline-secondary mb-0">
-                                <i class="bi bi-folder2-open me-1"></i>@T["mat.choose_file","Choose file"]
+                                <i class="bi bi-folder2-open me-1"></i>@T["mat.choose_file"]
                             </label>
                             <span class="form-control text-muted"
                                   id="fileName_File"
-                                  data-placeholder="@T["mat.no_file_chosen","No file chosen"]">@T["mat.no_file_chosen","No file chosen"]</span>
+                                  data-placeholder="@T["mat.no_file_chosen"]">@T["mat.no_file_chosen"]</span>
                             <input asp-for="File" type="file" class="d-none" id="File"
                                    onchange="matFileChanged(this)" />
                         </div>
                         <div class="form-text d-flex align-items-center gap-2">
-                            @T["mat.file_hint","Leave empty to not update the file."]
+                            @T["mat.file_hint"]
                             <span id="pageCountDisplay" class="text-muted fst-italic small"></span>
                         </div>
                     </div>
@@ -274,23 +274,23 @@
                         <div class="form-check mb-0">
                             <input class="form-check-input" type="checkbox" id="ConvertToPdf" name="ConvertToPdf" value="true" />
                             <label class="form-check-label fw-semibold" for="ConvertToPdf">
-                                <i class="bi bi-file-earmark-pdf me-1"></i>@T["mat.convert_to_pdf","Convert to PDF before saving"]
+                                <i class="bi bi-file-earmark-pdf me-1"></i>@T["mat.convert_to_pdf"]
                             </label>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Notes" class="form-label fw-semibold">@T["mat.new_version_notes","New version notes"]</label>
+                        <label asp-for="Notes" class="form-label fw-semibold">@T["mat.new_version_notes"]</label>
                         <textarea asp-for="Notes" class="form-control" rows="3"
-                                  placeholder="@T["mat.version_notes_placeholder","What changes in this version?"]"></textarea>
+                                  placeholder="@T["mat.version_notes_placeholder"]"></textarea>
                     </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <a asp-action="Index" class="btn btn-outline-secondary">
-                            <i class="bi bi-x me-1"></i>@T["mat.cancel","Cancel"]
+                            <i class="bi bi-x me-1"></i>@T["mat.cancel"]
                         </a>
                         <button type="button" id="submitBtn" class="btn btn-bocconi">
-                            <i class="bi bi-check-lg me-1"></i>@T["mat.save_btn","Save changes"]
+                            <i class="bi bi-check-lg me-1"></i>@T["mat.save_btn"]
                         </button>
                     </div>
                 </form>
@@ -305,32 +305,32 @@
         <div class="modal-content">
             <div class="modal-header bg-success bg-opacity-10 border-success">
                 <h5 class="modal-title text-success">
-                    <i class="bi bi-shield-check me-2"></i>@T["mat.verified_modal_title","Verifica completata"]
+                    <i class="bi bi-shield-check me-2"></i>@T["mat.verified_modal_title"]
                 </h5>
             </div>
             <div class="modal-body">
-                <p class="text-muted small mb-3">@T["mat.verified_modal_hint","Completa i dati di registrazione prima di salvare come Verificato."]</p>
+                <p class="text-muted small mb-3">@T["mat.verified_modal_hint"]</p>
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold">
-                        <i class="bi bi-hash me-1"></i>@T["mat.protocol_number","Numero di protocollo"]
+                        <i class="bi bi-hash me-1"></i>@T["mat.protocol_number"]
                     </label>
                     <div class="d-flex align-items-center gap-2 px-3 py-2 rounded border bg-light text-muted small">
                         <i class="bi bi-magic"></i>
-                        <span>@T["mat.protocol_auto","Assegnato automaticamente al salvataggio"]</span>
+                        <span>@T["mat.protocol_auto"]</span>
                     </div>
                 </div>
 
                 <div class="mb-2">
                     <label class="form-label fw-semibold">
-                        <i class="bi bi-folder2 me-1"></i>@T["mat.label_folder","Cartella"] <span class="text-danger">*</span>
+                        <i class="bi bi-folder2 me-1"></i>@T["mat.label_folder"] <span class="text-danger">*</span>
                     </label>
                     <div class="input-group input-group-sm mb-1">
                         <span class="input-group-text bg-white border-end-0">
                             <i class="bi bi-search text-muted"></i>
                         </span>
                         <input type="text" id="folderSearch" class="form-control border-start-0 ps-0"
-                               placeholder="@T["mat.folder_filter","Filtra cartelle…"]"
+                               placeholder="@T["mat.folder_filter"]"
                                autocomplete="off" />
                     </div>
                     <div id="folderList"
@@ -340,20 +340,20 @@
                         <span class="input-group-text fw-bold text-secondary" id="folderPrefixBadge" style="min-width:3rem;justify-content:center">IT</span>
                         <span class="input-group-text border-start-0 px-1 text-muted">–</span>
                         <input type="text" id="newFolderInput" class="form-control"
-                               placeholder="@T["mat.folder_new_placeholder","DOCUMENTI VARI"]"
+                               placeholder="@T["mat.folder_new_placeholder"]"
                                maxlength="120" autocomplete="off" />
                     </div>
                     <div id="folderError" class="text-danger small d-none mt-1">
-                        @T["mat.folder_required","Seleziona una cartella o inserisci il nome della nuova."]
+                        @T["mat.folder_required"]
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" id="modalCancelBtn">
-                    @T["common.cancel","Cancel"]
+                    @T["common.cancel"]
                 </button>
                 <button type="button" class="btn btn-success" id="modalConfirmBtn">
-                    <i class="bi bi-check-lg me-1"></i>@T["mat.modal_confirm","Conferma e salva"]
+                    <i class="bi bi-check-lg me-1"></i>@T["mat.modal_confirm"]
                 </button>
             </div>
         </div>
@@ -394,7 +394,7 @@
         var _selectedFolderId   = null;
         var _selectedFolderName = null;
         var _selectedIsNew      = false;
-        var _tNewFolder = @Json.Serialize(T["mat.folder_new","+ Nuova cartella"]);
+        var _tNewFolder = @Json.Serialize(T["mat.folder_new"]);
 
         function escHtml(s) {
             return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -605,8 +605,8 @@
 
             var ext       = file.name.split('.').pop().toLowerCase();
             var nameNoExt = file.name.replace(/\.[^.]+$/, '');
-            var _tPages   = @Json.Serialize(T["mat.pages","pagine"]);
-            var _tSlides  = @Json.Serialize(T["mat.slides","diapositive"]);
+            var _tPages   = @Json.Serialize(T["mat.pages"]);
+            var _tSlides  = @Json.Serialize(T["mat.slides"]);
 
             if (titleInp && titleInp.value.trim() === '') {
                 titleInp.value = nameNoExt;
@@ -739,8 +739,8 @@
             var inp = document.getElementById('extProtocolInput');
             var disp = document.getElementById('publishedDisplay');
             if (!inp || !disp) return;
-            var publishedLabel = @Json.Serialize(T["mat.badge_published","Pubblicato"]);
-            var publishableLabel = @Json.Serialize(T["mat.badge_publishable","Pubblicabile"]);
+            var publishedLabel = @Json.Serialize(T["mat.badge_published"]);
+            var publishableLabel = @Json.Serialize(T["mat.badge_publishable"]);
             if (inp.value.trim() !== '') {
                 disp.innerHTML = '<span class="badge bg-success"><i class="bi bi-check2 me-1"></i>' + publishedLabel + '</span>';
             } else {

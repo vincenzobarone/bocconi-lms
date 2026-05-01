@@ -48,41 +48,17 @@ public class TranslationService
         }
     }
 
-    public string T(string key, string defaultValue = "")
+    public string T(string key)
     {
         var lang = CurrentLanguage;
         var dict = GetCachedLanguage(lang);
         if (dict.TryGetValue(key, out var val)) return val;
 
-        // For non-English languages: if the specific translation is absent,
-        // show the key as placeholder (signals the developer that the
-        // translation is missing, instead of silently showing English).
-        // NOTE: do NOT auto-insert EN here — the defaultValue passed in views
-        // is often Italian fallback text, which would corrupt the EN translations.
-        if (lang != "en")
-        {
-            return key;
-        }
-
-        // Current language is EN: fall back to defaultValue (or key)
-        if (!string.IsNullOrEmpty(defaultValue) && _autoInserted.TryAdd(key, 0))
-        {
-            _ = Task.Run(async () =>
-            {
-                try
-                {
-                    await _repo.UpsertAsync("en", key, defaultValue);
-                    _cache.Remove(CachePrefix + "en");
-                }
-                catch { }
-            });
-        }
-
-        return string.IsNullOrEmpty(defaultValue) ? key : defaultValue;
+        // If the translation is missing, always return the key
+        return key;
     }
 
     public string this[string key] => T(key);
-    public string this[string key, string defaultValue] => T(key, defaultValue);
 
     public void InvalidateCache()
     {

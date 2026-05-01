@@ -6,7 +6,7 @@
 
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-action="Index">@T["mat.nav","Materials"]</a></li>
+        <li class="breadcrumb-item"><a asp-action="Index">@T["mat.nav"]</a></li>
         <li class="breadcrumb-item active">@Model.Title</li>
     </ol>
 </nav>
@@ -19,12 +19,12 @@
 
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <span class="fw-semibold"><i class="bi bi-clock-history me-2"></i>@T["mat.versions","Versions"] (@versions.Count)</span>
+                <span class="fw-semibold"><i class="bi bi-clock-history me-2"></i>@T["mat.versions"] (@versions.Count)</span>
             </div>
             <div class="card-body p-0">
                 @if (!versions.Any())
                 {
-                    <p class="text-muted p-3 mb-0">@T["mat.no_files","No file uploaded yet."]</p>
+                    <p class="text-muted p-3 mb-0">@T["mat.no_files"]</p>
                 }
                 else
                 {
@@ -37,7 +37,7 @@
                                         <span class="version-badge">v@(v.VersionNumber)</span>
                                         @if (v.IsActive)
                                         {
-                                            <span class="badge bg-success">@T["mat.version_active","Active"]</span>
+                                            <span class="badge bg-success">@T["mat.version_active"]</span>
                                         }
                                         <div>
                                             <div class="fw-semibold small">@v.FileName</div>
@@ -63,7 +63,7 @@
                                         </button>
                                         <a asp-action="Download" asp-route-versionId="@v.Id"
                                            class="btn btn-sm btn-outline-primary"
-                                           title="@T["mat.download_btn","Download"]">
+                                           title="@T["mat.download_btn"]">
                                             <i class="bi bi-download"></i>
                                         </a>
                                         @if (!v.IsActive && (bool)(ViewBag.CanEdit ?? false))
@@ -73,8 +73,8 @@
                                                 <input type="hidden" name="materialId" value="@Model.Id" />
                                                 <input type="hidden" name="versionId" value="@v.Id" />
                                                 <button type="submit" class="btn btn-sm btn-outline-warning"
-                                                        data-confirm="@T["mat.restore_confirm","Restore version"] v@(v.VersionNumber)?"
-                                                        title="@T["mat.restore_btn","Restore"]">
+                                                        data-confirm="@T["mat.restore_confirm"] v@(v.VersionNumber)?"
+                                                        title="@T["mat.restore_btn"]">
                                                     <i class="bi bi-arrow-counterclockwise"></i>
                                                 </button>
                                             </form>
@@ -86,8 +86,8 @@
                                                 <input type="hidden" name="versionId" value="@v.Id" />
                                                 <input type="hidden" name="materialId" value="@Model.Id" />
                                                 <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        data-confirm="@T["mat.delete_version_confirm","Eliminare la versione"] v@(v.VersionNumber)?"
-                                                        title="@T["mat.delete_version_btn","Elimina versione"]">
+                                                        data-confirm="@T["mat.delete_version_confirm"] v@(v.VersionNumber)?"
+                                                        title="@T["mat.delete_version_btn"]">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
@@ -105,33 +105,33 @@
         {
             <div class="card">
                 <div class="card-header fw-semibold">
-                    <i class="bi bi-upload me-2"></i>@T["mat.upload_version","Upload new version"]
+                    <i class="bi bi-upload me-2"></i>@T["mat.upload_version"]
                 </div>
                 <div class="card-body">
                     <form asp-action="UploadVersion" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
                         <div class="row g-2 align-items-end">
                             <div class="col-md-5">
-                                <label class="form-label small fw-semibold">@T["mat.label_file","File"]</label>
+                                <label class="form-label small fw-semibold">@T["mat.label_file"]</label>
                                 <div class="input-group input-group-sm">
                                     <label for="fileUploadDetails" class="btn btn-outline-secondary btn-sm mb-0">
-                                        <i class="bi bi-folder2-open me-1"></i>@T["mat.choose_file","Choose file"]
+                                        <i class="bi bi-folder2-open me-1"></i>@T["mat.choose_file"]
                                     </label>
                                     <span class="form-control text-muted text-truncate"
                                           id="fileNameDetails"
-                                          data-placeholder="@T["mat.no_file_chosen","No file chosen"]">@T["mat.no_file_chosen","No file chosen"]</span>
+                                          data-placeholder="@T["mat.no_file_chosen"]">@T["mat.no_file_chosen"]</span>
                                     <input type="file" name="file" id="fileUploadDetails" class="d-none" required
                                            onchange="bocconiFileInput(this,'fileNameDetails')" />
                                 </div>
                             </div>
                             <div class="col-md-5">
-                                <label class="form-label small fw-semibold">@T["mat.notes","Notes"]</label>
+                                <label class="form-label small fw-semibold">@T["mat.notes"]</label>
                                 <input type="text" name="notes" class="form-control form-control-sm"
-                                       placeholder="@T["mat.notes_placeholder","What changed?"]" />
+                                       placeholder="@T["mat.notes_placeholder"]" />
                             </div>
                             <div class="col-md-2">
                                 <button type="submit" class="btn btn-bocconi btn-sm w-100">
-                                    <i class="bi bi-upload me-1"></i>@T["mat.upload_btn","Upload"]
+                                    <i class="bi bi-upload me-1"></i>@T["mat.upload_btn"]
                                 </button>
                             </div>
                         </div>
@@ -144,66 +144,66 @@
     <div class="col-lg-4">
         <div class="card">
             <div class="card-body">
-                <h6 class="fw-semibold mb-3"><i class="bi bi-info-circle me-1"></i>@T["mat.info_panel","Information"]</h6>
+                <h6 class="fw-semibold mb-3"><i class="bi bi-info-circle me-1"></i>@T["mat.info_panel"]</h6>
                 @{
                     var (stCss, stLabel) = Model.Status switch {
-                        "verificato"   => ("success",   T["mat.status_verificato","Verified"]),
-                        "in_revisione" => ("warning",   T["mat.status_in_revisione","In review"]),
-                        _              => ("secondary", T["mat.status_bozza","Draft"])
+                        "verificato"   => ("success",   T["mat.status_verificato"]),
+                        "in_revisione" => ("warning",   T["mat.status_in_revisione"]),
+                        _              => ("secondary", T["mat.status_bozza"])
                     };
                 }
                 <dl class="row mb-0 small">
-                    <dt class="col-5 text-muted">@T["mat.col_type","Type"]</dt>
+                    <dt class="col-5 text-muted">@T["mat.col_type"]</dt>
                     <dd class="col-7">@(string.IsNullOrEmpty(Model.DocumentTypeName) ? "—" : Model.DocumentTypeName)</dd>
-                    <dt class="col-5 text-muted">@T["mat.col_lang","Language"]</dt>
+                    <dt class="col-5 text-muted">@T["mat.col_lang"]</dt>
                     <dd class="col-7">@Model.Language</dd>
-                    <dt class="col-5 text-muted">@T["mat.col_author","Author"]</dt>
+                    <dt class="col-5 text-muted">@T["mat.col_author"]</dt>
                     <dd class="col-7">@(string.IsNullOrEmpty(Model.AuthorName) ? "—" : Model.AuthorName)</dd>
                     @if (Model.PageCount.HasValue)
                     {
-                        <dt class="col-5 text-muted">@T["mat.page_count","Pages"]</dt>
+                        <dt class="col-5 text-muted">@T["mat.page_count"]</dt>
                         <dd class="col-7">@Model.PageCount</dd>
                     }
-                    <dt class="col-5 text-muted">@T["mat.label_owner","Owner"]</dt>
+                    <dt class="col-5 text-muted">@T["mat.label_owner"]</dt>
                     <dd class="col-7">@(string.IsNullOrEmpty(Model.OwnerName) ? "—" : Model.OwnerName)</dd>
-                    <dt class="col-5 text-muted">@T["mat.col_status","Status"]</dt>
+                    <dt class="col-5 text-muted">@T["mat.col_status"]</dt>
                     <dd class="col-7"><span class="badge bg-@stCss">@stLabel</span></dd>
                     @if (Model.ProtocolNumber.HasValue)
                     {
-                        <dt class="col-5 text-muted">@T["mat.col_protocol","Protocollo"]</dt>
+                        <dt class="col-5 text-muted">@T["mat.col_protocol"]</dt>
                         <dd class="col-7">
                             <code class="text-success fw-semibold">@Model.ProtocolNumber</code>
                         </dd>
                     }
                     @if (!string.IsNullOrEmpty(Model.FolderName))
                     {
-                        <dt class="col-5 text-muted">@T["mat.label_folder","Cartella"]</dt>
+                        <dt class="col-5 text-muted">@T["mat.label_folder"]</dt>
                         <dd class="col-7">
                             <span><i class="bi bi-folder me-1 text-muted"></i>@Model.FolderName</span>
                         </dd>
                     }
                     @if (Model.AreaId.HasValue || !string.IsNullOrEmpty(Model.AreaName))
                     {
-                        <dt class="col-5 text-muted">@T["mat.label_area","Area"]</dt>
+                        <dt class="col-5 text-muted">@T["mat.label_area"]</dt>
                         <dd class="col-7">@(string.IsNullOrEmpty(Model.AreaName) ? "—" : Model.AreaName)</dd>
                     }
                     @if (Model.CatalogationDate.HasValue)
                     {
-                        <dt class="col-5 text-muted">@T["mat.label_cat_date","Data catalogazione"]</dt>
+                        <dt class="col-5 text-muted">@T["mat.label_cat_date"]</dt>
                         <dd class="col-7">@Model.CatalogationDate.Value.ToString("dd/MM/yyyy")</dd>
                     }
-                    <dt class="col-5 text-muted">@T["mat.col_version","Ver."]</dt>
+                    <dt class="col-5 text-muted">@T["mat.col_version"]</dt>
                     <dd class="col-7">
                         @if (Model.CurrentVersion > 0)
                         { <span class="version-badge">v@(Model.CurrentVersion)</span> }
                         else { <span class="text-muted">—</span> }
                     </dd>
-                    <dt class="col-5 text-muted">@T["mat.col_created","Created"]</dt>
+                    <dt class="col-5 text-muted">@T["mat.col_created"]</dt>
                     <dd class="col-7">@Model.CreatedAt.ToString("dd/MM/yyyy")</dd>
                 </dl>
                 <hr />
                 <a asp-action="Index" class="btn btn-outline-secondary btn-sm w-100">
-                    <i class="bi bi-arrow-left me-1"></i>@T["mat.back","Back to Materials"]
+                    <i class="bi bi-arrow-left me-1"></i>@T["mat.back"]
                 </a>
             </div>
         </div>
@@ -213,37 +213,37 @@
         {
             <div class="card mt-3 border-primary">
                 <div class="card-header bg-primary bg-opacity-10 fw-semibold text-primary py-2">
-                    <i class="bi bi-send me-1"></i>@T["mat.publish_section","Publication"]
+                    <i class="bi bi-send me-1"></i>@T["mat.publish_section"]
                 </div>
                 <div class="card-body small">
                     <dl class="row mb-0">
-                        <dt class="col-5 text-muted">@T["mat.label_publishable","Pubblicabile"]</dt>
+                        <dt class="col-5 text-muted">@T["mat.label_publishable"]</dt>
                         <dd class="col-7">
-                            <span class="badge bg-primary">@T["mat.badge_publishable","Pubblicabile"]</span>
+                            <span class="badge bg-primary">@T["mat.badge_publishable"]</span>
                         </dd>
                         @if (Model.IsPublished)
                         {
-                            <dt class="col-5 text-muted">@T["mat.label_published","Pubblicato"]</dt>
+                            <dt class="col-5 text-muted">@T["mat.label_published"]</dt>
                             <dd class="col-7">
-                                <span class="badge bg-success"><i class="bi bi-check2 me-1"></i>@T["mat.badge_published","Pubblicato"]</span>
+                                <span class="badge bg-success"><i class="bi bi-check2 me-1"></i>@T["mat.badge_published"]</span>
                             </dd>
                         }
                         @if (!string.IsNullOrEmpty(Model.ExternalProtocolCode))
                         {
-                            <dt class="col-5 text-muted">@T["mat.label_ext_protocol","Codice protocollo esterno"]</dt>
+                            <dt class="col-5 text-muted">@T["mat.label_ext_protocol"]</dt>
                             <dd class="col-7"><code class="text-primary fw-semibold">@Model.ExternalProtocolCode</code></dd>
                         }
                         @if (!string.IsNullOrEmpty(Model.PlatformName))
                         {
-                            <dt class="col-5 text-muted">@T["mat.label_platform","Piattaforma"]</dt>
+                            <dt class="col-5 text-muted">@T["mat.label_platform"]</dt>
                             <dd class="col-7">@Model.PlatformName</dd>
                         }
                         @if (!string.IsNullOrEmpty(Model.ExternalLink))
                         {
-                            <dt class="col-5 text-muted">@T["mat.label_ext_link","Link esterno"]</dt>
+                            <dt class="col-5 text-muted">@T["mat.label_ext_link"]</dt>
                             <dd class="col-7">
                                 <a href="@Model.ExternalLink" target="_blank" rel="noopener" class="text-truncate d-inline-block" style="max-width:160px;">
-                                    <i class="bi bi-box-arrow-up-right me-1"></i>@T["mat.label_ext_link","Link"]
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>@T["mat.label_ext_link"]
                                 </a>
                             </dd>
                         }

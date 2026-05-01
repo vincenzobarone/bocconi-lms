@@ -1,11 +1,11 @@
 @model RegisterViewModel
 @{
-    ViewData["Title"] = T["admin.users.create_title", "Create User"];
+    ViewData["Title"] = T["admin.users.create_title"];
 }
 
 <div class="row justify-content-center">
     <div class="col-lg-6">
-        <h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-person-plus me-2"></i>@T["admin.users.create_title", "Create New User"]</h2>
+        <h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-person-plus me-2"></i>@T["admin.users.create_title"]</h2>
         <div class="card shadow-sm">
             <div class="card-body p-4">
                 <form asp-action="CreateUser" method="post">
@@ -18,12 +18,12 @@
                     }
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label asp-for="FirstName" class="form-label fw-semibold">@T["common.first_name", "First Name"] *</label>
+                            <label asp-for="FirstName" class="form-label fw-semibold">@T["common.first_name"] *</label>
                             <input asp-for="FirstName" class="form-control" />
                             <span asp-validation-for="FirstName" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label asp-for="LastName" class="form-label fw-semibold">@T["common.last_name", "Last Name"] *</label>
+                            <label asp-for="LastName" class="form-label fw-semibold">@T["common.last_name"] *</label>
                             <input asp-for="LastName" class="form-control" />
                             <span asp-validation-for="LastName" class="text-danger small"></span>
                         </div>
@@ -36,11 +36,11 @@
                     <div class="mb-3">
                         <label asp-for="Password" class="form-label fw-semibold">Password *</label>
                         <input asp-for="Password" type="password" class="form-control" />
-                        <div class="form-text">@T["admin.users.password_hint","Minimum 8 characters"]</div>
+                        <div class="form-text">@T["admin.users.password_hint"]</div>
                         <span asp-validation-for="Password" class="text-danger small"></span>
                     </div>
                     <div class="mb-4">
-                        <label asp-for="Role" class="form-label fw-semibold">@T["common.role", "Role"] *</label>
+                        <label asp-for="Role" class="form-label fw-semibold">@T["common.role"] *</label>
                         <select asp-for="Role" class="form-select">
                             @foreach (var r in (ViewBag.AvailableRoles as List<string> ?? new List<string>()))
                             {
@@ -49,8 +49,8 @@
                         </select>
                     </div>
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-bocconi px-4">@T["admin.users.create_btn", "Create User"]</button>
-                        <a asp-action="Users" class="btn btn-outline-secondary">@T["common.cancel", "Cancel"]</a>
+                        <button type="submit" class="btn btn-bocconi px-4">@T["admin.users.create_btn"]</button>
+                        <a asp-action="Users" class="btn btn-outline-secondary">@T["common.cancel"]</a>
                     </div>
                 </form>
             </div>

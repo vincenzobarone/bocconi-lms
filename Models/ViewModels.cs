@@ -231,6 +231,7 @@ public class EmailSettingsViewModel
     public bool NotifyStudentOnQuizCompleted { get; set; }
     public bool NotifyTeacherOnQuizCompleted { get; set; }
     public bool NotifyTeacherOnStudentEnrolled { get; set; }
+    public bool CourseModuleEnabled { get; set; }
 }
 
 

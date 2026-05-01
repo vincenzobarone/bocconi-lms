@@ -2,7 +2,7 @@
 @using BocconiLMS.Services
 @model List<TranslationRow>
 @{
-    ViewData["Title"] = T["admin.translations.page_title", "Translation Management"];
+    ViewData["Title"] = T["admin.translations.page_title"];
     var enabledLangs = ViewBag.EnabledLanguages as List<string> ?? new List<string> { "en", "it", "es", "de" };
     var missing = ViewBag.MissingCounts as Dictionary<string, int> ?? new();
     var allOtherLangs = TranslationService.AllLanguages.Where(l => l.Code != "en").ToList();
@@ -11,17 +11,17 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-bocconi mb-0">
-        <i class="bi bi-translate me-2"></i>@T["admin.translations.page_title", "Translation Management"]
+        <i class="bi bi-translate me-2"></i>@T["admin.translations.page_title"]
     </h2>
     <a asp-action="Index" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>@T["common.back_to_panel","Back to panel"]
+        <i class="bi bi-arrow-left me-1"></i>@T["common.back_to_panel"]
     </a>
 </div>
 
 @* ── LANGUAGE SETTINGS PANEL ─────────────────────────────── *@
 <div class="card mb-3 border-0 shadow-sm">
     <div class="card-header bg-white fw-semibold">
-        <i class="bi bi-globe me-2 text-bocconi"></i>@T["admin.lang.settings","Active Languages"]
+        <i class="bi bi-globe me-2 text-bocconi"></i>@T["admin.lang.settings"]
     </div>
     <div class="card-body">
         <form asp-action="SaveLanguageSettings" method="post" class="d-flex align-items-center gap-4 flex-wrap">
@@ -30,7 +30,7 @@
                 <input class="form-check-input" type="checkbox" checked disabled />
                 <label class="form-check-label ms-1">🇬🇧 English (EN)</label>
                 <input type="hidden" name="enabledLanguages" value="en" />
-                <span class="badge bg-secondary ms-1">@T["admin.lang.required","required"]</span>
+                <span class="badge bg-secondary ms-1">@T["admin.lang.required"]</span>
             </div>
             @foreach (var lang in allOtherLangs)
             {
@@ -50,7 +50,7 @@
                 </div>
             }
             <button type="submit" class="btn btn-bocconi btn-sm ms-auto">
-                <i class="bi bi-save me-1"></i>@T["admin.lang.save","Save language settings"]
+                <i class="bi bi-save me-1"></i>@T["admin.lang.save"]
             </button>
         </form>
     </div>
@@ -61,21 +61,21 @@
     <div class="card-body py-2">
         <div class="d-flex align-items-center gap-3 flex-wrap justify-content-between">
             <div class="d-flex gap-3 flex-wrap text-muted small">
-                <span><i class="bi bi-info-circle me-1"></i>@T["admin.translations.base_lang","Base"]: <strong>🇬🇧 English</strong></span>
+                <span><i class="bi bi-info-circle me-1"></i>@T["admin.translations.base_lang"]: <strong>🇬🇧 English</strong></span>
                 <span>|</span>
-                <span>@T["admin.translations.total_keys","Total keys"]: <strong>@Model.Count</strong></span>
+                <span>@T["admin.translations.total_keys"]: <strong>@Model.Count</strong></span>
                 @if (totalMissing > 0)
                 {
                     <span>|</span>
                     <span class="text-warning fw-semibold">
-                        <i class="bi bi-exclamation-triangle me-1"></i>@totalMissing @T["admin.translations.missing_total","missing entries in active languages"]
+                        <i class="bi bi-exclamation-triangle me-1"></i>@totalMissing @T["admin.translations.missing_total"]
                     </span>
                 }
             </div>
             @if (totalMissing > 0)
             {
                 <button id="btnFilterMissing" class="btn btn-sm btn-outline-warning">
-                    <i class="bi bi-funnel me-1"></i>@T["admin.translations.filter_missing","Show only missing"]
+                    <i class="bi bi-funnel me-1"></i>@T["admin.translations.filter_missing"]
                 </button>
             }
         </div>
@@ -89,12 +89,12 @@
             <table class="table table-hover table-sm mb-0" id="translationsTable">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col" style="width:20%">@T["admin.translations.col_key","Key"]</th>
+                        <th scope="col" style="width:20%">@T["admin.translations.col_key"]</th>
                         <th scope="col" style="width:20%">🇬🇧 English</th>
                         @if (enabledLangs.Contains("it")) { <th scope="col">🇮🇹 Italiano</th> }
                         @if (enabledLangs.Contains("es")) { <th scope="col">🇪🇸 Español</th> }
                         @if (enabledLangs.Contains("de")) { <th scope="col">🇩🇪 Deutsch</th> }
-                        <th scope="col" style="width:9%">@T["admin.translations.col_created","Created"]</th>
+                        <th scope="col" style="width:9%">@T["admin.translations.col_created"]</th>
                         <th scope="col" style="width:5%"></th>
                     </tr>
                 </thead>
@@ -111,7 +111,7 @@
                             {
                                 <td class="align-middle">
                                     @if (string.IsNullOrEmpty(row.It))
-                                    { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing","Missing"]</span> }
+                                    { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing"]</span> }
                                     else { @row.It }
                                 </td>
                             }
@@ -119,7 +119,7 @@
                             {
                                 <td class="align-middle">
                                     @if (string.IsNullOrEmpty(row.Es))
-                                    { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing","Missing"]</span> }
+                                    { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing"]</span> }
                                     else { @row.Es }
                                 </td>
                             }
@@ -127,7 +127,7 @@
                             {
                                 <td class="align-middle">
                                     @if (string.IsNullOrEmpty(row.De))
-                                    { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing","Missing"]</span> }
+                                    { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing"]</span> }
                                     else { @row.De }
                                 </td>
                             }
@@ -137,15 +137,15 @@
                             <td class="align-middle text-end">
                                 <div class="d-flex gap-1 justify-content-end">
                                     <a asp-action="EditTranslation" asp-route-key="@row.Key"
-                                       class="btn btn-sm btn-outline-secondary" title="@T["common.edit","Edit"]">
+                                       class="btn btn-sm btn-outline-secondary" title="@T["common.edit"]">
                                         <i class="bi bi-pencil"></i>
                                     </a>
                                     <form asp-action="DeleteTranslationKey" method="post" class="d-inline">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="key" value="@row.Key" />
                                         <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                title="@T["common.delete","Delete"]"
-                                                data-confirm="@T["admin.translations.confirm_delete","Delete this key and all its translations?"]">
+                                                title="@T["common.delete"]"
+                                                data-confirm="@T["admin.translations.confirm_delete"]">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </form>

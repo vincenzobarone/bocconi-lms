@@ -1,18 +1,18 @@
 @model List<Enrollment>
 @{
     var course = ViewBag.Course as Course;
-    ViewData["Title"] = $"{T["course.students","Students"]} - {course?.Title}";
+    ViewData["Title"] = $"{T["course.students"]} - {course?.Title}";
 }
 
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
         <li class="breadcrumb-item"><a asp-action="Dashboard">Dashboard</a></li>
         <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@course?.Id">@course?.Title</a></li>
-        <li class="breadcrumb-item active">@T["course.students","Students"]</li>
+        <li class="breadcrumb-item active">@T["course.students"]</li>
     </ol>
 </nav>
 
-<h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-people me-2"></i>@T["course.enrolled_students","Enrolled students"]</h2>
+<h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-people me-2"></i>@T["course.enrolled_students"]</h2>
 
 @if (Model.Any())
 {
@@ -21,10 +21,10 @@
             <table id="studentsTable" class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col">@T["course.col_student","Student"]</th>
-                        <th scope="col">@T["course.col_enrolled_at","Enrollment date"]</th>
-                        <th scope="col">@T["course.col_completed_lessons","Completed lessons"]</th>
-                        <th scope="col">@T["course.col_progress","Progress"]</th>
+                        <th scope="col">@T["course.col_student"]</th>
+                        <th scope="col">@T["course.col_enrolled_at"]</th>
+                        <th scope="col">@T["course.col_completed_lessons"]</th>
+                        <th scope="col">@T["course.col_progress"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -51,7 +51,7 @@
 }
 else
 {
-    <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>@T["course.no_students","No enrolled students."]</div>
+    <div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>@T["course.no_students"]</div>
 }
 
 @section Scripts {

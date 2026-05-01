@@ -1,12 +1,12 @@
 @model TeacherDashboard
 @{
-    ViewData["Title"] = T["teacher.dashboard_title","Teacher Dashboard"];
+    ViewData["Title"] = T["teacher.dashboard_title"];
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-speedometer2 me-2"></i>@T["teacher.dashboard_title","Teacher Dashboard"]</h2>
+    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-speedometer2 me-2"></i>@T["teacher.dashboard_title"]</h2>
     <a asp-controller="Course" asp-action="Create" class="btn btn-bocconi">
-        <i class="bi bi-plus-lg me-1"></i>@T["course.new_btn","New course"]
+        <i class="bi bi-plus-lg me-1"></i>@T["course.new_btn"]
     </a>
 </div>
 
@@ -14,24 +14,24 @@
     <div class="col-sm-4">
         <div class="card stat-card p-3 text-center">
             <div class="display-5 fw-bold text-bocconi">@Model.Courses.Count</div>
-            <div class="text-muted small">@T["teacher.stat_courses_created","Courses created"]</div>
+            <div class="text-muted small">@T["teacher.stat_courses_created"]</div>
         </div>
     </div>
     <div class="col-sm-4">
         <div class="card stat-card p-3 text-center">
             <div class="display-5 fw-bold text-bocconi">@Model.Courses.Count(c => c.IsPublished)</div>
-            <div class="text-muted small">@T["teacher.stat_courses_published","Published courses"]</div>
+            <div class="text-muted small">@T["teacher.stat_courses_published"]</div>
         </div>
     </div>
     <div class="col-sm-4">
         <div class="card stat-card gold p-3 text-center">
             <div class="display-5 fw-bold" style="color:#c8a96e;">@Model.Courses.Sum(c => c.EnrolledCount)</div>
-            <div class="text-muted small">@T["teacher.stat_enrolled_students","Enrolled students"]</div>
+            <div class="text-muted small">@T["teacher.stat_enrolled_students"]</div>
         </div>
     </div>
 </div>
 
-<h4 class="fw-semibold mb-3">@T["teacher.my_courses","My courses"]</h4>
+<h4 class="fw-semibold mb-3">@T["teacher.my_courses"]</h4>
 @if (Model.Courses.Any())
 {
     <div class="row g-3">
@@ -44,26 +44,26 @@
                             <h6 class="fw-bold mb-1">@c.Title</h6>
                             @if (c.IsPublished)
                             {
-                                <span class="badge bg-success">@T["common.published","Published"]</span>
+                                <span class="badge bg-success">@T["common.published"]</span>
                             }
                             else
                             {
-                                <span class="badge bg-secondary">@T["common.draft","Draft"]</span>
+                                <span class="badge bg-secondary">@T["common.draft"]</span>
                             }
                         </div>
                         <p class="text-muted small mb-2">@c.Category</p>
                         <div class="d-flex gap-3 text-muted small mb-3">
-                            <span><i class="bi bi-book me-1"></i>@c.LessonCount @T["common.lessons","lessons"]</span>
-                            <span><i class="bi bi-people me-1"></i>@c.EnrolledCount @T["common.students","students"]</span>
+                            <span><i class="bi bi-book me-1"></i>@c.LessonCount @T["common.lessons"]</span>
+                            <span><i class="bi bi-people me-1"></i>@c.EnrolledCount @T["common.students"]</span>
                         </div>
                         <div class="d-flex gap-2">
                             <a asp-controller="Course" asp-action="Details" asp-route-id="@c.Id"
-                               class="btn btn-sm btn-bocconi">@T["teacher.manage_btn","Manage"]</a>
+                               class="btn btn-sm btn-bocconi">@T["teacher.manage_btn"]</a>
                             <a asp-controller="Course" asp-action="Students" asp-route-id="@c.Id"
-                               class="btn btn-sm btn-outline-secondary">@T["course.students","Students"]</a>
+                               class="btn btn-sm btn-outline-secondary">@T["course.students"]</a>
                             <a asp-controller="Course" asp-action="Edit" asp-route-id="@c.Id"
                                class="btn btn-sm btn-outline-secondary"
-                               aria-label="@T["course.edit_aria","Modifica corso"]"><i class="bi bi-pencil"></i></a>
+                               aria-label="@T["course.edit_aria"]"><i class="bi bi-pencil"></i></a>
                         </div>
                     </div>
                 </div>
@@ -74,7 +74,7 @@
 else
 {
     <div class="alert alert-info">
-        <i class="bi bi-info-circle me-2"></i>@T["teacher.no_courses","You have not created any courses yet."]
-        <a asp-controller="Course" asp-action="Create">@T["teacher.create_first","Create your first course"]</a>.
+        <i class="bi bi-info-circle me-2"></i>@T["teacher.no_courses"]
+        <a asp-controller="Course" asp-action="Create">@T["teacher.create_first"]</a>.
     </div>
 }

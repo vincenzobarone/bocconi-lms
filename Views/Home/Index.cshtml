@@ -19,7 +19,7 @@
 <div class="py-5 text-center bg-bocconi text-white rounded-3 mb-4" style="background: linear-gradient(135deg, #003087, #0050c8) !important;">
     <i class="bi bi-mortarboard-fill display-4 mb-3 d-block" style="color: #c8a96e;"></i>
     <h1 class="fw-bold">Didasco</h1>
-    <p class="lead mb-4">@T["home.tagline","Piattaforma di gestione materiali didattici e corsi di Università Bocconi"]</p>
+    <p class="lead mb-4">@T["home.tagline"]</p>
     @if (!User.Identity!.IsAuthenticated)
     {
         <a asp-controller="Account" asp-action="Login" class="btn btn-lg me-2" style="background:#c8a96e; color:#fff; border:none;">
@@ -72,20 +72,20 @@
                         <p class="card-text text-muted small">@(c.Description.Length > 100 ? c.Description[..100] + "..." : c.Description)</p>
                         <div class="d-flex justify-content-between text-muted small">
                             <span><i class="bi bi-person me-1"></i>@c.TeacherName</span>
-                            <span><i class="bi bi-people me-1"></i>@c.EnrolledCount @T.T("course.enrolled_count", "iscritti")</span>
+                            <span><i class="bi bi-people me-1"></i>@c.EnrolledCount @T["course.enrolled_count"]</span>
                         </div>
                     </div>
                     <div class="card-footer bg-transparent">
                         @if (User.Identity!.IsAuthenticated)
                         {
                             <a asp-controller="Course" asp-action="Details" asp-route-id="@c.Id"
-                               class="btn btn-sm btn-bocconi w-100">@T.T("course.discover", "Scopri il corso")</a>
+                               class="btn btn-sm btn-bocconi w-100">@T["course.discover"]</a>
                         }
                         else
                         {
                             <a asp-controller="Account" asp-action="Login"
                                asp-route-returnUrl="@Url.Action("Details","Course",new{id=c.Id})"
-                               class="btn btn-sm btn-bocconi w-100">@T.T("course.discover", "Scopri il corso")</a>
+                               class="btn btn-sm btn-bocconi w-100">@T["course.discover"]</a>
                         }
                     </div>
                 </div>

@@ -2,7 +2,7 @@
 @using BocconiLMS.Services
 @model List<TranslationRow>
 @{
-    ViewData["Title"] = T["nav.dictionary","Dictionary"];
+    ViewData["Title"] = T["nav.dictionary"];
     var enabledLangs    = ViewBag.EnabledLanguages as List<string> ?? new List<string> { "en", "it", "es", "de" };
     var missing         = ViewBag.MissingCounts as Dictionary<string, int> ?? new();
     var allOtherLangs   = TranslationService.AllLanguages.Where(l => l.Code != "en").ToList();
@@ -15,7 +15,7 @@
 
 <div class="mb-4">
     <h2 class="fw-bold text-bocconi mb-0">
-        <i class="bi bi-journal-bookmark me-2"></i>@T["nav.dictionary","Dictionary"]
+        <i class="bi bi-journal-bookmark me-2"></i>@T["nav.dictionary"]
     </h2>
 </div>
 
@@ -25,7 +25,7 @@
         <button class="nav-link @(activeTab == "translations" ? "active" : "")"
                 id="tab-translations" data-bs-toggle="tab"
                 data-bs-target="#panel-translations" type="button" role="tab">
-            <i class="bi bi-translate me-1"></i>@T["admin.translations.page_title","Translations"]
+            <i class="bi bi-translate me-1"></i>@T["admin.translations.page_title"]
             @if (totalMissing > 0)
             {
                 <span class="badge bg-warning text-dark ms-1">@totalMissing</span>
@@ -36,14 +36,14 @@
         <button class="nav-link @(activeTab == "doctypes" ? "active" : "")"
                 id="tab-doctypes" data-bs-toggle="tab"
                 data-bs-target="#panel-doctypes" type="button" role="tab">
-            <i class="bi bi-tags me-1"></i>@T["admin.doc_types","Document Types"]
+            <i class="bi bi-tags me-1"></i>@T["admin.doc_types"]
         </button>
     </li>
     <li class="nav-item" role="presentation">
         <button class="nav-link @(activeTab == "aree" ? "active" : "")"
                 id="tab-aree" data-bs-toggle="tab"
                 data-bs-target="#panel-aree" type="button" role="tab">
-            <i class="bi bi-diagram-3 me-1"></i>@T["admin.areas_tab","Areas"]
+            <i class="bi bi-diagram-3 me-1"></i>@T["admin.areas_tab"]
             <span class="badge bg-secondary ms-1">@areas.Count</span>
         </button>
     </li>
@@ -51,7 +51,7 @@
         <button class="nav-link @(activeTab == "piattaforme" ? "active" : "")"
                 id="tab-piattaforme" data-bs-toggle="tab"
                 data-bs-target="#panel-piattaforme" type="button" role="tab">
-            <i class="bi bi-send me-1"></i>@T["admin.platforms_tab","Platforms"]
+            <i class="bi bi-send me-1"></i>@T["admin.platforms_tab"]
             <span class="badge bg-secondary ms-1">@platforms.Count</span>
         </button>
     </li>
@@ -68,21 +68,21 @@
             <div class="card-body py-2">
                 <div class="d-flex align-items-center gap-3 flex-wrap justify-content-between">
                     <div class="d-flex gap-3 flex-wrap text-muted small">
-                        <span><i class="bi bi-info-circle me-1"></i>@T["admin.translations.base_lang","Base"]: <strong>🇬🇧 English</strong></span>
+                        <span><i class="bi bi-info-circle me-1"></i>@T["admin.translations.base_lang"]: <strong>🇬🇧 English</strong></span>
                         <span>|</span>
-                        <span>@T["admin.translations.total_keys","Total keys"]: <strong>@Model.Count</strong></span>
+                        <span>@T["admin.translations.total_keys"]: <strong>@Model.Count</strong></span>
                         @if (totalMissing > 0)
                         {
                             <span>|</span>
                             <span class="text-warning fw-semibold">
-                                <i class="bi bi-exclamation-triangle me-1"></i>@totalMissing @T["admin.translations.missing_total","missing entries in active languages"]
+                                <i class="bi bi-exclamation-triangle me-1"></i>@totalMissing @T["admin.translations.missing_total"]
                             </span>
                         }
                     </div>
                     @if (totalMissing > 0)
                     {
                         <button id="btnFilterMissing" class="btn btn-sm btn-outline-warning">
-                            <i class="bi bi-funnel me-1"></i>@T["admin.translations.filter_missing","Show only missing"]
+                            <i class="bi bi-funnel me-1"></i>@T["admin.translations.filter_missing"]
                         </button>
                     }
                 </div>
@@ -96,12 +96,12 @@
                     <table class="table table-hover table-sm mb-0" id="translationsTable">
                         <thead class="table-light">
                             <tr>
-                                <th scope="col" style="width:20%">@T["admin.translations.col_key","Key"]</th>
+                                <th scope="col" style="width:20%">@T["admin.translations.col_key"]</th>
                                 <th scope="col" style="width:20%">🇬🇧 English</th>
                                 @if (enabledLangs.Contains("it")) { <th scope="col">🇮🇹 Italiano</th> }
                                 @if (enabledLangs.Contains("es")) { <th scope="col">🇪🇸 Español</th> }
                                 @if (enabledLangs.Contains("de")) { <th scope="col">🇩🇪 Deutsch</th> }
-                                <th scope="col" style="width:9%">@T["admin.translations.col_created","Created"]</th>
+                                <th scope="col" style="width:9%">@T["admin.translations.col_created"]</th>
                                 <th scope="col" style="width:5%"></th>
                             </tr>
                         </thead>
@@ -118,7 +118,7 @@
                                     {
                                         <td class="align-middle">
                                             @if (string.IsNullOrEmpty(row.It))
-                                            { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing","Missing"]</span> }
+                                            { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing"]</span> }
                                             else { @row.It }
                                         </td>
                                     }
@@ -126,7 +126,7 @@
                                     {
                                         <td class="align-middle">
                                             @if (string.IsNullOrEmpty(row.Es))
-                                            { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing","Missing"]</span> }
+                                            { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing"]</span> }
                                             else { @row.Es }
                                         </td>
                                     }
@@ -134,7 +134,7 @@
                                     {
                                         <td class="align-middle">
                                             @if (string.IsNullOrEmpty(row.De))
-                                            { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing","Missing"]</span> }
+                                            { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing"]</span> }
                                             else { @row.De }
                                         </td>
                                     }
@@ -144,15 +144,15 @@
                                     <td class="align-middle text-end">
                                         <div class="d-flex gap-1 justify-content-end">
                                             <a asp-action="EditTranslation" asp-route-key="@row.Key"
-                                               class="btn btn-sm btn-outline-secondary" title="@T["common.edit","Edit"]">
+                                               class="btn btn-sm btn-outline-secondary" title="@T["common.edit"]">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             <form asp-action="DeleteTranslationKey" method="post" class="d-inline">
                                                 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="key" value="@row.Key" />
                                                 <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        title="@T["common.delete","Delete"]"
-                                                        data-confirm="@T["admin.translations.confirm_delete","Delete this key and all its translations?"]">
+                                                        title="@T["common.delete"]"
+                                                        data-confirm="@T["admin.translations.confirm_delete"]">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
@@ -173,16 +173,16 @@
 
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                <span class="fw-semibold"><i class="bi bi-tags me-2 text-bocconi"></i>@T["admin.doc_types","Document Types"]</span>
+                <span class="fw-semibold"><i class="bi bi-tags me-2 text-bocconi"></i>@T["admin.doc_types"]</span>
                 <button type="button" class="btn btn-sm btn-bocconi"
                         data-bs-toggle="modal" data-bs-target="#createDocTypeModal">
-                    <i class="bi bi-plus me-1"></i>@T["doctype.create","Create type"]
+                    <i class="bi bi-plus me-1"></i>@T["doctype.create"]
                 </button>
             </div>
             <div class="card-body p-0">
                 @if (!docTypes.Any())
                 {
-                    <p class="text-muted p-4">@T["doctype.none","No types defined."]</p>
+                    <p class="text-muted p-4">@T["doctype.none"]</p>
                 }
                 else
                 {
@@ -190,9 +190,9 @@
                         <thead class="table-light">
                             <tr>
                                 <th scope="col">#</th>
-                                <th scope="col">@T["common.name","Name"]</th>
-                                <th scope="col" class="text-center">@T["mat.page_title","Materials"]</th>
-                                <th scope="col" class="text-end">@T["common.actions","Actions"]</th>
+                                <th scope="col">@T["common.name"]</th>
+                                <th scope="col" class="text-center">@T["mat.page_title"]</th>
+                                <th scope="col" class="text-end">@T["common.actions"]</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -210,14 +210,14 @@
                                         <div class="d-flex gap-1 justify-content-end">
                                             <a asp-action="EditDocumentType" asp-route-id="@dt.Id"
                                                class="btn btn-sm btn-outline-secondary"
-                                               title="@T["common.edit","Edit"]">
+                                               title="@T["common.edit"]">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             <form asp-action="DeleteDocumentType" asp-route-id="@dt.Id" method="post" class="d-inline">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        data-confirm="@T["doctype.delete_confirm","Delete type"] «@dt.Name»?"
-                                                        title="@T["common.delete","Delete"]"
+                                                        data-confirm="@T["doctype.delete_confirm"] «@dt.Name»?"
+                                                        title="@T["common.delete"]"
                                                         @(dt.MaterialCount > 0 ? "disabled" : "")>
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -239,24 +239,24 @@
 
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                <span class="fw-semibold"><i class="bi bi-diagram-3 me-2 text-bocconi"></i>@T["admin.areas_tab","Areas"]</span>
+                <span class="fw-semibold"><i class="bi bi-diagram-3 me-2 text-bocconi"></i>@T["admin.areas_tab"]</span>
                 <button type="button" class="btn btn-sm btn-bocconi"
                         data-bs-toggle="modal" data-bs-target="#createAreaModal">
-                    <i class="bi bi-plus me-1"></i>@T["admin.create_area","Create area"]
+                    <i class="bi bi-plus me-1"></i>@T["admin.create_area"]
                 </button>
             </div>
             <div class="card-body p-0">
                 @if (!areas.Any())
                 {
-                    <p class="text-muted p-4">@T["admin.no_areas","No areas defined yet."]</p>
+                    <p class="text-muted p-4">@T["admin.no_areas"]</p>
                 }
                 else
                 {
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th scope="col" class="ps-3">@T["common.name","Name"]</th>
-                                <th scope="col" class="text-center" style="width:130px">@T["admin.users_tab","Users"]</th>
+                                <th scope="col" class="ps-3">@T["common.name"]</th>
+                                <th scope="col" class="text-center" style="width:130px">@T["admin.users_tab"]</th>
                                 <th scope="col" style="width:110px"></th>
                             </tr>
                         </thead>
@@ -281,7 +281,7 @@
                                                     class="btn btn-sm btn-outline-secondary btn-edit-area"
                                                     data-area-id="@a.Id"
                                                     data-area-name="@a.Name"
-                                                    title="@T["common.edit","Edit"]">
+                                                    title="@T["common.edit"]">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
                                             <form asp-action="DeleteArea" method="post" class="d-inline">
@@ -289,9 +289,9 @@
                                                 <input type="hidden" name="id" value="@a.Id" />
                                                 <button type="submit"
                                                         class="btn btn-sm @(a.UserCount > 0 ? "btn-outline-secondary" : "btn-outline-danger")"
-                                                        title="@T["admin.delete_area","Delete area"]"
+                                                        title="@T["admin.delete_area"]"
                                                         @(a.UserCount > 0 ? "disabled" : "")
-                                                        @(a.UserCount == 0 ? $"data-confirm=\"{T["admin.delete_area_confirm","Delete area"]} '{a.Name}'?\"" : "")>
+                                                        @(a.UserCount == 0 ? $"data-confirm=\"{T["admin.delete_area_confirm"]} '{a.Name}'?\"" : "")>
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
@@ -312,23 +312,23 @@
 
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                <span class="fw-semibold"><i class="bi bi-send me-2 text-bocconi"></i>@T["admin.platforms_tab","Platforms"]</span>
+                <span class="fw-semibold"><i class="bi bi-send me-2 text-bocconi"></i>@T["admin.platforms_tab"]</span>
                 <button type="button" class="btn btn-sm btn-bocconi"
                         data-bs-toggle="modal" data-bs-target="#createPlatformModal">
-                    <i class="bi bi-plus me-1"></i>@T["admin.create_platform","Create platform"]
+                    <i class="bi bi-plus me-1"></i>@T["admin.create_platform"]
                 </button>
             </div>
             <div class="card-body p-0">
                 @if (!platforms.Any())
                 {
-                    <p class="text-muted p-4">@T["admin.no_platforms","No platforms defined yet."]</p>
+                    <p class="text-muted p-4">@T["admin.no_platforms"]</p>
                 }
                 else
                 {
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
-                                <th scope="col" class="ps-3">@T["common.name","Name"]</th>
+                                <th scope="col" class="ps-3">@T["common.name"]</th>
                                 <th scope="col" style="width:110px"></th>
                             </tr>
                         </thead>
@@ -343,7 +343,7 @@
                                                     class="btn btn-sm btn-outline-secondary btn-edit-platform"
                                                     data-platform-id="@pl.Id"
                                                     data-platform-name="@pl.Name"
-                                                    title="@T["common.edit","Edit"]">
+                                                    title="@T["common.edit"]">
                                                 <i class="bi bi-pencil"></i>
                                             </button>
                                             <form asp-action="DeletePlatform" method="post" class="d-inline">
@@ -351,8 +351,8 @@
                                                 <input type="hidden" name="id" value="@pl.Id" />
                                                 <button type="submit"
                                                         class="btn btn-sm btn-outline-danger"
-                                                        title="@T["admin.delete_platform","Delete platform"]"
-                                                        data-confirm="@T["admin.delete_platform_confirm","Delete platform"] '@pl.Name'?">
+                                                        title="@T["admin.delete_platform"]"
+                                                        data-confirm="@T["admin.delete_platform_confirm"] '@pl.Name'?">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
@@ -373,21 +373,21 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-tags me-2"></i>@T["doctype.create","Create type"]</h5>
+                <h5 class="modal-title"><i class="bi bi-tags me-2"></i>@T["doctype.create"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="CreateDocumentType" method="post">
                 @Html.AntiForgeryToken()
                 <div class="modal-body">
-                    <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">@T["common.name"] <span class="text-danger">*</span></label>
                     <input type="text" name="Name" id="createDocTypeName" class="form-control"
-                           placeholder="@T["doctype.name_placeholder","Document type name…"]"
+                           placeholder="@T["doctype.name_placeholder"]"
                            maxlength="255" autocomplete="off" required />
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel"]</button>
                     <button type="submit" class="btn btn-bocconi">
-                        <i class="bi bi-plus me-1"></i>@T["doctype.create","Create type"]
+                        <i class="bi bi-plus me-1"></i>@T["doctype.create"]
                     </button>
                 </div>
             </form>
@@ -400,21 +400,21 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-diagram-3 me-2"></i>@T["admin.create_area","Create area"]</h5>
+                <h5 class="modal-title"><i class="bi bi-diagram-3 me-2"></i>@T["admin.create_area"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="CreateArea" method="post">
                 @Html.AntiForgeryToken()
                 <div class="modal-body">
-                    <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">@T["common.name"] <span class="text-danger">*</span></label>
                     <input type="text" name="name" id="createAreaName" class="form-control"
-                           placeholder="@T["admin.area_name_placeholder","Area name…"]"
+                           placeholder="@T["admin.area_name_placeholder"]"
                            maxlength="255" autocomplete="off" required />
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel"]</button>
                     <button type="submit" class="btn btn-bocconi">
-                        <i class="bi bi-plus me-1"></i>@T["admin.create_area","Create area"]
+                        <i class="bi bi-plus me-1"></i>@T["admin.create_area"]
                     </button>
                 </div>
             </form>
@@ -426,22 +426,22 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>@T["admin.edit_area","Edit area"]</h5>
+                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>@T["admin.edit_area"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="EditArea" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" id="editAreaId" value="" />
                 <div class="modal-body">
-                    <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">@T["common.name"] <span class="text-danger">*</span></label>
                     <input type="text" name="name" id="editAreaName" class="form-control"
-                           placeholder="@T["admin.area_name_placeholder","Area name…"]"
+                           placeholder="@T["admin.area_name_placeholder"]"
                            maxlength="255" autocomplete="off" required />
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel"]</button>
                     <button type="submit" class="btn btn-bocconi">
-                        <i class="bi bi-check-lg me-1"></i>@T["common.save","Save"]
+                        <i class="bi bi-check-lg me-1"></i>@T["common.save"]
                     </button>
                 </div>
             </form>
@@ -454,21 +454,21 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-send me-2"></i>@T["admin.create_platform","Create platform"]</h5>
+                <h5 class="modal-title"><i class="bi bi-send me-2"></i>@T["admin.create_platform"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="CreatePlatform" method="post">
                 @Html.AntiForgeryToken()
                 <div class="modal-body">
-                    <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">@T["common.name"] <span class="text-danger">*</span></label>
                     <input type="text" name="name" id="createPlatformName" class="form-control"
-                           placeholder="@T["admin.platform_name_placeholder","Platform name…"]"
+                           placeholder="@T["admin.platform_name_placeholder"]"
                            maxlength="255" autocomplete="off" required />
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel"]</button>
                     <button type="submit" class="btn btn-bocconi">
-                        <i class="bi bi-plus me-1"></i>@T["admin.create_platform","Create platform"]
+                        <i class="bi bi-plus me-1"></i>@T["admin.create_platform"]
                     </button>
                 </div>
             </form>
@@ -480,22 +480,22 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>@T["admin.edit_platform","Edit platform"]</h5>
+                <h5 class="modal-title"><i class="bi bi-pencil me-2"></i>@T["admin.edit_platform"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <form asp-action="EditPlatform" method="post">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="id" id="editPlatformId" value="" />
                 <div class="modal-body">
-                    <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
+                    <label class="form-label fw-semibold">@T["common.name"] <span class="text-danger">*</span></label>
                     <input type="text" name="name" id="editPlatformName" class="form-control"
-                           placeholder="@T["admin.platform_name_placeholder","Platform name…"]"
+                           placeholder="@T["admin.platform_name_placeholder"]"
                            maxlength="255" autocomplete="off" required />
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel"]</button>
                     <button type="submit" class="btn btn-bocconi">
-                        <i class="bi bi-check-lg me-1"></i>@T["common.save","Save"]
+                        <i class="bi bi-check-lg me-1"></i>@T["common.save"]
                     </button>
                 </div>
             </form>

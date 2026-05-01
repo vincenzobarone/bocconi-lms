@@ -1,6 +1,6 @@
 @using BocconiLMS.Services
 @{
-    ViewData["Title"] = T["admin.platform_settings","Platform Settings"];
+    ViewData["Title"] = T["admin.platform_settings"];
     bool coursesEnabled   = ViewBag.CoursesEnabled == true;
     bool materialsEnabled = ViewBag.MaterialsEnabled != false;
     var enabledLangs      = ViewBag.EnabledLanguages as List<string> ?? new List<string> { "en" };
@@ -60,17 +60,17 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-bocconi mb-0">
-        <i class="bi bi-sliders me-2"></i>@T["admin.platform_settings","Platform Settings"]
+        <i class="bi bi-sliders me-2"></i>@T["admin.platform_settings"]
     </h2>
     <a asp-controller="Home" asp-action="Dashboard" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>@T["common.back_to_panel","Back to panel"]
+        <i class="bi bi-arrow-left me-1"></i>@T["common.back_to_panel"]
     </a>
 </div>
 
 @* ── Active Languages ──────────────────────────────────────────────── *@
 <div class="card mb-4 border-0 shadow-sm">
     <div class="card-header bg-white fw-semibold">
-        <i class="bi bi-globe me-2 text-bocconi"></i>@T["admin.lang.settings","Active Languages"]
+        <i class="bi bi-globe me-2 text-bocconi"></i>@T["admin.lang.settings"]
     </div>
     <div class="card-body">
         <form asp-action="SaveLanguageSettings" method="post" class="d-flex align-items-center gap-4 flex-wrap">
@@ -79,7 +79,7 @@
                 <input class="form-check-input" type="checkbox" checked disabled />
                 <label class="form-check-label ms-1">🇬🇧 English (EN)</label>
                 <input type="hidden" name="enabledLanguages" value="en" />
-                <span class="badge bg-secondary ms-1">@T["admin.lang.required","required"]</span>
+                <span class="badge bg-secondary ms-1">@T["admin.lang.required"]</span>
             </div>
             @foreach (var lang in allOtherLangs)
             {
@@ -94,12 +94,12 @@
                     </label>
                     @if (isEnabled && mis > 0)
                     {
-                        <span class="badge bg-warning text-dark ms-1" title="Missing translations">@mis @T["admin.translations.missing","Missing"]</span>
+                        <span class="badge bg-warning text-dark ms-1" title="Missing translations">@mis @T["admin.translations.missing"]</span>
                     }
                 </div>
             }
             <button type="submit" class="btn btn-bocconi btn-sm ms-auto">
-                <i class="bi bi-save me-1"></i>@T["admin.lang.save","Save language settings"]
+                <i class="bi bi-save me-1"></i>@T["admin.lang.save"]
             </button>
         </form>
     </div>
@@ -108,10 +108,10 @@
 @* ── Timezone ──────────────────────────────────────────────────────── *@
 <div class="card mb-4 border-0 shadow-sm">
     <div class="card-header bg-white fw-semibold">
-        <i class="bi bi-clock-history me-2 text-bocconi"></i>@T["admin.timezone.title","Fuso orario piattaforma"]
+        <i class="bi bi-clock-history me-2 text-bocconi"></i>@T["admin.timezone.title"]
     </div>
     <div class="card-body">
-        <p class="text-muted small mb-3">@T["admin.timezone.desc","Il fuso orario usato per l'orologio nella dashboard di tutti gli utenti. Se il browser dell'utente è in un fuso diverso, viene mostrata anche l'ora locale."]</p>
+        <p class="text-muted small mb-3">@T["admin.timezone.desc"]</p>
         <form asp-action="SaveTimezone" asp-route-area="" method="post" class="d-flex align-items-center gap-3 flex-wrap">
             @Html.AntiForgeryToken()
             <select name="timezone" class="form-select" style="max-width:320px;">
@@ -133,10 +133,10 @@
                 }
             </select>
             <button type="submit" class="btn btn-bocconi btn-sm">
-                <i class="bi bi-save me-1"></i>@T["admin.timezone.save","Salva fuso orario"]
+                <i class="bi bi-save me-1"></i>@T["admin.timezone.save"]
             </button>
             <span class="text-muted small">
-                <i class="bi bi-info-circle me-1"></i>@T["admin.timezone.current","Attuale:"] <strong>@currentTz</strong>
+                <i class="bi bi-info-circle me-1"></i>@T["admin.timezone.current"] <strong>@currentTz</strong>
             </span>
         </form>
     </div>
@@ -149,21 +149,21 @@
         @* Modulo Materiali *@
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-bocconi-light fw-semibold">
-                <i class="bi bi-collection me-2"></i>@T["admin.materials_module","Materials Module"]
+                <i class="bi bi-collection me-2"></i>@T["admin.materials_module"]
             </div>
             <div class="card-body">
                 <p class="mb-1">
-                    @T["admin.materials_module_on_prefix","When the materials module is"]
-                    <strong>@T["admin.module_active","active"]</strong>:
+                    @T["admin.materials_module_on_prefix"]
+                    <strong>@T["admin.module_active"]</strong>:
                 </p>
                 <ul class="mb-3 small">
-                    <li>@T["admin.materials_feature_nav","The Materials link appears in the navigation bar"]</li>
-                    <li>@T["admin.materials_feature_library","Users can browse, search and download materials"]</li>
-                    <li>@T["admin.materials_feature_teacher","Teachers and admins can upload and manage materials"]</li>
+                    <li>@T["admin.materials_feature_nav"]</li>
+                    <li>@T["admin.materials_feature_library"]</li>
+                    <li>@T["admin.materials_feature_teacher"]</li>
                 </ul>
                 <div class="alert alert-info small py-2 mb-0">
                     <i class="bi bi-info-circle me-1"></i>
-                    @T["admin.materials_module_info","Changes take effect immediately. Existing material data is not deleted."]
+                    @T["admin.materials_module_info"]
                 </div>
 
                 <form id="materialsToggleForm" method="post" asp-action="ToggleMaterials">
@@ -176,21 +176,21 @@
         @* Modulo Corsi *@
         <div class="card shadow-sm">
             <div class="card-header bg-bocconi-light fw-semibold">
-                <i class="bi bi-book me-2"></i>@T["admin.courses_module","Courses & Enrolments Module"]
+                <i class="bi bi-book me-2"></i>@T["admin.courses_module"]
             </div>
             <div class="card-body">
                 <p class="mb-1">
-                    @T["admin.courses_module_on_prefix","When the courses module is"]
-                    <strong>@T["admin.module_active","active"]</strong>:
+                    @T["admin.courses_module_on_prefix"]
+                    <strong>@T["admin.module_active"]</strong>:
                 </p>
                 <ul class="mb-3 small">
-                    <li>@T["admin.courses_feature_nav","The Courses link appears in the navigation bar for everyone"]</li>
-                    <li>@T["admin.courses_feature_catalog","Students and teachers see the course catalogue, enrolments and course dashboard"]</li>
-                    <li>@T["admin.courses_feature_teacher","Teachers can manage lessons and students per course"]</li>
+                    <li>@T["admin.courses_feature_nav"]</li>
+                    <li>@T["admin.courses_feature_catalog"]</li>
+                    <li>@T["admin.courses_feature_teacher"]</li>
                 </ul>
                 <div class="alert alert-info small py-2 mb-0">
                     <i class="bi bi-info-circle me-1"></i>
-                    @T["admin.courses_module_info","Changes take effect immediately. Existing course data is not deleted."]
+                    @T["admin.courses_module_info"]
                 </div>
 
                 <form id="coursesToggleForm" method="post" asp-action="PlatformFeatures">
@@ -206,28 +206,28 @@
         <div class="card shadow-sm border-0 bg-light">
             <div class="card-body">
                 <h6 class="fw-bold mb-3">
-                    <i class="bi bi-grid-3x3-gap me-2 text-bocconi"></i>@T["admin.modules_summary","Module summary"]
+                    <i class="bi bi-grid-3x3-gap me-2 text-bocconi"></i>@T["admin.modules_summary"]
                 </h6>
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <span><i class="bi bi-collection me-2 text-bocconi"></i>@T["nav.materials","Materials"]</span>
+                        <span><i class="bi bi-collection me-2 text-bocconi"></i>@T["nav.materials"]</span>
                         <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
                             <input class="form-check-input mt-0" type="checkbox" role="switch"
                                    id="materialsToggle" style="width:2.5em;height:1.3em;cursor:pointer;"
                                    @(materialsEnabled ? "checked" : "") />
                             <span class="small fw-semibold @(materialsEnabled ? "text-success" : "text-secondary")">
-                                @(materialsEnabled ? T["admin.module_active","Active"] : T["admin.module_disabled","Disabled"])
+                                @(materialsEnabled ? T["admin.module_active"] : T["admin.module_disabled"])
                             </span>
                         </div>
                     </li>
                     <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                        <span><i class="bi bi-book me-2 text-bocconi"></i>@T["admin.courses_label","Courses"]</span>
+                        <span><i class="bi bi-book me-2 text-bocconi"></i>@T["admin.courses_label"]</span>
                         <div class="form-check form-switch mb-0 d-flex align-items-center gap-2">
                             <input class="form-check-input mt-0" type="checkbox" role="switch"
                                    id="coursesToggle" style="width:2.5em;height:1.3em;cursor:pointer;"
                                    @(coursesEnabled ? "checked" : "") />
                             <span class="small fw-semibold @(coursesEnabled ? "text-success" : "text-secondary")">
-                                @(coursesEnabled ? T["admin.module_active","Active"] : T["admin.module_disabled","Disabled"])
+                                @(coursesEnabled ? T["admin.module_active"] : T["admin.module_disabled"])
                             </span>
                         </div>
                     </li>

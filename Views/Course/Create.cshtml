@@ -1,19 +1,19 @@
 @model CourseFormViewModel
 @{
-    ViewData["Title"] = T["course.create_title","New course"];
+    ViewData["Title"] = T["course.create_title"];
 }
 
 <div class="row justify-content-center">
     <div class="col-lg-7">
-        <h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-plus-circle me-2"></i>@T["course.create_title","Create new course"]</h2>
+        <h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-plus-circle me-2"></i>@T["course.create_title"]</h2>
         <div class="card shadow-sm">
             <div class="card-body p-4">
                 <form asp-action="Create" method="post">
                     @Html.AntiForgeryToken()
                     @await Html.PartialAsync("_CourseForm", Model)
                     <div class="d-flex gap-2 mt-3">
-                        <button type="submit" class="btn btn-bocconi px-4">@T["course.create_btn","Create course"]</button>
-                        <a asp-action="Dashboard" class="btn btn-outline-secondary">@T["common.cancel","Cancel"]</a>
+                        <button type="submit" class="btn btn-bocconi px-4">@T["course.create_btn"]</button>
+                        <a asp-action="Dashboard" class="btn btn-outline-secondary">@T["common.cancel"]</a>
                     </div>
                 </form>
             </div>

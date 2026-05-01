@@ -1,13 +1,13 @@
 @model UsersAndRolesViewModel
 @{
-    ViewData["Title"] = T["admin.users_roles","Users & Roles"];
+    ViewData["Title"] = T["admin.users_roles"];
     var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
     var activeTab = Model.ActiveTab;
     bool coursesEnabled = ViewBag.CoursesEnabled == true;
 }
 
 <div class="mb-4">
-    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-people me-2"></i>@T["admin.users_roles","Users & Roles"]</h2>
+    <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-people me-2"></i>@T["admin.users_roles"]</h2>
 </div>
 
 <ul class="nav nav-tabs mb-4" id="usersRolesTabs" role="tablist">
@@ -15,7 +15,7 @@
         <button class="nav-link @(activeTab == "utenti" ? "active" : "")"
                 id="tab-utenti" data-bs-toggle="tab" data-bs-target="#pane-utenti"
                 type="button" role="tab">
-            <i class="bi bi-people me-1"></i>@T["admin.users_tab","Users"]
+            <i class="bi bi-people me-1"></i>@T["admin.users_tab"]
             <span class="badge bg-secondary ms-1">@Model.Users.Count</span>
         </button>
     </li>
@@ -23,7 +23,7 @@
         <button class="nav-link @(activeTab == "ruoli" ? "active" : "")"
                 id="tab-ruoli" data-bs-toggle="tab" data-bs-target="#pane-ruoli"
                 type="button" role="tab">
-            <i class="bi bi-shield-lock me-1"></i>@T["admin.roles_tab","Roles"]
+            <i class="bi bi-shield-lock me-1"></i>@T["admin.roles_tab"]
             <span class="badge bg-secondary ms-1">@Model.Roles.Count</span>
         </button>
     </li>
@@ -36,20 +36,20 @@
          id="pane-utenti" role="tabpanel">
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                <span class="fw-semibold"><i class="bi bi-people me-2 text-bocconi"></i>@T["admin.users_tab","Users"]</span>
+                <span class="fw-semibold"><i class="bi bi-people me-2 text-bocconi"></i>@T["admin.users_tab"]</span>
                 <a asp-action="CreateUser" class="btn btn-sm btn-bocconi">
-                    <i class="bi bi-person-plus me-1"></i>@T["admin.users.new_btn","Crea utente"]
+                    <i class="bi bi-person-plus me-1"></i>@T["admin.users.new_btn"]
                 </a>
             </div>
             <div class="card-body">
                 <table id="usersTable" class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col">@T["common.name", "Name"]</th>
+                            <th scope="col">@T["common.name"]</th>
                             <th scope="col">Email</th>
-                            <th scope="col">@T["common.role", "Role"]</th>
-                            <th scope="col">@T["common.status", "Status"]</th>
-                            <th scope="col">@T["common.actions", "Actions"]</th>
+                            <th scope="col">@T["common.role"]</th>
+                            <th scope="col">@T["common.status"]</th>
+                            <th scope="col">@T["common.actions"]</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -67,7 +67,7 @@
                                             _         => "bg-warning text-dark"
                                         };
                                         var roleLabel = string.IsNullOrEmpty(u.Role)
-                                            ? T["admin.no_role","Nessun ruolo"]
+                                            ? T["admin.no_role"]
                                             : u.Role;
                                     }
                                     <span class="badge @roleClass">
@@ -83,11 +83,11 @@
                                     {
                                         @if (u.IsActive)
                                         {
-                                            <span class="badge bg-success">@T["common.active", "Active"]</span>
+                                            <span class="badge bg-success">@T["common.active"]</span>
                                         }
                                         else
                                         {
-                                            <span class="badge bg-warning text-dark">@T["common.inactive", "Inactive"]</span>
+                                            <span class="badge bg-warning text-dark">@T["common.inactive"]</span>
                                         }
                                     }
                                     else
@@ -98,9 +98,9 @@
                                                 data-bs-toggle="modal" data-bs-target="#toggleModal"
                                                 data-user-id="@u.Id"
                                                 data-user-name="@u.FullName"
-                                                data-confirm-msg="@(u.IsActive ? T["users.confirm_deactivate","Deactivate"] : T["users.confirm_activate","Activate"]) &quot;@u.FullName&quot;?"
-                                                title="@T["users.click_to_toggle","Click to toggle status"]">
-                                            @(u.IsActive ? T["common.active","Active"] : T["common.inactive","Inactive"])
+                                                data-confirm-msg="@(u.IsActive ? T["users.confirm_deactivate"] : T["users.confirm_activate"]) &quot;@u.FullName&quot;?"
+                                                title="@T["users.click_to_toggle"]">
+                                            @(u.IsActive ? T["common.active"] : T["common.inactive"])
                                         </button>
                                     }
                                 </td>
@@ -109,7 +109,7 @@
                                         @if (u.Id != currentUserId && u.Role != "Admin")
                                         {
                                             <a asp-action="EditUser" asp-route-id="@u.Id"
-                                               class="btn btn-sm btn-outline-secondary" title="@T["common.edit","Edit"]">
+                                               class="btn btn-sm btn-outline-secondary" title="@T["common.edit"]">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                         }
@@ -121,7 +121,7 @@
                                                     data-user-id="@u.Id"
                                                     data-user-name="@u.FullName"
                                                     data-user-role="@u.Role"
-                                                    title="@T["users.view_courses","View courses"]">
+                                                    title="@T["users.view_courses"]">
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                         }
@@ -136,7 +136,7 @@
                                                         data-bs-toggle="modal" data-bs-target="#deleteBlockedModal"
                                                         data-user-name="@u.FullName"
                                                         data-course-count="@u.CourseCount"
-                                                        title="@T["users.delete","Delete"]">
+                                                        title="@T["users.delete"]">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             }
@@ -148,7 +148,7 @@
                                                         data-user-id="@u.Id"
                                                         data-user-name="@u.FullName"
                                                         data-user-role="@u.Role"
-                                                        title="@T["users.delete","Delete"]">
+                                                        title="@T["users.delete"]">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             }
@@ -169,10 +169,10 @@
 
         <div class="card shadow-sm">
             <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
-                <span class="fw-semibold"><i class="bi bi-shield-lock me-2 text-bocconi"></i>@T["admin.roles_tab","Roles"]</span>
+                <span class="fw-semibold"><i class="bi bi-shield-lock me-2 text-bocconi"></i>@T["admin.roles_tab"]</span>
                 <form method="get" action="/Admin/CreateRole" class="d-inline">
                     <button type="submit" class="btn btn-sm btn-bocconi">
-                        <i class="bi bi-plus me-1"></i>@T["admin.create_role","Create role"]
+                        <i class="bi bi-plus me-1"></i>@T["admin.create_role"]
                     </button>
                 </form>
             </div>
@@ -180,8 +180,8 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col" class="ps-3">@T["common.name","Name"]</th>
-                            <th scope="col" class="text-center" style="width:130px">@T["admin.users_tab","Users"]</th>
+                            <th scope="col" class="ps-3">@T["common.name"]</th>
+                            <th scope="col" class="text-center" style="width:130px">@T["admin.users_tab"]</th>
                             <th scope="col" style="width:110px"></th>
                         </tr>
                     </thead>
@@ -193,7 +193,7 @@
                                     @r.Name
                                     @if (r.IsAdmin)
                                     {
-                                        <span class="badge bg-secondary ms-2 fw-normal">@T["admin.role_protected","protected"]</span>
+                                        <span class="badge bg-secondary ms-2 fw-normal">@T["admin.role_protected"]</span>
                                     }
                                 </td>
                                 <td class="text-center">
@@ -212,7 +212,7 @@
                                         <div class="d-flex gap-1 justify-content-end">
                                             <form method="get" action="/Admin/EditRole/@r.Id" class="d-inline">
                                                 <button type="submit" class="btn btn-sm btn-outline-secondary"
-                                                        title="@T["admin.edit_role","Edit role"]">
+                                                        title="@T["admin.edit_role"]">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
                                             </form>
@@ -220,7 +220,7 @@
                                             {
                                                 <button type="button" disabled
                                                         class="btn btn-sm btn-outline-secondary"
-                                                        title="@T["admin.delete_role_blocked","Cannot delete: users have this role"]">
+                                                        title="@T["admin.delete_role_blocked"]">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             }
@@ -231,8 +231,8 @@
                                                     <input type="hidden" name="id" value="@r.Id" />
                                                     <button type="submit"
                                                             class="btn btn-sm btn-outline-danger"
-                                                            title="@T["admin.delete_role","Delete role"]"
-                                                            data-confirm="@T["admin.delete_role_confirm","Delete role"] '@r.Name'?">
+                                                            title="@T["admin.delete_role"]"
+                                                            data-confirm="@T["admin.delete_role_confirm"] '@r.Name'?">
                                                         <i class="bi bi-trash"></i>
                                                     </button>
                                                 </form>
@@ -261,7 +261,7 @@
                 <div class="text-center py-3"><div class="spinner-border text-bocconi" role="status"></div></div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.close","Close"]</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.close"]</button>
             </div>
         </div>
     </div>
@@ -271,15 +271,15 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">@T["common.confirm_action", "Confirm Action"]</h5>
+                <h5 class="modal-title">@T["common.confirm_action"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="toggleModalBody"></div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel", "Cancel"]</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel"]</button>
                 <form id="toggleForm" method="post">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-bocconi">@T["common.confirm", "Confirm"]</button>
+                    <button type="submit" class="btn btn-bocconi">@T["common.confirm"]</button>
                 </form>
             </div>
         </div>
@@ -290,20 +290,20 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-danger">
             <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>@T["users.delete_title","Delete user"]</h5>
+                <h5 class="modal-title"><i class="bi bi-exclamation-triangle me-2"></i>@T["users.delete_title"]</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <p id="deleteModalBody"></p>
                 <div class="alert alert-warning small">
-                    <i class="bi bi-exclamation-triangle me-1"></i>@T["users.delete_warning","This action is permanent and cannot be undone. All data associated with this user will also be deleted."]
+                    <i class="bi bi-exclamation-triangle me-1"></i>@T["users.delete_warning"]
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel","Cancel"]</button>
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel"]</button>
                 <form id="deleteForm" method="post">
                     @Html.AntiForgeryToken()
-                    <button type="submit" class="btn btn-danger">@T["users.delete_confirm","Yes, delete"]</button>
+                    <button type="submit" class="btn btn-danger">@T["users.delete_confirm"]</button>
                 </form>
             </div>
         </div>
@@ -314,15 +314,15 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-lock me-2"></i>@T["users.delete_blocked_title","Cannot delete teacher"]</h5>
+                <h5 class="modal-title"><i class="bi bi-lock me-2"></i>@T["users.delete_blocked_title"]</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
                 <p id="deleteBlockedBody"></p>
-                <p class="text-muted small">@T["users.delete_blocked_hint","Reassign or delete all courses for this teacher before deleting their account."]</p>
+                <p class="text-muted small">@T["users.delete_blocked_hint"]</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-bocconi" data-bs-dismiss="modal">@T["common.ok","OK"]</button>
+                <button type="button" class="btn btn-bocconi" data-bs-dismiss="modal">@T["common.ok"]</button>
             </div>
         </div>
     </div>
@@ -335,16 +335,16 @@
     </style>
     <script>
         var _lbl = {
-            noCourseTaught:       @Json.Serialize(T["users.no_courses_taught","This teacher has no courses."]),
-            noCourseEnrolled:     @Json.Serialize(T["users.no_courses_enrolled","This student is not enrolled in any course."]),
-            coursesTaught:        @Json.Serialize(T["users.courses_taught","Courses taught"]),
-            coursesEnrolled:      @Json.Serialize(T["users.courses_enrolled","Enrolled courses"]),
-            published:            @Json.Serialize(T["common.published","Published"]),
-            draft:                @Json.Serialize(T["common.draft","Draft"]),
-            error:                @Json.Serialize(T["common.error","An error occurred."]),
-            deleteConfirmMsg:     @Json.Serialize(T["users.delete_confirm_msg","Are you sure you want to delete"]),
-            deleteBlockedMsg:     @Json.Serialize(T["users.delete_blocked_msg","has"]),
-            deleteBlockedCourses: @Json.Serialize(T["users.delete_blocked_courses","active course(s) and cannot be deleted."])
+            noCourseTaught:       @Json.Serialize(T["users.no_courses_taught"]),
+            noCourseEnrolled:     @Json.Serialize(T["users.no_courses_enrolled"]),
+            coursesTaught:        @Json.Serialize(T["users.courses_taught"]),
+            coursesEnrolled:      @Json.Serialize(T["users.courses_enrolled"]),
+            published:            @Json.Serialize(T["common.published"]),
+            draft:                @Json.Serialize(T["common.draft"]),
+            error:                @Json.Serialize(T["common.error"]),
+            deleteConfirmMsg:     @Json.Serialize(T["users.delete_confirm_msg"]),
+            deleteBlockedMsg:     @Json.Serialize(T["users.delete_blocked_msg"]),
+            deleteBlockedCourses: @Json.Serialize(T["users.delete_blocked_courses"])
         };
 
         $(document).ready(function () {

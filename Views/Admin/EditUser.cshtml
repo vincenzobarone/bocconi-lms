@@ -1,11 +1,11 @@
 @model User
 @{
-    ViewData["Title"] = T["admin.users.edit_title", "Edit User"] + " - " + Model.FullName;
+    ViewData["Title"] = T["admin.users.edit_title"] + " - " + Model.FullName;
 }
 
 <div class="row justify-content-center">
     <div class="col-lg-6">
-        <h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-pencil me-2"></i>@T["admin.users.edit_title", "Edit User"]</h2>
+        <h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-pencil me-2"></i>@T["admin.users.edit_title"]</h2>
         <div class="card shadow-sm">
             <div class="card-body p-4">
                 <form asp-action="EditUser" method="post">
@@ -13,11 +13,11 @@
                     <input type="hidden" asp-for="Id" />
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label asp-for="FirstName" class="form-label fw-semibold">@T["common.first_name", "First Name"]</label>
+                            <label asp-for="FirstName" class="form-label fw-semibold">@T["common.first_name"]</label>
                             <input asp-for="FirstName" class="form-control" />
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label asp-for="LastName" class="form-label fw-semibold">@T["common.last_name", "Last Name"]</label>
+                            <label asp-for="LastName" class="form-label fw-semibold">@T["common.last_name"]</label>
                             <input asp-for="LastName" class="form-control" />
                         </div>
                     </div>
@@ -26,12 +26,12 @@
                         <input value="@Model.Email" class="form-control" disabled />
                     </div>
                     <div class="mb-3">
-                        <label asp-for="Role" class="form-label fw-semibold">@T["common.role", "Role"]</label>
+                        <label asp-for="Role" class="form-label fw-semibold">@T["common.role"]</label>
                         @if (Model.Role == "Admin")
                         {
                             <input type="hidden" asp-for="Role" />
-                            <input class="form-control" value="@T["role.admin","Admin"]" disabled />
-                            <div class="form-text text-muted">@T["admin.users.role_locked","The Admin role cannot be changed."]</div>
+                            <input class="form-control" value="@T["role.admin"]" disabled />
+                            <div class="form-text text-muted">@T["admin.users.role_locked"]</div>
                         }
                         else
                         {
@@ -39,13 +39,13 @@
                             {
                                 <div class="alert alert-warning py-2 px-3 mb-2 small">
                                     <i class="bi bi-exclamation-triangle me-1"></i>
-                                    @T["admin.no_role_warning","Questo utente non ha ancora un ruolo assegnato. Seleziona un ruolo e salva."]
+                                    @T["admin.no_role_warning"]
                                 </div>
                             }
                             <select asp-for="Role" class="form-select @(string.IsNullOrEmpty(Model.Role) ? "border-warning" : "")">
                                 @if (string.IsNullOrEmpty(Model.Role))
                                 {
-                                    <option value="" selected>— @T["admin.select_role","Seleziona un ruolo"] —</option>
+                                    <option value="" selected>— @T["admin.select_role"] —</option>
                                 }
                                 @foreach (var r in (ViewBag.AvailableRoles as List<string> ?? new List<string>()))
                                 {
@@ -57,7 +57,7 @@
                     </div>
                     <div class="form-check mb-3">
                         <input asp-for="IsActive" class="form-check-input" type="checkbox" />
-                        <label asp-for="IsActive" class="form-check-label">@T["admin.users.active_account", "Active Account"]</label>
+                        <label asp-for="IsActive" class="form-check-label">@T["admin.users.active_account"]</label>
                     </div>
 
                     @{
@@ -67,7 +67,7 @@
                     @if (allAreas.Any())
                     {
                         <div class="mb-4">
-                            <label class="form-label fw-semibold">@T["admin.areas_tab","Areas"]</label>
+                            <label class="form-label fw-semibold">@T["admin.areas_tab"]</label>
                             <div class="border rounded p-3" style="max-height:220px;overflow-y:auto;">
                                 @foreach (var area in allAreas)
                                 {
@@ -84,8 +84,8 @@
                     }
 
                     <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-bocconi px-4">@T["common.save", "Save"]</button>
-                        <a asp-action="Users" class="btn btn-outline-secondary">@T["common.cancel", "Cancel"]</a>
+                        <button type="submit" class="btn btn-bocconi px-4">@T["common.save"]</button>
+                        <a asp-action="Users" class="btn btn-outline-secondary">@T["common.cancel"]</a>
                     </div>
                 </form>
             </div>

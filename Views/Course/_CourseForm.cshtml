@@ -4,12 +4,12 @@
 {
     <div class="mb-3">
         <label asp-for="TeacherId" class="form-label fw-semibold">
-            <i class="bi bi-person-video3 me-1"></i>@T["course.form.teacher","Teacher"] *
+            <i class="bi bi-person-video3 me-1"></i>@T["course.form.teacher"] *
         </label>
         @if (Model.AvailableTeachers.Any())
         {
             <select asp-for="TeacherId" class="form-select">
-                <option value="">@T["course.form.select_teacher","— Select a teacher —"]</option>
+                <option value="">@T["course.form.select_teacher"]</option>
                 @foreach (var t in Model.AvailableTeachers)
                 {
                     <option value="@t.Id" selected="@(Model.TeacherId == t.Id)">@t.FullName</option>
@@ -20,7 +20,7 @@
         {
             <div class="alert alert-warning py-2 mb-0">
                 <i class="bi bi-exclamation-triangle me-1"></i>
-                @T["course.form.no_teachers","No active teachers found. Create a teacher account first."]
+                @T["course.form.no_teachers"]
             </div>
         }
         <span asp-validation-for="TeacherId" class="text-danger small"></span>
@@ -28,42 +28,42 @@
 }
 
 <div class="mb-3">
-    <label asp-for="Title" class="form-label fw-semibold">@T["course.form.title","Title"] *</label>
-    <input asp-for="Title" class="form-control" placeholder="@T["course.form.title_placeholder","e.g. Business Economics I"]" />
+    <label asp-for="Title" class="form-label fw-semibold">@T["course.form.title"] *</label>
+    <input asp-for="Title" class="form-control" placeholder="@T["course.form.title_placeholder"]" />
     <span asp-validation-for="Title" class="text-danger small"></span>
 </div>
 <div class="mb-3">
-    <label asp-for="Description" class="form-label fw-semibold">@T["course.form.description","Description"] *</label>
-    <textarea asp-for="Description" class="form-control" rows="4" placeholder="@T["course.form.description_placeholder","Describe the course content..."]"></textarea>
+    <label asp-for="Description" class="form-label fw-semibold">@T["course.form.description"] *</label>
+    <textarea asp-for="Description" class="form-control" rows="4" placeholder="@T["course.form.description_placeholder"]"></textarea>
     <span asp-validation-for="Description" class="text-danger small"></span>
 </div>
 <div class="mb-3">
-    <label asp-for="Category" class="form-label fw-semibold">@T["course.form.category","Category"] *</label>
+    <label asp-for="Category" class="form-label fw-semibold">@T["course.form.category"] *</label>
     <select asp-for="Category" class="form-select">
-        <option value="">@T["course.form.select_category","Select a category..."]</option>
-        <option>@T["cat.economics","Economics"]</option>
-        <option>@T["cat.management","Management"]</option>
-        <option>@T["cat.finance","Finance"]</option>
-        <option>@T["cat.marketing","Marketing"]</option>
-        <option>@T["cat.law","Law"]</option>
-        <option>@T["cat.it","Computer Science"]</option>
-        <option>@T["cat.statistics","Statistics"]</option>
-        <option>@T["cat.languages","Languages"]</option>
-        <option>@T["cat.other","Other"]</option>
+        <option value="">@T["course.form.select_category"]</option>
+        <option>@T["cat.economics"]</option>
+        <option>@T["cat.management"]</option>
+        <option>@T["cat.finance"]</option>
+        <option>@T["cat.marketing"]</option>
+        <option>@T["cat.law"]</option>
+        <option>@T["cat.it"]</option>
+        <option>@T["cat.statistics"]</option>
+        <option>@T["cat.languages"]</option>
+        <option>@T["cat.other"]</option>
     </select>
     <span asp-validation-for="Category" class="text-danger small"></span>
 </div>
 <div class="row">
     <div class="col-md-6 mb-3">
-        <label asp-for="StartDate" class="form-label fw-semibold">@T["course.form.start_date","Start date"]</label>
+        <label asp-for="StartDate" class="form-label fw-semibold">@T["course.form.start_date"]</label>
         <input asp-for="StartDate" type="date" class="form-control" />
     </div>
     <div class="col-md-6 mb-3">
-        <label asp-for="EndDate" class="form-label fw-semibold">@T["course.form.end_date","End date"]</label>
+        <label asp-for="EndDate" class="form-label fw-semibold">@T["course.form.end_date"]</label>
         <input asp-for="EndDate" type="date" class="form-control" />
     </div>
 </div>
 <div class="form-check">
     <input asp-for="IsPublished" class="form-check-input" type="checkbox" />
-    <label asp-for="IsPublished" class="form-check-label">@T["course.form.publish","Publish immediately (visible to students)"]</label>
+    <label asp-for="IsPublished" class="form-check-label">@T["course.form.publish"]</label>
 </div>

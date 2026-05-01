@@ -192,7 +192,7 @@ public class MaterialsController : Controller
         if (!value.HasValue || value == 0)
         {
             ModelState.AddModelError(fieldName,
-                _t.T("mat.doctype_required", "Il tipo documento è obbligatorio"));
+                _t.T("mat.doctype_required"));
         }
     }
 
@@ -520,10 +520,10 @@ public class MaterialsController : Controller
         }
 
         if (string.IsNullOrWhiteSpace(vm.AuthorName))
-            ModelState.AddModelError(nameof(vm.AuthorName), _t.T("mat.author_required", "L'autore è obbligatorio."));
+            ModelState.AddModelError(nameof(vm.AuthorName), _t.T("mat.author_required"));
 
         if (vm.File == null || vm.File.Length == 0)
-            ModelState.AddModelError(nameof(vm.File), _t.T("mat.file_required", "Il file è obbligatorio."));
+            ModelState.AddModelError(nameof(vm.File), _t.T("mat.file_required"));
 
         TranslateDocTypeError(nameof(vm.DocumentTypeId), vm.DocumentTypeId);
 
@@ -538,7 +538,7 @@ public class MaterialsController : Controller
 
         if (await _materials.TitleExistsAsync(vm.Title))
         {
-            ModelState.AddModelError(nameof(vm.Title), _t.T("mat.title_duplicate", "Esiste già un materiale con questo titolo."));
+            ModelState.AddModelError(nameof(vm.Title), _t.T("mat.title_duplicate"));
             ViewBag.CurrentUserFullName = CurrentUserFullName();
             ViewBag.CanSetStatus = await CanSetStatusAsync("create");
             ViewBag.CanPublish   = await CanPublishMaterialAsync();
@@ -583,14 +583,14 @@ public class MaterialsController : Controller
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SaveVersionAsync fallita per materialId={MatId} file={File}", matId, vm.File.FileName);
-                TempData["Warning"] = _t.T("mat.msg_created_no_file", "Material created, but the file could not be saved:") + " " + ex.Message;
+                TempData["Warning"] = _t.T("mat.msg_created_no_file") + " " + ex.Message;
                 return RedirectToAction(nameof(Details), new { id = matId });
             }
         }
 
         _audit.Log("material.create", $"material#{matId} \"{vm.Title}\"");
         FireMaterialNotification(vm.Title, "created");
-        TempData["Success"] = string.Format(_t.T("mat.msg_created", "Material \u00ab{0}\u00bb created successfully."), vm.Title);
+        TempData["Success"] = string.Format(_t.T("mat.msg_created"), vm.Title);
         return RedirectToAction(nameof(Details), new { id = matId });
     }
 
@@ -650,7 +650,7 @@ public class MaterialsController : Controller
         }
 
         if (string.IsNullOrWhiteSpace(vm.AuthorName))
-            ModelState.AddModelError(nameof(vm.AuthorName), _t.T("mat.author_required", "L'autore è obbligatorio."));
+            ModelState.AddModelError(nameof(vm.AuthorName), _t.T("mat.author_required"));
 
         TranslateDocTypeError(nameof(vm.DocumentTypeId), vm.DocumentTypeId);
 
@@ -666,7 +666,7 @@ public class MaterialsController : Controller
 
         if (await _materials.TitleExistsAsync(vm.Title, id))
         {
-            ModelState.AddModelError(nameof(vm.Title), _t.T("mat.title_duplicate", "Esiste già un materiale con questo titolo."));
+            ModelState.AddModelError(nameof(vm.Title), _t.T("mat.title_duplicate"));
             var mat = await _materials.GetByIdAsync(id);
             ViewBag.Material     = mat;
             ViewBag.CanSetStatus = await CanSetStatusAsync("edit");
@@ -722,14 +722,14 @@ public class MaterialsController : Controller
             {
                 _logger.LogError(ex, "SaveVersionAsync fallita in Edit per materialId={Id} file={File}", id, vm.File.FileName);
                 FireMaterialNotification(vm.Title, "updated");
-                TempData["Warning"] = _t.T("mat.msg_updated_no_file", "Material updated, but the file could not be saved:") + " " + ex.Message;
+                TempData["Warning"] = _t.T("mat.msg_updated_no_file") + " " + ex.Message;
                 return RedirectToAction(nameof(Index));
             }
         }
 
         _audit.Log("material.edit", $"material#{id} \"{vm.Title}\"");
         FireMaterialNotification(vm.Title, "updated");
-        TempData["Success"] = _t.T("mat.msg_updated", "Material updated.");
+        TempData["Success"] = _t.T("mat.msg_updated");
         return RedirectToAction(nameof(Index));
     }
 
@@ -745,7 +745,7 @@ public class MaterialsController : Controller
         if (material == null) return NotFound();
         if (file == null || file.Length == 0)
         {
-            TempData["Error"] = _t.T("mat.msg_select_file", "Please select a file to upload.");
+            TempData["Error"] = _t.T("mat.msg_select_file");
             return RedirectToAction(nameof(Details), new { id });
         }
         try
@@ -755,10 +755,10 @@ public class MaterialsController : Controller
         catch (Exception ex)
         {
             _logger.LogError(ex, "SaveVersionAsync fallita in UploadVersion per materialId={Id} file={File}", id, file.FileName);
-            TempData["Error"] = _t.T("mat.msg_file_save_error", "Error saving the file:") + " " + ex.Message;
+            TempData["Error"] = _t.T("mat.msg_file_save_error") + " " + ex.Message;
             return RedirectToAction(nameof(Details), new { id });
         }
-        TempData["Success"] = _t.T("mat.msg_version_uploaded", "New version uploaded.");
+        TempData["Success"] = _t.T("mat.msg_version_uploaded");
         return RedirectToAction(nameof(Details), new { id });
     }
 
@@ -773,7 +773,7 @@ public class MaterialsController : Controller
         var material = await _materials.GetByIdAsync(materialId);
         if (material == null) return NotFound();
         await _materials.RestoreVersionAsync(materialId, versionId);
-        TempData["Success"] = _t.T("mat.msg_version_restored", "Version restored.");
+        TempData["Success"] = _t.T("mat.msg_version_restored");
         return RedirectToAction(nameof(Details), new { id = materialId });
     }
 
@@ -794,7 +794,7 @@ public class MaterialsController : Controller
         var count = await _materials.CountVersionsAsync(materialId);
         if (count <= 1)
         {
-            TempData["Error"] = _t.T("mat.msg_version_last", "Cannot delete the only version of the material. Delete the material to remove it entirely.");
+            TempData["Error"] = _t.T("mat.msg_version_last");
             return RedirectToAction(nameof(Details), new { id = materialId });
         }
 
@@ -811,7 +811,7 @@ public class MaterialsController : Controller
             System.IO.File.Delete(fullPath);
 
         await _materials.DeleteVersionAsync(versionId);
-        TempData["Success"] = string.Format(_t.T("mat.msg_version_deleted", "Version v{0} deleted."), version.VersionNumber);
+        TempData["Success"] = string.Format(_t.T("mat.msg_version_deleted"), version.VersionNumber);
         return RedirectToAction(nameof(Details), new { id = materialId });
     }
 
@@ -824,7 +824,7 @@ public class MaterialsController : Controller
     {
         if (ids == null || ids.Count == 0)
         {
-            TempData["Error"] = _t.T("mat.msg_select_at_least_one", "Please select at least one material.");
+            TempData["Error"] = _t.T("mat.msg_select_at_least_one");
             return RedirectToAction(nameof(Index));
         }
 
@@ -852,7 +852,7 @@ public class MaterialsController : Controller
 
         if (added == 0)
         {
-            TempData["Error"] = _t.T("mat.msg_no_files_available", "No files available for the selected materials.");
+            TempData["Error"] = _t.T("mat.msg_no_files_available");
             return RedirectToAction(nameof(Index));
         }
 
@@ -929,7 +929,7 @@ public class MaterialsController : Controller
         await _materials.DeleteAsync(id);
         _audit.Log("material.delete", $"material#{id} \"{deletedTitle}\"");
         FireMaterialNotification(deletedTitle, "deleted");
-        TempData["Success"] = string.Format(_t.T("mat.msg_deleted", "Material \u00ab{0}\u00bb deleted."), deletedTitle);
+        TempData["Success"] = string.Format(_t.T("mat.msg_deleted"), deletedTitle);
         return RedirectToAction(nameof(Index));
     }
 
@@ -942,7 +942,7 @@ public class MaterialsController : Controller
     {
         if (!await CanEditMaterialAsync()) return Forbid();
         await _materials.LinkToLessonAsync(lessonId, materialId, CurrentUserId());
-        TempData["Success"] = _t.T("mat.msg_linked_lesson", "Material linked to lesson.");
+        TempData["Success"] = _t.T("mat.msg_linked_lesson");
         return RedirectToAction("Details", "Lesson", new { id = lessonId });
     }
 
@@ -953,7 +953,7 @@ public class MaterialsController : Controller
     {
         if (!await CanEditMaterialAsync()) return Forbid();
         await _materials.UnlinkFromLessonAsync(lessonId, materialId);
-        TempData["Success"] = _t.T("mat.msg_unlinked_lesson", "Material removed from lesson.");
+        TempData["Success"] = _t.T("mat.msg_unlinked_lesson");
         return RedirectToAction("Details", "Lesson", new { id = lessonId });
     }
 

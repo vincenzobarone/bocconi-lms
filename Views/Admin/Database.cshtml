@@ -1,13 +1,13 @@
 @{
-    ViewData["Title"] = T["admin.database_page_title", "Database"];
+    ViewData["Title"] = T["admin.database_page_title"];
 }
 
 <div class="d-flex align-items-center justify-content-between mb-4">
     <h2 class="fw-bold text-bocconi mb-0">
-        <i class="bi bi-database-gear me-2"></i>@T["admin.database_page_title", "Database"]
+        <i class="bi bi-database-gear me-2"></i>@T["admin.database_page_title"]
     </h2>
     <a asp-controller="Home" asp-action="Dashboard" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>@T["common.back_dashboard", "Dashboard"]
+        <i class="bi bi-arrow-left me-1"></i>@T["common.back_dashboard"]
     </a>
 </div>
 
@@ -36,15 +36,15 @@
         <div class="d-flex align-items-start gap-2">
             <i class="bi bi-key-fill fs-4 mt-1 text-warning"></i>
             <div class="flex-fill">
-                <strong>@T["admin.prod_script_ready", "Script generated — temporary admin password"]</strong>
+                <strong>@T["admin.prod_script_ready"]</strong>
                 <p class="mb-1 small text-muted">
-                    @T["admin.prod_script_pwd_hint", "This password is shown only once. Note it down before closing the page. The download starts automatically."]
+                    @T["admin.prod_script_pwd_hint"]
                 </p>
                 <div class="d-flex align-items-center gap-2 mt-2">
                     <code class="fs-5 bg-white px-3 py-1 rounded border" id="tmpPwdCode">@tmpPwd</code>
                     <button type="button" class="btn btn-sm btn-outline-secondary"
                             onclick="navigator.clipboard.writeText(document.getElementById('tmpPwdCode').textContent.trim()).then(()=>{this.textContent='Copied ✓';this.disabled=true;})">
-                        @T["common.copy", "Copy"]
+                        @T["common.copy"]
                     </button>
                 </div>
                 <p class="mb-0 mt-2 small">
@@ -56,10 +56,10 @@
         {
             <hr class="my-2" />
             <a asp-action="DownloadProductionScript" id="autoDownloadLink" class="btn btn-warning">
-                <i class="bi bi-download me-1"></i>@T["admin.prod_script_download", "Download SQL script"]
+                <i class="bi bi-download me-1"></i>@T["admin.prod_script_download"]
             </a>
             <span class="text-muted small ms-2">
-                @T["admin.prod_script_auto_download", "(download starts automatically)"]
+                @T["admin.prod_script_auto_download"]
             </span>
         }
     </div>
@@ -68,9 +68,9 @@
 {
     <div class="alert alert-info d-flex align-items-center gap-2" role="alert">
         <i class="bi bi-info-circle"></i>
-        @T["admin.prod_script_already_ready", "A script is still available from the previous page load."]
+        @T["admin.prod_script_already_ready"]
         <a asp-action="DownloadProductionScript" class="btn btn-sm btn-info ms-2">
-            <i class="bi bi-download me-1"></i>@T["admin.prod_script_download", "Download SQL script"]
+            <i class="bi bi-download me-1"></i>@T["admin.prod_script_download"]
         </a>
     </div>
 }
@@ -79,15 +79,11 @@
 <div class="card shadow-sm">
     <div class="card-header fw-semibold bg-light d-flex align-items-center gap-2">
         <i class="bi bi-file-earmark-code"></i>
-        @T["admin.prod_script_title", "Production script"]
+        @T["admin.prod_script_title"]
     </div>
     <div class="card-body">
         <p class="text-muted small mb-3">
-            @T["admin.prod_script_desc",
-               "Generates a complete SQL file to install Didasco on an empty production database. " +
-               "The script includes: drift detection, CREATE TABLE for all application tables, " +
-               "Admin role seed and an administrator user with a temporary password. " +
-               "Tables 'documents' and 'document_versions' (removed by migration 008) are excluded."]
+            @T["admin.prod_script_desc"]
         </p>
 
         <form method="post" asp-action="GenerateProductionScript" id="frmProdScript">
@@ -96,29 +92,28 @@
                 <input class="form-check-input" type="checkbox" name="includeDataDictionary"
                        value="true" id="chkDataDictionary" />
                 <label class="form-check-label" for="chkDataDictionary">
-                    @T["admin.prod_script_include_data_dictionary", "Include data dictionary"]
+                    @T["admin.prod_script_include_data_dictionary"]
                 </label>
                 <div class="form-text">
-                    @T["admin.prod_script_data_dictionary_hint",
-                       "If checked, inserts organisational areas, delivery platforms and translation keys (INSERT IGNORE / ON DUPLICATE KEY UPDATE)."]
+                    @T["admin.prod_script_data_dictionary_hint"]
                 </div>
             </div>
 
             <div class="d-flex align-items-center gap-3 flex-wrap">
                 <button type="submit" class="btn btn-bocconi" id="btnGenerate"
                         onclick="this.disabled=true; this.innerHTML='<span class=\'spinner-border spinner-border-sm me-1\'></span>Generating…'; this.form.submit();">
-                    <i class="bi bi-gear me-1"></i>@T["admin.prod_script_generate_btn", "Generate script"]
+                    <i class="bi bi-gear me-1"></i>@T["admin.prod_script_generate_btn"]
                 </button>
             </div>
         </form>
 
         <div class="mt-3 p-3 bg-light rounded border small text-muted">
-            <strong><i class="bi bi-shield-exclamation me-1 text-danger"></i>@T["admin.prod_script_warning_title", "Notes"]</strong>
+            <strong><i class="bi bi-shield-exclamation me-1 text-danger"></i>@T["admin.prod_script_warning_title"]</strong>
             <ul class="mb-0 mt-1 ps-3">
-                <li>@T["admin.prod_script_w1", "The temporary password is shown only once. Note it down before closing the page."]</li>
-                <li>@T["admin.prod_script_w2", "The script does NOT delete existing data: it uses CREATE TABLE IF NOT EXISTS and INSERT IGNORE."]</li>
-                <li>@T["admin.prod_script_w3", "The drift detection block aborts the script if it finds tables with different column names or order."]</li>
-                <li>@T["admin.prod_script_w4", "Run with: mysql -u<user> -p <database> < didasco_production_YYYYMMDD.sql"]</li>
+                <li>@T["admin.prod_script_w1"]</li>
+                <li>@T["admin.prod_script_w2"]</li>
+                <li>@T["admin.prod_script_w3"]</li>
+                <li>@T["admin.prod_script_w4"]</li>
             </ul>
         </div>
     </div>

@@ -140,7 +140,7 @@ public class AdminController : Controller
         await _users.SetUserCreatedByAsync(appUser.Id, creatorId);
 
         _audit.Log("user.create", $"user#{appUser.Id} \"{appUser.Email}\" role={role}");
-        TempData["Success"] = string.Format(_translationService.T("admin.msg_user_created", "User {0} created successfully."), appUser.FullName);
+        TempData["Success"] = string.Format(_translationService.T("admin.msg_user_created"), appUser.FullName);
         return RedirectToAction("Users");
     }
 
@@ -154,7 +154,7 @@ public class AdminController : Controller
         var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
         if (user.Id == currentUserId || user.Role == "Admin")
         {
-            TempData["Error"] = _translationService.T("admin.msg_user_no_edit", "You cannot edit this user.");
+            TempData["Error"] = _translationService.T("admin.msg_user_no_edit");
             return RedirectToAction(nameof(Users));
         }
         ViewBag.AvailableRoles  = await _users.GetNonAdminRoleNamesAsync();
@@ -174,7 +174,7 @@ public class AdminController : Controller
         var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
         if (user.Id == currentUserId || user.Role == "Admin")
         {
-            TempData["Error"] = _translationService.T("admin.msg_user_no_edit", "You cannot edit this user.");
+            TempData["Error"] = _translationService.T("admin.msg_user_no_edit");
             return RedirectToAction(nameof(Users));
         }
         user.FirstName = model.FirstName;
@@ -226,7 +226,7 @@ public class AdminController : Controller
             var activeAdmins = await _users.CountActiveAdminsAsync();
             if (activeAdmins <= 1)
             {
-                TempData["Error"] = _translationService.T("admin.msg_last_admin", "Cannot deactivate the only active administrator.");
+                TempData["Error"] = _translationService.T("admin.msg_last_admin");
                 return RedirectToAction("Users");
             }
         }
@@ -246,7 +246,7 @@ public class AdminController : Controller
         await _areas.SetUserAreasAsync(model.Id, areaIds ?? new List<int>());
 
         _audit.Log("user.edit", $"user#{model.Id} \"{user.Email}\" role={user.Role} active={user.IsActive}");
-        TempData["Success"] = _translationService.T("admin.msg_user_updated", "User updated.");
+        TempData["Success"] = _translationService.T("admin.msg_user_updated");
         return RedirectToAction("Users");
     }
 
@@ -260,17 +260,17 @@ public class AdminController : Controller
         if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
         {
-            TempData["Error"] = _translationService.T("admin.msg_area_invalid_name", "Invalid area name.");
+            TempData["Error"] = _translationService.T("admin.msg_area_invalid_name");
             return RedirectToAction("Dictionary", new { tab = "aree" });
         }
         if (await _areas.NameExistsAsync(name))
         {
-            TempData["Error"] = string.Format(_translationService.T("admin.msg_area_exists", "An area named \u00ab{0}\u00bb already exists."), name.Trim());
+            TempData["Error"] = string.Format(_translationService.T("admin.msg_area_exists"), name.Trim());
             return RedirectToAction("Dictionary", new { tab = "aree" });
         }
         var currentUserId = int.Parse(User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)!.Value);
         await _areas.CreateAsync(name, currentUserId);
-        TempData["Success"] = string.Format(_translationService.T("admin.msg_area_created", "Area \u00ab{0}\u00bb created."), name.Trim());
+        TempData["Success"] = string.Format(_translationService.T("admin.msg_area_created"), name.Trim());
         return RedirectToAction("Dictionary", new { tab = "aree" });
     }
 
@@ -282,16 +282,16 @@ public class AdminController : Controller
         if (!await CanAccessMenuAsync("menu.users")) return Forbid();
         if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
         {
-            TempData["Error"] = _translationService.T("admin.msg_area_invalid_name", "Invalid area name.");
+            TempData["Error"] = _translationService.T("admin.msg_area_invalid_name");
             return RedirectToAction("Dictionary", new { tab = "aree" });
         }
         if (await _areas.NameExistsAsync(name, excludeId: id))
         {
-            TempData["Error"] = string.Format(_translationService.T("admin.msg_area_exists", "An area named \u00ab{0}\u00bb already exists."), name.Trim());
+            TempData["Error"] = string.Format(_translationService.T("admin.msg_area_exists"), name.Trim());
             return RedirectToAction("Dictionary", new { tab = "aree" });
         }
         await _areas.RenameAsync(id, name);
-        TempData["Success"] = string.Format(_translationService.T("admin.msg_area_renamed", "Area renamed to \u00ab{0}\u00bb."), name.Trim());
+        TempData["Success"] = string.Format(_translationService.T("admin.msg_area_renamed"), name.Trim());
         return RedirectToAction("Dictionary", new { tab = "aree" });
     }
 
@@ -304,11 +304,11 @@ public class AdminController : Controller
         var count = await _areas.CountUsersAsync(id);
         if (count > 0)
         {
-            TempData["Error"] = string.Format(_translationService.T("admin.msg_area_in_use", "Cannot delete: {0} user(s) belong to this area."), count);
+            TempData["Error"] = string.Format(_translationService.T("admin.msg_area_in_use"), count);
             return RedirectToAction("Dictionary", new { tab = "aree" });
         }
         await _areas.DeleteAsync(id);
-        TempData["Success"] = _translationService.T("admin.msg_area_deleted", "Area deleted.");
+        TempData["Success"] = _translationService.T("admin.msg_area_deleted");
         return RedirectToAction("Dictionary", new { tab = "aree" });
     }
 
@@ -322,16 +322,16 @@ public class AdminController : Controller
         if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
         {
-            TempData["Error"] = _translationService.T("admin.msg_platform_invalid_name", "Invalid platform name.");
+            TempData["Error"] = _translationService.T("admin.msg_platform_invalid_name");
             return RedirectToAction("Dictionary", new { tab = "piattaforme" });
         }
         if (await _platforms.NameExistsAsync(name))
         {
-            TempData["Error"] = string.Format(_translationService.T("admin.msg_platform_exists", "A platform named \u00ab{0}\u00bb already exists."), name.Trim());
+            TempData["Error"] = string.Format(_translationService.T("admin.msg_platform_exists"), name.Trim());
             return RedirectToAction("Dictionary", new { tab = "piattaforme" });
         }
         await _platforms.CreateAsync(name);
-        TempData["Success"] = string.Format(_translationService.T("admin.msg_platform_created", "Platform \u00ab{0}\u00bb created."), name.Trim());
+        TempData["Success"] = string.Format(_translationService.T("admin.msg_platform_created"), name.Trim());
         return RedirectToAction("Dictionary", new { tab = "piattaforme" });
     }
 
@@ -343,16 +343,16 @@ public class AdminController : Controller
         if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         if (string.IsNullOrWhiteSpace(name) || name.Length > 255)
         {
-            TempData["Error"] = _translationService.T("admin.msg_platform_invalid_name", "Invalid platform name.");
+            TempData["Error"] = _translationService.T("admin.msg_platform_invalid_name");
             return RedirectToAction("Dictionary", new { tab = "piattaforme" });
         }
         if (await _platforms.NameExistsAsync(name, excludeId: id))
         {
-            TempData["Error"] = string.Format(_translationService.T("admin.msg_platform_exists", "A platform named \u00ab{0}\u00bb already exists."), name.Trim());
+            TempData["Error"] = string.Format(_translationService.T("admin.msg_platform_exists"), name.Trim());
             return RedirectToAction("Dictionary", new { tab = "piattaforme" });
         }
         await _platforms.RenameAsync(id, name);
-        TempData["Success"] = string.Format(_translationService.T("admin.msg_platform_renamed", "Platform renamed to \u00ab{0}\u00bb."), name.Trim());
+        TempData["Success"] = string.Format(_translationService.T("admin.msg_platform_renamed"), name.Trim());
         return RedirectToAction("Dictionary", new { tab = "piattaforme" });
     }
 
@@ -365,11 +365,11 @@ public class AdminController : Controller
         var count = await _platforms.CountMaterialsAsync(id);
         if (count > 0)
         {
-            TempData["Error"] = string.Format(_translationService.T("admin.msg_platform_in_use", "Cannot delete: {0} material(s) use this platform."), count);
+            TempData["Error"] = string.Format(_translationService.T("admin.msg_platform_in_use"), count);
             return RedirectToAction("Dictionary", new { tab = "piattaforme" });
         }
         await _platforms.DeleteAsync(id);
-        TempData["Success"] = _translationService.T("admin.msg_platform_deleted", "Platform deleted.");
+        TempData["Success"] = _translationService.T("admin.msg_platform_deleted");
         return RedirectToAction("Dictionary", new { tab = "piattaforme" });
     }
 
@@ -424,7 +424,7 @@ public class AdminController : Controller
             var activeAdmins = await _users.CountActiveAdminsAsync();
             if (activeAdmins <= 1)
             {
-                TempData["Error"] = _translationService.T("admin.msg_last_admin", "Cannot deactivate the only active administrator.");
+                TempData["Error"] = _translationService.T("admin.msg_last_admin");
                 return RedirectToAction("Users");
             }
         }
@@ -433,8 +433,8 @@ public class AdminController : Controller
         await _users.UpdateAsync(user);
         _audit.Log(user.IsActive ? "user.activate" : "user.deactivate", $"user#{id} \"{user.Email}\"");
         TempData["Success"] = user.IsActive
-            ? _translationService.T("admin.msg_user_activated", "User activated.")
-            : _translationService.T("admin.msg_user_deactivated", "User deactivated.");
+            ? _translationService.T("admin.msg_user_activated")
+            : _translationService.T("admin.msg_user_deactivated");
         return RedirectToAction("Users");
     }
 
@@ -522,6 +522,7 @@ public class AdminController : Controller
             NotifyStudentOnQuizCompleted = (await _settings.GetAsync("Notifications:StudentOnQuizCompleted")) == "true",
             NotifyTeacherOnQuizCompleted = (await _settings.GetAsync("Notifications:TeacherOnQuizCompleted")) == "true",
             NotifyTeacherOnStudentEnrolled = (await _settings.GetAsync("Notifications:TeacherOnStudentEnrolled")) == "true",
+            CourseModuleEnabled = await _features.IsCoursesEnabledAsync()
         };
         return View(vm);
     }
@@ -562,28 +563,19 @@ public class AdminController : Controller
                 string.Join(",", model.MaterialUpdatedRoles ?? new List<string>()));
             await _settings.SetAsync("Notifications:MaterialDeleted",
                 model.NotifyMaterialDeleted ? "true" : "false");
-            await _settings.SetAsync("Notifications:MaterialDeletedRoles",
-                string.Join(",", model.MaterialDeletedRoles ?? new List<string>()));
-
-            await _settings.SetAsync("Notifications:CoursesEnabled",
-                model.CoursesNotificationsEnabled ? "true" : "false");
-            await _settings.SetAsync("Notifications:StudentOnEnroll",
-                model.NotifyStudentOnEnroll ? "true" : "false");
-            await _settings.SetAsync("Notifications:StudentOnQuizCompleted",
-                model.NotifyStudentOnQuizCompleted ? "true" : "false");
-            await _settings.SetAsync("Notifications:TeacherOnQuizCompleted",
-                model.NotifyTeacherOnQuizCompleted ? "true" : "false");
-            await _settings.SetAsync("Notifications:TeacherOnStudentEnrolled",
-                model.NotifyTeacherOnStudentEnrolled ? "true" : "false");
+            await _settings.SetAsync("Notifications:MaterialDeletedRoles", string.Join(",", model.MaterialDeletedRoles ?? new List<string>()));
+            await _settings.SetAsync("Notifications:CoursesEnabled", model.CoursesNotificationsEnabled ? "true" : "false");
+            await _settings.SetAsync("Notifications:StudentOnEnroll",  model.NotifyStudentOnEnroll ? "true" : "false");
+            await _settings.SetAsync("Notifications:StudentOnQuizCompleted",  model.NotifyStudentOnQuizCompleted ? "true" : "false");
+            await _settings.SetAsync("Notifications:TeacherOnQuizCompleted",  model.NotifyTeacherOnQuizCompleted ? "true" : "false");
+            await _settings.SetAsync("Notifications:TeacherOnStudentEnrolled", model.NotifyTeacherOnStudentEnrolled ? "true" : "false");
 
             _audit.Log("settings.email_saved", $"smtp_host={model.Host} enabled={model.Enabled}");
-            TempData["Success"] = _translationService.T("admin.email.saved", "Impostazioni email salvate con successo.");
+            TempData["Success"] = _translationService.T("admin.email.saved");
         }
         catch (Exception ex)
         {
-            TempData["Error"] = string.Format(
-                _translationService.T("admin.email.save_error", "Errore nel salvataggio: {0}"),
-                ex.Message);
+            TempData["Error"] = string.Format(  _translationService.T("admin.email.save_error"), ex.Message);
         }
 
         return RedirectToAction("EmailSettings");
@@ -687,7 +679,7 @@ public class AdminController : Controller
     {
         if (string.IsNullOrWhiteSpace(model.TestEmailRecipient))
         {
-            TempData["Error"] = _translationService.T("admin.email.test_no_recipient", "Inserire un indirizzo email per il test.");
+            TempData["Error"] = _translationService.T("admin.email.test_no_recipient");
             return RedirectToAction("EmailSettings");
         }
 
@@ -696,13 +688,13 @@ public class AdminController : Controller
             var settings = await _emailService.GetEffectiveSettingsAsync();
             await _emailService.SendTestEmailAsync(model.TestEmailRecipient, settings);
             TempData["Success"] = string.Format(
-                _translationService.T("admin.email.test_sent", "Email di test inviata a {0}."),
+                _translationService.T("admin.email.test_sent"),
                 model.TestEmailRecipient);
         }
         catch (Exception ex)
         {
             TempData["Error"] = string.Format(
-                _translationService.T("admin.email.test_failed", "Invio fallito: {0}"),
+                _translationService.T("admin.email.test_failed"),
                 ex.Message);
         }
 
@@ -778,7 +770,7 @@ public class AdminController : Controller
         if (string.IsNullOrWhiteSpace(model.Key)) return BadRequest();
         await _translations.SaveRowAsync(model);
         _translationService.InvalidateCache();
-        TempData["Success"] = string.Format(_translationService.T("admin.msg_translations_saved", "Translations for '{0}' saved."), model.Key);
+        TempData["Success"] = string.Format(_translationService.T("admin.msg_translations_saved"), model.Key);
         return RedirectToAction(nameof(Dictionary));
     }
 
@@ -790,7 +782,7 @@ public class AdminController : Controller
         if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         await _translations.DeleteKeyAsync(key);
         _translationService.InvalidateCache();
-        TempData["Success"] = string.Format(_translationService.T("admin.msg_key_deleted", "Key '{0}' deleted."), key);
+        TempData["Success"] = string.Format(_translationService.T("admin.msg_key_deleted"), key);
         return RedirectToAction(nameof(Dictionary));
     }
 
@@ -851,7 +843,7 @@ public class AdminController : Controller
             await _users.SetRoleCreatedByAsync(created.Id, currentUserId);
         }
         _audit.Log("role.create", $"role#{created?.Id} \"{name}\" permissions={string.Join(",", permissions ?? new())}");
-        TempData["Success"] = string.Format(_translationService.T("admin.msg_role_created", "Role '{0}' created successfully."), name);
+        TempData["Success"] = string.Format(_translationService.T("admin.msg_role_created"), name);
         return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }
 
@@ -864,7 +856,7 @@ public class AdminController : Controller
         if (role == null) return NotFound();
         if (role.Name!.Equals("Admin", StringComparison.OrdinalIgnoreCase))
         {
-            TempData["Error"] = _translationService.T("admin.msg_admin_role_protected", "The Admin role is protected and cannot be modified.");
+            TempData["Error"] = _translationService.T("admin.msg_admin_role_protected");
             return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
         var perms = await _rolePerms.GetRolePermissionsAsync(role.Id);
@@ -882,7 +874,7 @@ public class AdminController : Controller
         if (role == null) return NotFound();
         if (role.Name!.Equals("Admin", StringComparison.OrdinalIgnoreCase))
         {
-            TempData["Error"] = _translationService.T("admin.msg_admin_role_protected", "The Admin role is protected and cannot be modified.");
+            TempData["Error"] = _translationService.T("admin.msg_admin_role_protected");
             return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
         if (!ModelState.IsValid)
@@ -914,7 +906,7 @@ public class AdminController : Controller
         await _rolePerms.SetRolePermissionsAsync(role.Id, permissions ?? new());
         _audit.Log("role.edit", $"role#{role.Id} \"{model.Name}\" permissions={string.Join(",", permissions ?? new())}");
         TempData["Success"] = string.Format(
-            _translationService.T("admin.role_updated", "Role updated to '{0}'."),
+            _translationService.T("admin.role_updated"),
             model.Name);
         return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }
@@ -929,18 +921,18 @@ public class AdminController : Controller
         if (role == null) return NotFound();
         if (role.Name!.Equals("Admin", StringComparison.OrdinalIgnoreCase))
         {
-            TempData["Error"] = _translationService.T("admin.msg_admin_role_protected_del", "The Admin role is protected and cannot be deleted.");
+            TempData["Error"] = _translationService.T("admin.msg_admin_role_protected_del");
             return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
         var userCount = await _users.CountUsersInRoleAsync(role.Id);
         if (userCount > 0)
         {
-            TempData["Error"] = string.Format(_translationService.T("admin.msg_role_in_use", "Cannot delete '{0}': {1} user(s) have this role. Reassign users first."), role.Name, userCount);
+            TempData["Error"] = string.Format(_translationService.T("admin.msg_role_in_use"), role.Name, userCount);
             return RedirectToAction(nameof(Users), new { tab = "ruoli" });
         }
         await _roleManager.DeleteAsync(role);
         _audit.Log("role.delete", $"role#{id} \"{role.Name}\"");
-        TempData["Success"] = string.Format(_translationService.T("admin.msg_role_deleted", "Role '{0}' deleted."), role.Name);
+        TempData["Success"] = string.Format(_translationService.T("admin.msg_role_deleted"), role.Name);
         return RedirectToAction(nameof(Users), new { tab = "ruoli" });
     }
 
@@ -960,16 +952,16 @@ public class AdminController : Controller
         if (!await CanAccessMenuAsync("menu.translations")) return Forbid();
         if (!ModelState.IsValid)
         {
-            TempData["Error"] = _translationService.T("admin.msg_doctype_invalid", "Invalid name.");
+            TempData["Error"] = _translationService.T("admin.msg_doctype_invalid");
             return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
         }
         if (await _docTypes.NameExistsAsync(vm.Name))
         {
-            TempData["Error"] = string.Format(_translationService.T("admin.msg_doctype_exists", "A type named '{0}' already exists."), vm.Name);
+            TempData["Error"] = string.Format(_translationService.T("admin.msg_doctype_exists"), vm.Name);
             return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
         }
         await _docTypes.CreateAsync(vm.Name);
-        TempData["Success"] = string.Format(_translationService.T("admin.msg_doctype_created", "Type '{0}' created."), vm.Name);
+        TempData["Success"] = string.Format(_translationService.T("admin.msg_doctype_created"), vm.Name);
         return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
     }
 
@@ -992,11 +984,11 @@ public class AdminController : Controller
         if (!ModelState.IsValid) return View(vm);
         if (await _docTypes.NameExistsAsync(vm.Name, id))
         {
-            ModelState.AddModelError(nameof(vm.Name), string.Format(_translationService.T("admin.msg_doctype_exists", "A type named '{0}' already exists."), vm.Name));
+            ModelState.AddModelError(nameof(vm.Name), string.Format(_translationService.T("admin.msg_doctype_exists"), vm.Name));
             return View(vm);
         }
         await _docTypes.UpdateAsync(id, vm.Name);
-        TempData["Success"] = _translationService.T("admin.msg_doctype_updated", "Document type updated.");
+        TempData["Success"] = _translationService.T("admin.msg_doctype_updated");
         return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
     }
 
@@ -1009,11 +1001,11 @@ public class AdminController : Controller
         var count = await _docTypes.CountMaterialsAsync(id);
         if (count > 0)
         {
-            TempData["Error"] = string.Format(_translationService.T("admin.msg_doctype_in_use", "Cannot delete: {0} material(s) use this type."), count);
+            TempData["Error"] = string.Format(_translationService.T("admin.msg_doctype_in_use"), count);
             return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
         }
         await _docTypes.DeleteAsync(id);
-        TempData["Success"] = _translationService.T("admin.msg_doctype_deleted", "Document type deleted.");
+        TempData["Success"] = _translationService.T("admin.msg_doctype_deleted");
         return RedirectToAction(nameof(Dictionary), new { tab = "doctypes" });
     }
 
@@ -1036,7 +1028,7 @@ public class AdminController : Controller
     {
         if (!string.IsNullOrWhiteSpace(timezone))
             await _settings.SetAsync("Platform:Timezone", timezone.Trim());
-        TempData["Success"] = _translationService.T("admin.msg_timezone_updated", "Timezone updated.");
+        TempData["Success"] = _translationService.T("admin.msg_timezone_updated");
         return RedirectToAction(nameof(PlatformFeatures));
     }
 
@@ -1046,8 +1038,8 @@ public class AdminController : Controller
     {
         await _features.SetCoursesEnabledAsync(coursesEnabled);
         TempData["Success"] = coursesEnabled
-            ? _translationService.T("admin.msg_courses_enabled", "Courses module enabled.")
-            : _translationService.T("admin.msg_courses_disabled", "Courses module disabled.");
+            ? _translationService.T("admin.msg_courses_enabled")
+            : _translationService.T("admin.msg_courses_disabled");
         return RedirectToAction(nameof(PlatformFeatures));
     }
 
@@ -1058,8 +1050,8 @@ public class AdminController : Controller
     {
         await _features.SetMaterialsEnabledAsync(materialsEnabled);
         TempData["Success"] = materialsEnabled
-            ? _translationService.T("admin.msg_materials_enabled", "Materials module enabled.")
-            : _translationService.T("admin.msg_materials_disabled", "Materials module disabled.");
+            ? _translationService.T("admin.msg_materials_enabled")
+            : _translationService.T("admin.msg_materials_disabled");
         return RedirectToAction(nameof(PlatformFeatures));
     }
 
@@ -1105,7 +1097,7 @@ public class AdminController : Controller
         catch (Exception ex)
         {
             TempData["Error"] = _translationService.T(
-                "admin.prod_script_error", "Error generating the script: ") + ex.Message;
+                "admin.prod_script_error");
             return RedirectToAction(nameof(Database));
         }
     }
@@ -1121,7 +1113,7 @@ public class AdminController : Controller
         if (bytes == null || bytes.Length == 0)
         {
             TempData["Error"] = _translationService.T(
-                "admin.prod_script_expired", "Script no longer available. Please regenerate.");
+                "admin.prod_script_expired");
             return RedirectToAction(nameof(Database));
         }
 

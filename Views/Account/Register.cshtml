@@ -1,6 +1,6 @@
 @model BocconiLMS.Models.PublicRegisterViewModel
 @{
-    ViewData["Title"] = T["auth.register_title","Create account"];
+    ViewData["Title"] = T["auth.register_title"];
     Layout = "_Layout";
 }
 
@@ -9,8 +9,8 @@
         <div class="card shadow">
             <div class="card-header bg-bocconi text-white text-center py-4">
                 <i class="bi bi-person-plus-fill display-5 d-block mb-2" style="color:#c8a96e;"></i>
-                <h4 class="mb-0 fw-bold">@T["auth.register_title","Create account"]</h4>
-                <small>@T["auth.register_subtitle","Bocconi Learning Management System"]</small>
+                <h4 class="mb-0 fw-bold">@T["auth.register_title"]</h4>
+                <small>@T["auth.register_subtitle"]</small>
             </div>
             <div class="card-body p-4">
                 @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
@@ -28,19 +28,19 @@
 
                     <div class="row g-3 mb-3">
                         <div class="col-6">
-                            <label asp-for="FirstName" class="form-label fw-semibold">@T["auth.firstname","First name"]</label>
+                            <label asp-for="FirstName" class="form-label fw-semibold">@T["auth.firstname"]</label>
                             <input asp-for="FirstName" class="form-control" placeholder="Mario" autocomplete="given-name" />
                             <span asp-validation-for="FirstName" class="text-danger small"></span>
                         </div>
                         <div class="col-6">
-                            <label asp-for="LastName" class="form-label fw-semibold">@T["auth.lastname","Last name"]</label>
+                            <label asp-for="LastName" class="form-label fw-semibold">@T["auth.lastname"]</label>
                             <input asp-for="LastName" class="form-control" placeholder="Rossi" autocomplete="family-name" />
                             <span asp-validation-for="LastName" class="text-danger small"></span>
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Email" class="form-label fw-semibold">@T["auth.email","Email"]</label>
+                        <label asp-for="Email" class="form-label fw-semibold">@T["auth.email"]</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                             <input asp-for="Email" class="form-control" placeholder="nome.cognome@studbocconi.it" autocomplete="email" />
@@ -49,17 +49,17 @@
                     </div>
 
                     <div class="mb-3">
-                        <label asp-for="Password" class="form-label fw-semibold">@T["auth.password","Password"]</label>
+                        <label asp-for="Password" class="form-label fw-semibold">@T["auth.password"]</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-lock"></i></span>
                             <input asp-for="Password" class="form-control" placeholder="••••••••" autocomplete="new-password" />
                         </div>
-                        <div class="form-text">@T["auth.min_8_chars","Minimum 8 characters."]</div>
+                        <div class="form-text">@T["auth.min_8_chars"]</div>
                         <span asp-validation-for="Password" class="text-danger small"></span>
                     </div>
 
                     <div class="mb-4">
-                        <label asp-for="ConfirmPassword" class="form-label fw-semibold">@T["auth.confirm_password","Confirm password"]</label>
+                        <label asp-for="ConfirmPassword" class="form-label fw-semibold">@T["auth.confirm_password"]</label>
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
                             <input asp-for="ConfirmPassword" class="form-control" placeholder="••••••••" autocomplete="new-password" />
@@ -69,7 +69,7 @@
 
                     <div class="mb-4">
                         <label class="form-label fw-semibold">
-                            @T["auth.captcha_label","Verifica anti-robot"]
+                            @T["auth.captcha_label"]
                         </label>
                         <div class="input-group">
                             <span class="input-group-text bg-light fw-bold text-bocconi" style="min-width:6rem;">
@@ -82,12 +82,12 @@
                     </div>
 
                     <button type="submit" class="btn btn-bocconi w-100 py-2 fw-semibold">
-                        <i class="bi bi-person-check me-2"></i>@T["auth.btn_register","Register"]
+                        <i class="bi bi-person-check me-2"></i>@T["auth.btn_register"]
                     </button>
 
                     <div class="text-center mt-3 small text-muted">
-                        @T["auth.already_have_account","Already have an account?"]
-                        <a asp-action="Login" class="fw-semibold">@T["auth.btn_login","Log in"]</a>
+                        @T["auth.already_have_account"]
+                        <a asp-action="Login" class="fw-semibold">@T["auth.btn_login"]</a>
                     </div>
                 </form>
             </div>

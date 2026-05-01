@@ -1,10 +1,10 @@
 @model LessonFormViewModel
 @{
-    ViewData["Title"] = T["lesson.edit_title","Edit lesson"];
+    ViewData["Title"] = T["lesson.edit_title"];
 }
 <div class="row justify-content-center">
     <div class="col-lg-7">
-        <h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-pencil me-2"></i>@T["lesson.edit_title","Edit lesson"]</h2>
+        <h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-pencil me-2"></i>@T["lesson.edit_title"]</h2>
         <div class="card shadow-sm">
             <div class="card-body p-4">
                 <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
@@ -12,8 +12,8 @@
                     <input type="hidden" asp-for="CourseId" />
                     @await Html.PartialAsync("_LessonForm", Model)
                     <div class="d-flex gap-2 mt-3">
-                        <button type="submit" class="btn btn-bocconi px-4">@T["common.save_changes","Save changes"]</button>
-                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">@T["common.cancel","Cancel"]</a>
+                        <button type="submit" class="btn btn-bocconi px-4">@T["common.save_changes"]</button>
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-outline-secondary">@T["common.cancel"]</a>
                     </div>
                 </form>
             </div>

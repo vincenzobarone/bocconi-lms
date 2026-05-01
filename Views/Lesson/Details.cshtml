@@ -9,7 +9,7 @@
 
 <nav aria-label="breadcrumb" class="mb-3">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Index">@T["nav.courses","Courses"]</a></li>
+        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Index">@T["nav.courses"]</a></li>
         <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Details" asp-route-id="@Model.CourseId">@Model.CourseTitle</a></li>
         <li class="breadcrumb-item active">@Model.Title</li>
     </ol>
@@ -23,13 +23,13 @@
             {
                 <div class="d-flex gap-2">
                     <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-secondary">
-                        <i class="bi bi-pencil me-1"></i>@T["common.edit","Edit"]
+                        <i class="bi bi-pencil me-1"></i>@T["common.edit"]
                     </a>
                     <form asp-action="Delete" asp-route-id="@Model.Id" method="post" class="d-inline">
                         @Html.AntiForgeryToken()
                         <button type="submit" class="btn btn-sm btn-outline-danger"
-                                data-confirm="@T["lesson.confirm_delete","Delete this lesson?"]"
-                                title="@T["common.delete","Delete"]">
+                                data-confirm="@T["lesson.confirm_delete"]"
+                                title="@T["common.delete"]">
                             <i class="bi bi-trash"></i>
                         </button>
                     </form>
@@ -106,12 +106,12 @@
                                         <a asp-controller="Materials" asp-action="Download"
                                            asp-route-versionId="@m.ActiveVersion.Id"
                                            class="btn btn-sm btn-bocconi"
-                                           aria-label="@T["mat.download_aria","Scarica materiale"]"><i class="bi bi-download"></i></a>
+                                           aria-label="@T["mat.download_aria"]"><i class="bi bi-download"></i></a>
                                     }
                                     <a asp-controller="Materials" asp-action="Details" asp-route-id="@m.Id"
                                        class="btn btn-sm btn-outline-secondary"
-                                       title="@T["mat.details_aria","Dettagli materiale"]"
-                                       aria-label="@T["mat.details_aria","Dettagli materiale"]">
+                                       title="@T["mat.details_aria"]"
+                                       aria-label="@T["mat.details_aria"]">
                                         <i class="bi bi-info-circle"></i>
                                     </a>
                                     @if (isOwner)
@@ -122,8 +122,8 @@
                                             <input type="hidden" name="materialId" value="@m.Id" />
                                             <button type="submit" class="btn btn-sm btn-outline-warning"
                                                     data-confirm="Rimuovere «@m.Title» da questa lezione?"
-                                                    title="@T["mat.unlink_aria","Scollega materiale"]"
-                                                    aria-label="@T["mat.unlink_aria","Scollega materiale"]">
+                                                    title="@T["mat.unlink_aria"]"
+                                                    aria-label="@T["mat.unlink_aria"]">
                                                 <i class="bi bi-x-circle"></i>
                                             </button>
                                         </form>
@@ -151,7 +151,7 @@
                 {
                     <a asp-controller="Quiz" asp-action="Create" asp-route-lessonId="@Model.Id"
                        class="btn btn-sm btn-bocconi">
-                        <i class="bi bi-plus-lg me-1"></i>@T["quiz.create","Create quiz"]
+                        <i class="bi bi-plus-lg me-1"></i>@T["quiz.create"]
                     </a>
                 }
             </div>
@@ -162,28 +162,28 @@
                         <div>
                             <strong>@q.Title</strong>
                             <div class="text-muted small">
-                                <i class="bi bi-clock me-1"></i>@q.TimeLimitMinutes @T["quiz.minutes","min"]
-                                <span class="ms-3"><i class="bi bi-award me-1"></i>@T["quiz.passing_score","Pass"]: @q.PassingScore%</span>
+                                <i class="bi bi-clock me-1"></i>@q.TimeLimitMinutes @T["quiz.minutes"]
+                                <span class="ms-3"><i class="bi bi-award me-1"></i>@T["quiz.passing_score"]: @q.PassingScore%</span>
                                 @if (!string.IsNullOrEmpty(q.CreatedByName))
                                 {
-                                    <span class="ms-3"><i class="bi bi-person-plus me-1"></i>@T["quiz.created_by","Creato da"] @q.CreatedByName</span>
+                                    <span class="ms-3"><i class="bi bi-person-plus me-1"></i>@T["quiz.created_by"] @q.CreatedByName</span>
                                 }
                             </div>
                         </div>
                         <div class="d-flex gap-2">
                             <a asp-controller="Quiz" asp-action="Take" asp-route-id="@q.Id"
                                class="btn btn-sm btn-bocconi">
-                                <i class="bi bi-play-circle me-1"></i>@T["quiz.take","Take"]
+                                <i class="bi bi-play-circle me-1"></i>@T["quiz.take"]
                             </a>
                             <a asp-controller="Quiz" asp-action="History" asp-route-quizId="@q.Id"
-                               class="btn btn-sm btn-outline-secondary">@T["quiz.history","History"]</a>
+                               class="btn btn-sm btn-outline-secondary">@T["quiz.history"]</a>
                             @if (isOwner)
                             {
                                 <form asp-controller="Quiz" asp-action="Delete" asp-route-id="@q.Id" method="post" class="d-inline">
                                     @Html.AntiForgeryToken()
                                     <button type="submit" class="btn btn-sm btn-outline-danger"
-                                            data-confirm="@T["quiz.confirm_delete","Delete this quiz?"]"
-                                            title="@T["common.delete","Delete"]">
+                                            data-confirm="@T["quiz.confirm_delete"]"
+                                            title="@T["common.delete"]">
                                         <i class="bi bi-trash"></i>
                                     </button>
                                 </form>
@@ -202,18 +202,18 @@
                 {
                     <div class="text-center text-success mb-3">
                         <i class="bi bi-check-circle-fill display-5"></i>
-                        <p class="fw-semibold mt-2">@T["lesson.completed","Lesson completed"]</p>
+                        <p class="fw-semibold mt-2">@T["lesson.completed"]</p>
                     </div>
                 }
                 <div class="text-muted small">
                     <div class="mb-2"><i class="bi bi-book me-2"></i>@Model.CourseTitle</div>
-                    <div class="mb-2"><i class="bi bi-sort-numeric-up me-2"></i>@T["lesson.sort_order","Order"]: @Model.SortOrder</div>
+                    <div class="mb-2"><i class="bi bi-sort-numeric-up me-2"></i>@T["lesson.sort_order"]: @Model.SortOrder</div>
                     <div><i class="bi bi-calendar me-2"></i>@Model.CreatedAt.ToString("dd/MM/yyyy")</div>
                 </div>
                 <hr />
                 <a asp-controller="Course" asp-action="Details" asp-route-id="@Model.CourseId"
                    class="btn btn-outline-secondary w-100">
-                    <i class="bi bi-arrow-left me-2"></i>@T["common.back_to_course","Back to course"]
+                    <i class="bi bi-arrow-left me-2"></i>@T["common.back_to_course"]
                 </a>
             </div>
         </div>

@@ -1,13 +1,13 @@
 @model List<BocconiLMS.Models.DocumentType>
 @{
-    ViewData["Title"] = T["admin.doc_types","Document Types"];
+    ViewData["Title"] = T["admin.doc_types"];
     var newType = ViewBag.NewType as BocconiLMS.Models.DocumentTypeFormViewModel ?? new();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold mb-0"><i class="bi bi-tags me-2"></i>@T["admin.doc_types","Document Types"]</h2>
+    <h2 class="fw-bold mb-0"><i class="bi bi-tags me-2"></i>@T["admin.doc_types"]</h2>
     <a asp-controller="Materials" asp-action="Index" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-arrow-left me-1"></i>@T["mat.page_title","Materials Library"]
+        <i class="bi bi-arrow-left me-1"></i>@T["mat.page_title"]
     </a>
 </div>
 
@@ -17,7 +17,7 @@
             <div class="card-body p-0">
                 @if (!Model.Any())
                 {
-                    <p class="text-muted p-4">@T["doctype.none","No types defined."]</p>
+                    <p class="text-muted p-4">@T["doctype.none"]</p>
                 }
                 else
                 {
@@ -25,9 +25,9 @@
                         <thead class="table-light">
                             <tr>
                                 <th scope="col">#</th>
-                                <th scope="col">@T["common.name","Name"]</th>
-                                <th scope="col" class="text-center">@T["mat.page_title","Materials"]</th>
-                                <th scope="col" class="text-end">@T["common.actions","Actions"]</th>
+                                <th scope="col">@T["common.name"]</th>
+                                <th scope="col" class="text-center">@T["mat.page_title"]</th>
+                                <th scope="col" class="text-end">@T["common.actions"]</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -45,14 +45,14 @@
                                         <div class="d-flex gap-1 justify-content-end">
                                             <a asp-action="EditDocumentType" asp-route-id="@t.Id"
                                                class="btn btn-sm btn-outline-secondary"
-                                               title="@T["common.edit","Edit"]">
+                                               title="@T["common.edit"]">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
                                             <form asp-action="DeleteDocumentType" asp-route-id="@t.Id" method="post" class="d-inline">
                                                 @Html.AntiForgeryToken()
                                                 <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        data-confirm="@T["doctype.delete_confirm","Delete type"] «@t.Name»?"
-                                                        title="@T["common.delete","Delete"]"
+                                                        data-confirm="@T["doctype.delete_confirm"] «@t.Name»?"
+                                                        title="@T["common.delete"]"
                                                         @(t.MaterialCount > 0 ? "disabled" : "")>
                                                     <i class="bi bi-trash"></i>
                                                 </button>
@@ -71,19 +71,19 @@
     <div class="col-lg-4">
         <div class="card shadow-sm">
             <div class="card-header fw-semibold">
-                <i class="bi bi-plus-circle me-1"></i>@T["doctype.add","Add type"]
+                <i class="bi bi-plus-circle me-1"></i>@T["doctype.add"]
             </div>
             <div class="card-body">
                 <form asp-action="CreateDocumentType" method="post">
                     @Html.AntiForgeryToken()
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">@T["common.name","Name"] <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">@T["common.name"] <span class="text-danger">*</span></label>
                         <input asp-for="@newType.Name" name="Name" class="form-control"
-                               placeholder="@T["doctype.name_placeholder","Document type name…"]"
+                               placeholder="@T["doctype.name_placeholder"]"
                                maxlength="255" required />
                     </div>
                     <button type="submit" class="btn btn-bocconi w-100">
-                        <i class="bi bi-plus-lg me-1"></i>@T["doctype.create","Create type"]
+                        <i class="bi bi-plus-lg me-1"></i>@T["doctype.create"]
                     </button>
                 </form>
             </div>

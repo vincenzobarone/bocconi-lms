@@ -1,9 +1,9 @@
 @{
-    ViewData["Title"] = T["auth.access_denied_title","Access denied"];
+    ViewData["Title"] = T["auth.access_denied_title"];
 }
 <div class="text-center py-5">
     <i class="bi bi-shield-lock-fill display-1 text-warning"></i>
-    <h2 class="mt-3">@T["auth.access_denied_title","Access denied"]</h2>
-    <p class="text-muted">@T["auth.access_denied_msg","You don't have the permissions to access this section."]</p>
-    <a asp-controller="Home" asp-action="Index" class="btn btn-bocconi">@T["auth.back_to_home","Back to home"]</a>
+    <h2 class="mt-3">@T["auth.access_denied_title"]</h2>
+    <p class="text-muted">@T["auth.access_denied_msg"]</p>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-bocconi">@T["auth.back_to_home"]</a>
 </div>

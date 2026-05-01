@@ -1,7 +1,7 @@
 @using BocconiLMS.Data
 @model RoleFormViewModel
 @{
-    ViewData["Title"] = T["admin.edit_role","Edit role"];
+    ViewData["Title"] = T["admin.edit_role"];
     bool coursesEnabled = ViewBag.CoursesEnabled == true;
 
     var coursePerms = RolePermissionRepository.AllPermissions.Where(p => p.CoursesOnly).ToList();
@@ -25,10 +25,10 @@
     <div class="col-lg-6">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="fw-bold text-bocconi mb-0">
-                <i class="bi bi-shield-lock me-2"></i>@T["admin.edit_role","Edit role"]
+                <i class="bi bi-shield-lock me-2"></i>@T["admin.edit_role"]
             </h2>
             <a asp-action="Users" asp-route-tab="ruoli" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-arrow-left me-1"></i>@T["admin.roles_tab","Roles"]
+                <i class="bi bi-arrow-left me-1"></i>@T["admin.roles_tab"]
             </a>
         </div>
 
@@ -47,7 +47,7 @@
             <div class="card shadow-sm mb-3">
                 <div class="card-body">
                     <label asp-for="Name" class="form-label fw-semibold">
-                        @T["common.name","Name"] <span class="text-danger">*</span>
+                        @T["common.name"] <span class="text-danger">*</span>
                     </label>
                     <input asp-for="Name" class="form-control" maxlength="50" autocomplete="off" />
                     <span asp-validation-for="Name" class="text-danger small"></span>
@@ -59,7 +59,7 @@
             {
                 <div class="card shadow-sm mb-3">
                     <div class="card-header bg-white fw-semibold py-3">
-                        <i class="bi bi-book me-2 text-bocconi"></i>@T["admin.courses","Courses"]
+                        <i class="bi bi-book me-2 text-bocconi"></i>@T["admin.courses"]
                     </div>
                     <div class="card-body">
                         @foreach (var p in coursePerms)
@@ -70,7 +70,7 @@
                                        id="perm_@p.Key.Replace('.','_')"
                                        @(Model.Permissions.Contains(p.Key) ? "checked" : "") />
                                 <label class="form-check-label" for="perm_@p.Key.Replace('.','_')">
-                                    @T[p.TranslationKey, p.Key]
+                                    @T[p.TranslationKey]
                                 </label>
                             </div>
                         }
@@ -81,10 +81,10 @@
             @* ── Accesso Menu ────────────────────────────────────── *@
             <div class="card shadow-sm mb-3">
                 <div class="card-header bg-white fw-semibold py-3">
-                    <i class="bi bi-layout-text-sidebar me-2 text-bocconi"></i>@T["perm.menu_access","Accesso Menu"]
+                    <i class="bi bi-layout-text-sidebar me-2 text-bocconi"></i>@T["perm.menu_access"]
                 </div>
                 <div class="card-body">
-                    <div class="form-text mb-3">@T["perm.menu_access_hint","Consente agli utenti con questo ruolo di accedere alle seguenti sezioni del pannello."]</div>
+                    <div class="form-text mb-3">@T["perm.menu_access_hint"]</div>
 
                     @* ── Materials toggle + sub-opzioni ───────────── *@
                     <div class="form-check mb-1">
@@ -94,14 +94,14 @@
                                @(matMenuChecked ? "checked" : "")
                                onchange="toggleMatOps(this.checked)" />
                         <label class="form-check-label fw-semibold" for="perm_menu_materials">
-                            <i class="bi bi-collection me-1 text-bocconi"></i>@T["perm.menu_materials","Materiali — accesso sezione"]
+                            <i class="bi bi-collection me-1 text-bocconi"></i>@T["perm.menu_materials"]
                         </label>
                     </div>
 
                     @* Sub-opzioni operazioni Materials *@
                     <div id="matOpsGroup"
                          class="ps-4 border-start border-2 border-bocconi ms-2 mb-3 @(matMenuChecked ? "" : "d-none")">
-                        <div class="form-text mb-2">@T["perm.mat_ops_hint","Operazioni consentite sui materiali:"]</div>
+                        <div class="form-text mb-2">@T["perm.mat_ops_hint"]</div>
 
                         @foreach (var op in matOpPerms)
                         {
@@ -115,7 +115,7 @@
                                        @(matMenuChecked ? "" : "disabled")
                                        onchange="onMatOpChange()" />
                                 <label class="form-check-label" for="@opId">
-                                    @T[op.TranslationKey, op.Key]
+                                    @T[op.TranslationKey]
                                 </label>
                             </div>
                         }
@@ -127,10 +127,10 @@
                                 <input type="checkbox" class="form-check-input" id="matSetStatusAll"
                                        @(anySetStatus ? "checked" : "") />
                                 <label class="form-check-label fw-semibold text-secondary" for="matSetStatusAll">
-                                    <i class="bi bi-arrow-left-right me-1"></i>@T["perm.materials_setstatus_all","Consenti modifica stato"]
+                                    <i class="bi bi-arrow-left-right me-1"></i>@T["perm.materials_setstatus_all"]
                                 </label>
                                 <div class="form-text ms-0" style="margin-top:2px;">
-                                    @T["perm.materials_setstatus_all_hint","Bypassa il blocco automatico (bozza in creazione, in revisione in modifica)"]
+                                    @T["perm.materials_setstatus_all_hint"]
                                 </div>
                             </div>
                             @* Checkbox nascoste che inviano i valori reali *@
@@ -152,7 +152,7 @@
                                    id="perm_@p.Key.Replace('.','_')"
                                    @(Model.Permissions.Contains(p.Key) ? "checked" : "") />
                             <label class="form-check-label fw-semibold" for="perm_@p.Key.Replace('.','_')">
-                                <i class="bi @MenuIcon(p.Key) me-1 text-bocconi"></i>@T[p.TranslationKey, p.Key]
+                                <i class="bi @MenuIcon(p.Key) me-1 text-bocconi"></i>@T[p.TranslationKey]
                             </label>
                         </div>
                     }
@@ -161,10 +161,10 @@
 
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-bocconi px-4">
-                    <i class="bi bi-check2 me-1"></i>@T["common.save","Save"]
+                    <i class="bi bi-check2 me-1"></i>@T["common.save"]
                 </button>
                 <a asp-action="Users" asp-route-tab="ruoli" class="btn btn-outline-secondary">
-                    @T["common.cancel","Cancel"]
+                    @T["common.cancel"]
                 </a>
             </div>
         </form>

@@ -1,19 +1,19 @@
 @model DashboardViewModel
 @{
     ViewData["Title"] = Model.IsAdmin
-        ? T["dashboard.admin.title", "Dashboard Admin"]
-        : T["dashboard.title", "Dashboard"];
+        ? T["dashboard.admin.title"]
+        : T["dashboard.title"];
 }
 
 <div class="mb-4 d-flex align-items-center justify-content-between">
     <h2 class="fw-bold text-bocconi mb-0">
         @if (Model.IsAdmin)
         {
-            <i class="bi bi-shield-lock-fill me-2"></i>@T["dashboard.admin.title", "Dashboard Admin"]
+            <i class="bi bi-shield-lock-fill me-2"></i>@T["dashboard.admin.title"]
         }
         else
         {
-            <i class="bi bi-house-door-fill me-2"></i>@T["dashboard.title", "Dashboard"]
+            <i class="bi bi-house-door-fill me-2"></i>@T["dashboard.title"]
         }
     </h2>
     @if (!Model.IsPending)
@@ -27,7 +27,7 @@
             <span>
                 <i class="bi bi-clock me-1"></i><span id="liveClock">--:--:--</span>
                 <span class="badge bg-light text-secondary border ms-1 fw-normal d-none" id="localTimeBadge"
-                      title="@T["dashboard.local_time","Ora locale del browser"]"></span>
+                      title="@T["dashboard.local_time"]"></span>
             </span>
         </div>
     }
@@ -41,9 +41,9 @@
             <div class="card border-warning shadow-sm">
                 <div class="card-body text-center p-5">
                     <i class="bi bi-hourglass-split display-3 text-warning mb-3 d-block"></i>
-                    <h4 class="fw-bold">@T["dashboard.pending.title", "Account in attesa"]</h4>
+                    <h4 class="fw-bold">@T["dashboard.pending.title"]</h4>
                     <p class="text-muted mb-0">
-                        @T["dashboard.pending.desc", "Il tuo account è stato registrato. Un amministratore ti assegnerà presto un ruolo per accedere alle funzionalità della piattaforma."]
+                        @T["dashboard.pending.desc"]
                     </p>
                 </div>
             </div>
@@ -60,10 +60,10 @@
             <div class="card h-100 shadow-sm">
                 <div class="card-body text-center p-4">
                     <i class="bi bi-sliders display-4 text-bocconi mb-3 d-block"></i>
-                    <h5 class="fw-bold">@T["admin.platform_settings", "Platform Settings"]</h5>
-                    <p class="text-muted">@T["admin.platform_settings_desc", "Configura moduli e funzionalità della piattaforma"]</p>
+                    <h5 class="fw-bold">@T["admin.platform_settings"]</h5>
+                    <p class="text-muted">@T["admin.platform_settings_desc"]</p>
                     <a asp-controller="Admin" asp-action="PlatformFeatures" class="btn btn-bocconi">
-                        @T["admin.configure", "Configura"]
+                        @T["admin.configure"]
                     </a>
                 </div>
             </div>
@@ -72,10 +72,10 @@
             <div class="card h-100 shadow-sm">
                 <div class="card-body text-center p-4">
                     <i class="bi bi-envelope-at display-4 text-bocconi mb-3 d-block"></i>
-                    <h5 class="fw-bold">@T["admin.email_settings", "Email Settings"]</h5>
-                    <p class="text-muted">@T["admin.email_settings_desc", "Configura il server SMTP e le notifiche email"]</p>
+                    <h5 class="fw-bold">@T["admin.email_settings"]</h5>
+                    <p class="text-muted">@T["admin.email_settings_desc"]</p>
                     <a asp-controller="Admin" asp-action="EmailSettings" class="btn btn-bocconi">
-                        @T["admin.configure_email", "Configura email"]
+                        @T["admin.configure_email"]
                     </a>
                 </div>
             </div>
@@ -84,10 +84,10 @@
             <div class="card h-100 shadow-sm">
                 <div class="card-body text-center p-4">
                     <i class="bi bi-database-gear display-4 text-bocconi mb-3 d-block"></i>
-                    <h5 class="fw-bold">@T["admin.database", "Database"]</h5>
-                    <p class="text-muted">@T["admin.database_desc", "Generate the production installation SQL script."]</p>
+                    <h5 class="fw-bold">@T["admin.database"]</h5>
+                    <p class="text-muted">@T["admin.database_desc"]</p>
                     <a asp-controller="Admin" asp-action="Database" class="btn btn-bocconi">
-                        @T["admin.database_manage", "Open"]
+                        @T["admin.database_manage"]
                     </a>
                 </div>
             </div>
@@ -98,7 +98,7 @@
     @if (Model.AdminStats != null && (Model.CoursesEnabled || Model.MaterialsEnabled))
     {
         <h5 class="text-muted fw-semibold mb-3">
-            <i class="bi bi-bar-chart-fill me-2"></i>@T["dashboard.admin.stats", "Panoramica piattaforma"]
+            <i class="bi bi-bar-chart-fill me-2"></i>@T["dashboard.admin.stats"]
         </h5>
         <div class="row g-3">
             @if (Model.CoursesEnabled)
@@ -107,7 +107,7 @@
                     <div class="card text-center border-0 bg-light shadow-sm h-100">
                         <div class="card-body py-3">
                             <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.TotalCourses</div>
-                            <small class="text-muted">@T["dashboard.admin.courses", "Corsi totali"]</small>
+                            <small class="text-muted">@T["dashboard.admin.courses"]</small>
                         </div>
                     </div>
                 </div>
@@ -115,7 +115,7 @@
                     <div class="card text-center border-0 bg-light shadow-sm h-100">
                         <div class="card-body py-3">
                             <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.ActiveStudents</div>
-                            <small class="text-muted">@T["dashboard.admin.students", "Studenti attivi"]</small>
+                            <small class="text-muted">@T["dashboard.admin.students"]</small>
                         </div>
                     </div>
                 </div>
@@ -123,7 +123,7 @@
                     <div class="card text-center border-0 bg-light shadow-sm h-100">
                         <div class="card-body py-3">
                             <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.ActiveTeachers</div>
-                            <small class="text-muted">@T["dashboard.admin.teachers", "Docenti attivi"]</small>
+                            <small class="text-muted">@T["dashboard.admin.teachers"]</small>
                         </div>
                     </div>
                 </div>
@@ -131,7 +131,7 @@
                     <div class="card text-center border-0 bg-light shadow-sm h-100">
                         <div class="card-body py-3">
                             <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.TotalEnrollments</div>
-                            <small class="text-muted">@T["dashboard.admin.enrollments", "Iscrizioni totali"]</small>
+                            <small class="text-muted">@T["dashboard.admin.enrollments"]</small>
                         </div>
                     </div>
                 </div>
@@ -142,7 +142,7 @@
                     <div class="card text-center border-0 bg-light shadow-sm h-100">
                         <div class="card-body py-3">
                             <div class="display-6 fw-bold text-bocconi">@Model.TotalMaterials</div>
-                            <small class="text-muted">@T["dashboard.admin.materials", "Materiali totali"]</small>
+                            <small class="text-muted">@T["dashboard.admin.materials"]</small>
                         </div>
                     </div>
                 </div>
@@ -150,7 +150,7 @@
                     <div class="card text-center border-0 bg-light shadow-sm h-100">
                         <div class="card-body py-3">
                             <div class="display-6 fw-bold text-success">@Model.RecentMaterials</div>
-                            <small class="text-muted">@T["dashboard.materials.recent", "Ultimi 30 giorni"]</small>
+                            <small class="text-muted">@T["dashboard.materials.recent"]</small>
                         </div>
                     </div>
                 </div>
@@ -158,7 +158,7 @@
                     <div class="card text-center border-0 bg-light shadow-sm h-100">
                         <div class="card-body py-3">
                             <div class="display-6 fw-bold text-bocconi">@Model.AdminStats.TotalUsers</div>
-                            <small class="text-muted">@T["dashboard.admin.users", "Utenti totali"]</small>
+                            <small class="text-muted">@T["dashboard.admin.users"]</small>
                         </div>
                     </div>
                 </div>
@@ -178,7 +178,7 @@
                     <div class="card-body py-4">
                         <i class="bi bi-book-fill fs-2 text-bocconi mb-2 d-block"></i>
                         <div class="display-6 fw-bold">@Model.TeacherCourseCount</div>
-                        <small class="text-muted">@T["dashboard.teacher.courses", "I miei corsi"]</small>
+                        <small class="text-muted">@T["dashboard.teacher.courses"]</small>
                     </div>
                 </div>
             </div>
@@ -187,7 +187,7 @@
                     <div class="card-body py-4">
                         <i class="bi bi-people-fill fs-2 text-bocconi mb-2 d-block"></i>
                         <div class="display-6 fw-bold">@Model.TeacherStudentCount</div>
-                        <small class="text-muted">@T["dashboard.teacher.students", "Studenti iscritti"]</small>
+                        <small class="text-muted">@T["dashboard.teacher.students"]</small>
                     </div>
                 </div>
             </div>
@@ -199,7 +199,7 @@
                     <div class="card-body py-4">
                         <i class="bi bi-folder2-open fs-2 text-bocconi mb-2 d-block"></i>
                         <div class="display-6 fw-bold">@Model.TotalMaterials</div>
-                        <small class="text-muted">@T["dashboard.materials.total", "Materiali totali"]</small>
+                        <small class="text-muted">@T["dashboard.materials.total"]</small>
                     </div>
                 </div>
             </div>
@@ -208,7 +208,7 @@
                     <div class="card-body py-4">
                         <i class="bi bi-clock-history fs-2 text-success mb-2 d-block"></i>
                         <div class="display-6 fw-bold text-success">@Model.RecentMaterials</div>
-                        <small class="text-muted">@T["dashboard.materials.recent", "Ultimi 30 giorni"]</small>
+                        <small class="text-muted">@T["dashboard.materials.recent"]</small>
                     </div>
                 </div>
             </div>
@@ -228,7 +228,7 @@
                     <div class="card-body py-4">
                         <i class="bi bi-collection-play-fill fs-2 text-bocconi mb-2 d-block"></i>
                         <div class="display-6 fw-bold">@Model.StudentEnrolledCount</div>
-                        <small class="text-muted">@T["dashboard.student.enrolled", "Corsi iscritti"]</small>
+                        <small class="text-muted">@T["dashboard.student.enrolled"]</small>
                     </div>
                 </div>
             </div>
@@ -237,7 +237,7 @@
                     <div class="card-body py-4">
                         <i class="bi bi-patch-check-fill fs-2 text-success mb-2 d-block"></i>
                         <div class="display-6 fw-bold text-success">@Model.StudentCompletedLessons</div>
-                        <small class="text-muted">@T["dashboard.student.completed", "Lezioni completate"]</small>
+                        <small class="text-muted">@T["dashboard.student.completed"]</small>
                     </div>
                 </div>
             </div>
@@ -249,7 +249,7 @@
                     <div class="card-body py-4">
                         <i class="bi bi-folder2-open fs-2 text-bocconi mb-2 d-block"></i>
                         <div class="display-6 fw-bold">@Model.TotalMaterials</div>
-                        <small class="text-muted">@T["dashboard.materials.total", "Materiali disponibili"]</small>
+                        <small class="text-muted">@T["dashboard.materials.total"]</small>
                     </div>
                 </div>
             </div>
@@ -258,7 +258,7 @@
                     <div class="card-body py-4">
                         <i class="bi bi-clock-history fs-2 text-info mb-2 d-block"></i>
                         <div class="display-6 fw-bold text-info">@Model.RecentMaterials</div>
-                        <small class="text-muted">@T["dashboard.materials.recent", "Ultimi 30 giorni"]</small>
+                        <small class="text-muted">@T["dashboard.materials.recent"]</small>
                     </div>
                 </div>
             </div>
@@ -268,7 +268,7 @@
     @* ── Elenco corsi con barra di avanzamento ─────────────────────────── *@
     @if (Model.CoursesEnabled)
     {
-        <h5 class="fw-semibold mb-3 mt-2">@T["dashboard.student.my_courses","I miei corsi"]</h5>
+        <h5 class="fw-semibold mb-3 mt-2">@T["dashboard.student.my_courses"]</h5>
         @if (Model.StudentEnrollments.Any())
         {
             <div class="row g-3 mb-4">
@@ -279,7 +279,7 @@
                             <div class="card-body">
                                 <h6 class="fw-bold mb-2">@e.CourseTitle</h6>
                                 <div class="d-flex justify-content-between small text-muted mb-1">
-                                    <span>@e.CompletedLessons / @e.TotalLessons @T["common.lessons","lezioni"]</span>
+                                    <span>@e.CompletedLessons / @e.TotalLessons @T["common.lessons"]</span>
                                     <span class="fw-semibold @(e.ProgressPercent == 100 ? "text-success" : "text-bocconi")">@e.ProgressPercent%</span>
                                 </div>
                                 <div class="progress mb-3" style="height:6px;">
@@ -290,8 +290,8 @@
                                 <a asp-controller="Course" asp-action="Details" asp-route-id="@e.CourseId"
                                    class="btn btn-sm btn-outline-secondary w-100">
                                     @(e.ProgressPercent == 100
-                                        ? T["dashboard.student.review_btn","Rivedi"]
-                                        : T["dashboard.student.continue_btn","Continua"])
+                                        ? T["dashboard.student.review_btn"]
+                                        : T["dashboard.student.continue_btn"])
                                 </a>
                             </div>
                         </div>
@@ -302,8 +302,8 @@
         else
         {
             <div class="alert alert-info mb-4">
-                <i class="bi bi-info-circle me-2"></i>@T["dashboard.student.no_courses","Non sei iscritto a nessun corso."]
-                <a asp-controller="Course" asp-action="Index">@T["dashboard.student.explore_catalog","Esplora il catalogo"]</a>.
+                <i class="bi bi-info-circle me-2"></i>@T["dashboard.student.no_courses"]
+                <a asp-controller="Course" asp-action="Index">@T["dashboard.student.explore_catalog"]</a>.
             </div>
         }
     }
@@ -311,15 +311,15 @@
     @* ── Ultimi tentativi quiz ──────────────────────────────────────────── *@
     @if (Model.StudentRecentAttempts.Any())
     {
-        <h5 class="fw-semibold mb-3">@T["dashboard.student.recent_quizzes","Quiz recenti"]</h5>
+        <h5 class="fw-semibold mb-3">@T["dashboard.student.recent_quizzes"]</h5>
         <div class="table-responsive mb-4">
             <table class="table table-hover align-middle">
                 <thead class="table-light">
                     <tr>
-                        <th scope="col">@T["quiz.col_quiz","Quiz"]</th>
-                        <th scope="col">@T["quiz.col_score","Punteggio"]</th>
-                        <th scope="col">@T["quiz.col_result","Esito"]</th>
-                        <th scope="col">@T["quiz.col_date","Data"]</th>
+                        <th scope="col">@T["quiz.col_quiz"]</th>
+                        <th scope="col">@T["quiz.col_score"]</th>
+                        <th scope="col">@T["quiz.col_result"]</th>
+                        <th scope="col">@T["quiz.col_date"]</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -331,11 +331,11 @@
                             <td>
                                 @if (a.Passed)
                                 {
-                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>@T["quiz.passed","Superato"]</span>
+                                    <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>@T["quiz.passed"]</span>
                                 }
                                 else
                                 {
-                                    <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>@T["quiz.failed","Non superato"]</span>
+                                    <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>@T["quiz.failed"]</span>
                                 }
                             </td>
                             <td class="text-muted small">@a.AttemptedAt.ToString("dd/MM/yyyy HH:mm")</td>
@@ -358,7 +358,7 @@
                     <div class="card-body py-4">
                         <i class="bi bi-folder2-open fs-2 text-bocconi mb-2 d-block"></i>
                         <div class="display-6 fw-bold">@Model.TotalMaterials</div>
-                        <small class="text-muted">@T["dashboard.materials.total", "Materiali totali"]</small>
+                        <small class="text-muted">@T["dashboard.materials.total"]</small>
                     </div>
                 </div>
             </div>
@@ -367,7 +367,7 @@
                     <div class="card-body py-4">
                         <i class="bi bi-clock-history fs-2 text-success mb-2 d-block"></i>
                         <div class="display-6 fw-bold text-success">@Model.RecentMaterials</div>
-                        <small class="text-muted">@T["dashboard.materials.recent", "Aggiunti negli ultimi 30 giorni"]</small>
+                        <small class="text-muted">@T["dashboard.materials.recent"]</small>
                     </div>
                 </div>
             </div>
@@ -377,7 +377,7 @@
             <div class="col-12">
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle me-2"></i>
-                    @T["dashboard.no_modules", "Nessun modulo attivo. Contatta l'amministratore."]
+                    @T["dashboard.no_modules"]
                 </div>
             </div>
         }

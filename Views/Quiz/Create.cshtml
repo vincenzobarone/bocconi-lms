@@ -1,11 +1,11 @@
 @model QuizFormViewModel
 @{
-    ViewData["Title"] = T["quiz.create_title","Create quiz"];
+    ViewData["Title"] = T["quiz.create_title"];
 }
 
 <div class="row">
     <div class="col-lg-10 mx-auto">
-        <h2 class="fw-bold text-bocconi mb-1"><i class="bi bi-clipboard2-plus me-2"></i>@T["quiz.create_title","Create quiz"]</h2>
+        <h2 class="fw-bold text-bocconi mb-1"><i class="bi bi-clipboard2-plus me-2"></i>@T["quiz.create_title"]</h2>
         <p class="text-muted mb-4"><i class="bi bi-book me-1"></i>@ViewBag.LessonTitle</p>
 
         <form asp-action="Create" method="post" id="quizForm">
@@ -13,25 +13,25 @@
             <input type="hidden" asp-for="LessonId" />
 
             <div class="card mb-4">
-                <div class="card-header fw-semibold">@T["quiz.form.settings","Quiz settings"]</div>
+                <div class="card-header fw-semibold">@T["quiz.form.settings"]</div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label asp-for="Title" class="form-label fw-semibold">@T["quiz.form.title","Title"] *</label>
-                        <input asp-for="Title" class="form-control" placeholder="@T["quiz.form.title_placeholder","e.g. Lesson 1 test"]" />
+                        <label asp-for="Title" class="form-label fw-semibold">@T["quiz.form.title"] *</label>
+                        <input asp-for="Title" class="form-control" placeholder="@T["quiz.form.title_placeholder"]" />
                         <span asp-validation-for="Title" class="text-danger small"></span>
                     </div>
                     <div class="mb-3">
-                        <label asp-for="Description" class="form-label fw-semibold">@T["quiz.form.description","Description"]</label>
+                        <label asp-for="Description" class="form-label fw-semibold">@T["quiz.form.description"]</label>
                         <textarea asp-for="Description" class="form-control" rows="2"></textarea>
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label asp-for="TimeLimitMinutes" class="form-label fw-semibold">@T["quiz.form.time_limit","Time limit (minutes)"]</label>
+                            <label asp-for="TimeLimitMinutes" class="form-label fw-semibold">@T["quiz.form.time_limit"]</label>
                             <input asp-for="TimeLimitMinutes" type="number" class="form-control" min="5" max="180" />
                             <span asp-validation-for="TimeLimitMinutes" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label asp-for="PassingScore" class="form-label fw-semibold">@T["quiz.form.passing_score","Passing score (%)"]</label>
+                            <label asp-for="PassingScore" class="form-label fw-semibold">@T["quiz.form.passing_score"]</label>
                             <input asp-for="PassingScore" type="number" class="form-control" min="1" max="100" />
                             <span asp-validation-for="PassingScore" class="text-danger small"></span>
                         </div>
@@ -42,15 +42,15 @@
             <div id="questionsContainer"></div>
 
             <button type="button" class="btn btn-outline-secondary mb-4" onclick="addQuestion()">
-                <i class="bi bi-plus-circle me-1"></i>@T["quiz.add_question_btn","Add question"]
+                <i class="bi bi-plus-circle me-1"></i>@T["quiz.add_question_btn"]
             </button>
 
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-bocconi px-4">
-                    <i class="bi bi-check-lg me-2"></i>@T["quiz.save_btn","Save quiz"]
+                    <i class="bi bi-check-lg me-2"></i>@T["quiz.save_btn"]
                 </button>
                 <a asp-controller="Lesson" asp-action="Details" asp-route-id="@Model.LessonId"
-                   class="btn btn-outline-secondary">@T["common.cancel","Cancel"]</a>
+                   class="btn btn-outline-secondary">@T["common.cancel"]</a>
             </div>
         </form>
     </div>
@@ -59,14 +59,14 @@
 @section Scripts {
 <script>
 var qCount = 0;
-var lblQuestion = @Json.Serialize(T["quiz.js.question","Question"]);
-var lblQuestionText = @Json.Serialize(T["quiz.js.question_text","Question text"] + " *");
-var lblQuestionPlaceholder = @Json.Serialize(T["quiz.js.question_placeholder","Enter the question..."]);
-var lblOptions = @Json.Serialize(T["quiz.js.options","Options"]);
-var lblOptionsHint = @Json.Serialize(T["quiz.js.options_hint","(select the circle of the correct answer)"]);
-var lblOptionPlaceholder = @Json.Serialize(T["quiz.js.option_placeholder","Option"]);
-var lblAtLeastOne = @Json.Serialize(T["quiz.js.at_least_one","Please add at least one question to the quiz."]);
-var lblRemoveQuestion = @Json.Serialize(T["quiz.js.remove_question","Rimuovi domanda"]);
+var lblQuestion = @Json.Serialize(T["quiz.js.question"]);
+var lblQuestionText = @Json.Serialize(T["quiz.js.question_text"] + " *");
+var lblQuestionPlaceholder = @Json.Serialize(T["quiz.js.question_placeholder"]);
+var lblOptions = @Json.Serialize(T["quiz.js.options"]);
+var lblOptionsHint = @Json.Serialize(T["quiz.js.options_hint"]);
+var lblOptionPlaceholder = @Json.Serialize(T["quiz.js.option_placeholder"]);
+var lblAtLeastOne = @Json.Serialize(T["quiz.js.at_least_one"]);
+var lblRemoveQuestion = @Json.Serialize(T["quiz.js.remove_question"]);
 
 function addQuestion() {
     var idx = qCount;
