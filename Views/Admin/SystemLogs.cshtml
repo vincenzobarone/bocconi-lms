@@ -19,10 +19,15 @@
 
 <div class="d-flex align-items-center justify-content-between mb-3">
     <h2 class="mb-0"><i class="bi bi-list-columns-reverse me-2 text-secondary"></i>@T["logs.title"]</h2>
-    <button type="button" class="btn btn-outline-warning btn-sm"
-            data-bs-toggle="modal" data-bs-target="#purgeModal">
-        <i class="bi bi-trash3 me-1"></i>@T["logs.purge"]
-    </button>
+    <div class="d-flex gap-2">
+        <a asp-controller="Home" asp-action="Dashboard" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>@T["common.back_dashboard"]
+        </a>
+        <button type="button" class="btn btn-outline-warning btn-sm"
+                data-bs-toggle="modal" data-bs-target="#purgeModal">
+            <i class="bi bi-trash3 me-1"></i>@T["logs.purge"]
+        </button>
+    </div>
 </div>
 
 @if (!LogRepo.WriteToDatabase)
