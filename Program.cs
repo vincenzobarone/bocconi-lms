@@ -152,7 +152,23 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
-app.Run($"http://0.0.0.0:{port}");
+// IIS detection: AspNetCoreModuleV2 sets these env vars depending on hosting mode.
+//   - inprocess:    ASPNETCORE_IIS_HTTPAUTH, IIS_USER_TOKEN
+//   - outofprocess: ASPNETCORE_PORT, ASPNETCORE_TOKEN, ANCM_HTTP_PORT
+// In either case the IIS module owns the binding; the app must NOT call Run(url).
+var isIIS = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_IIS_HTTPAUTH"))
+         || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("IIS_USER_TOKEN"))
+         || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE_TOKEN"))
+         || !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANCM_HTTP_PORT"));
+
+if (isIIS)
+{
+    app.Run();
+}
+else
+{
+    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+    app.Run($"http://0.0.0.0:{port}");
+}
 
 public partial class Program { }
