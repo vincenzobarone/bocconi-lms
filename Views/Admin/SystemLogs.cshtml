@@ -1,0 +1,279 @@
+@model SystemLogsViewModel
+@using Microsoft.AspNetCore.Html
+@inject BocconiLMS.Data.SystemLogRepository LogRepo
+@functions {
+    IHtmlContent Opt(string value, string? current, string label)
+    {
+        var sel = value == current ? " selected" : "";
+        var safeLabel = System.Net.WebUtility.HtmlEncode(label);
+        return new HtmlString($"<option value=\"{value}\"{sel}>{safeLabel}</option>");
+    }
+}
+@{
+    ViewData["Title"] = T["logs.title"];
+
+    var totalPages = Model.PageSize > 0
+        ? (int)Math.Ceiling((double)Model.TotalCount / Model.PageSize)
+        : 1;
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0"><i class="bi bi-list-columns-reverse me-2 text-secondary"></i>@T["logs.title"]</h2>
+    <button type="button" class="btn btn-outline-warning btn-sm"
+            data-bs-toggle="modal" data-bs-target="#purgeModal">
+        <i class="bi bi-trash3 me-1"></i>@T["logs.purge"]
+    </button>
+</div>
+
+@if (!LogRepo.WriteToDatabase)
+{
+    <div class="alert alert-warning d-flex align-items-start mb-3" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+        <div>
+            <strong>@T["logs.db_disabled.title"]</strong><br />
+            <small>@T["logs.db_disabled.desc"]</small>
+        </div>
+    </div>
+}
+else
+{
+    <div class="alert alert-info d-flex align-items-start mb-3 py-2" role="alert">
+        <i class="bi bi-info-circle me-2"></i>
+        <small class="mb-0">@T["logs.dual_write.notice"]</small>
+    </div>
+}
+
+<div class="card border-0 shadow-sm mb-3">
+    <div class="card-body pb-2">
+        <form method="get" asp-action="SystemLogs" class="row g-2 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">@T["logs.filter.type"]</label>
+                <select name="logType" class="form-select form-select-sm">
+                    <option value="">@T["logs.filter.all_types"]</option>
+                    @Opt("http_access", Model.FilterType, "HTTP Access")
+                    @Opt("audit",       Model.FilterType, "Audit")
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted mb-1">@T["logs.filter.user"]</label>
+                <input type="text" name="filterUser" class="form-control form-control-sm"
+                       value="@Model.FilterUser" placeholder="email..." />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">@T["logs.filter.outcome"]</label>
+                <select name="outcome" class="form-select form-select-sm">
+                    <option value="">@T["logs.filter.all_outcomes"]</option>
+                    @Opt("success", Model.FilterOutcome, "success")
+                    @Opt("failure", Model.FilterOutcome, "failure")
+                    @Opt("200",     Model.FilterOutcome, "200")
+                    @Opt("301",     Model.FilterOutcome, "301")
+                    @Opt("302",     Model.FilterOutcome, "302")
+                    @Opt("400",     Model.FilterOutcome, "400")
+                    @Opt("401",     Model.FilterOutcome, "401")
+                    @Opt("403",     Model.FilterOutcome, "403")
+                    @Opt("404",     Model.FilterOutcome, "404")
+                    @Opt("500",     Model.FilterOutcome, "500")
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">@T["logs.filter.date_from"]</label>
+                <input type="date" name="dateFrom" class="form-control form-control-sm"
+                       value="@(Model.DateFrom?.ToString("yyyy-MM-dd") ?? "")" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted mb-1">@T["logs.filter.date_to"]</label>
+                <input type="date" name="dateTo" class="form-control form-control-sm"
+                       value="@(Model.DateTo?.ToString("yyyy-MM-dd") ?? "")" />
+            </div>
+            <div class="col-md-1 d-flex gap-1">
+                <button type="submit" class="btn btn-primary btn-sm w-100" aria-label="@T["common.search"]">
+                    <i class="bi bi-search"></i>
+                </button>
+                <a asp-action="SystemLogs" class="btn btn-outline-secondary btn-sm" aria-label="@T["common.reset"]">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header bg-white border-bottom d-flex align-items-center justify-content-between py-2">
+        <span class="small text-muted">
+            @if (Model.TotalCount == 0)
+            {
+                <span>@T["logs.no_results"]</span>
+            }
+            else
+            {
+                <span>
+                    @T["logs.showing"] <strong>@Model.Logs.Count</strong> / <strong>@Model.TotalCount</strong> @T["logs.records"]
+                    @if (Model.TotalCount > Model.PageSize)
+                    {
+                        <span class="text-warning ms-1">— @T["logs.showing_latest"] @Model.PageSize</span>
+                    }
+                </span>
+            }
+        </span>
+        @if (totalPages > 1)
+        {
+            <div class="d-flex gap-1 align-items-center">
+                @if (Model.Page > 1)
+                {
+                    <a class="btn btn-outline-secondary btn-sm"
+                       asp-action="SystemLogs"
+                       asp-route-logType="@Model.FilterType"
+                       asp-route-filterUser="@Model.FilterUser"
+                       asp-route-outcome="@Model.FilterOutcome"
+                       asp-route-dateFrom="@(Model.DateFrom?.ToString("yyyy-MM-dd"))"
+                       asp-route-dateTo="@(Model.DateTo?.ToString("yyyy-MM-dd"))"
+                       asp-route-page="@(Model.Page - 1)"
+                       aria-label="Pagina precedente">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                }
+                <span class="btn btn-sm disabled">@Model.Page / @totalPages</span>
+                @if (Model.Page < totalPages)
+                {
+                    <a class="btn btn-outline-secondary btn-sm"
+                       asp-action="SystemLogs"
+                       asp-route-logType="@Model.FilterType"
+                       asp-route-filterUser="@Model.FilterUser"
+                       asp-route-outcome="@Model.FilterOutcome"
+                       asp-route-dateFrom="@(Model.DateFrom?.ToString("yyyy-MM-dd"))"
+                       asp-route-dateTo="@(Model.DateTo?.ToString("yyyy-MM-dd"))"
+                       asp-route-page="@(Model.Page + 1)"
+                       aria-label="Pagina successiva">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                }
+            </div>
+        }
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table id="logsTable" class="table table-sm table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col" style="width:160px">@T["logs.col.timestamp"]</th>
+                        <th scope="col" style="width:90px">@T["logs.col.type"]</th>
+                        <th scope="col" style="width:200px">@T["logs.col.user"]</th>
+                        <th scope="col" style="width:110px">@T["logs.col.ip"]</th>
+                        <th scope="col">@T["logs.col.action"]</th>
+                        <th scope="col" style="width:90px">@T["logs.col.outcome"]</th>
+                        <th scope="col" style="width:70px" class="text-end">ms</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var log in Model.Logs)
+                    {
+                        var rowCss = log.Outcome is "500" or "failure" ? "table-danger"
+                                   : log.Outcome is "401" or "403"    ? "table-warning"
+                                   : "";
+                        <tr class="@rowCss">
+                            <td class="text-muted small font-monospace text-nowrap">
+                                @log.CreatedAt.ToString("dd/MM/yy HH:mm:ss")
+                            </td>
+                            <td>
+                                @if (log.LogType == "audit")
+                                {
+                                    <span class="badge bg-info text-dark">audit</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">HTTP</span>
+                                }
+                            </td>
+                            <td class="small text-truncate" style="max-width:200px" title="@log.UserEmail">
+                                @(log.UserEmail ?? "-")
+                            </td>
+                            <td class="small font-monospace">@(log.Ip ?? "-")</td>
+                            <td class="small">
+                                <span>@log.Action</span>
+                                @if (!string.IsNullOrWhiteSpace(log.Target))
+                                {
+                                    <br /><span class="text-muted">→ @log.Target</span>
+                                }
+                            </td>
+                            <td>
+                                @{
+                                    var outcomeCss = log.Outcome switch
+                                    {
+                                        "success" or "200" or "201" or "204" => "text-success fw-semibold",
+                                        "failure" or "500" or "503"          => "text-danger fw-semibold",
+                                        "401" or "403"                       => "text-warning fw-semibold",
+                                        "301" or "302"                       => "text-secondary",
+                                        _                                    => ""
+                                    };
+                                }
+                                <span class="small @outcomeCss">@(log.Outcome ?? "-")</span>
+                            </td>
+                            <td class="text-end small font-monospace">
+                                @(log.DurationMs.HasValue ? log.DurationMs + " ms" : "-")
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Logs.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                @T["logs.no_results"]
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="purgeModal" tabindex="-1" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-action="PurgeLogs">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-trash3 me-2"></i>@T["logs.purge"]</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted mb-3">@T["logs.purge.desc"]</p>
+                    <div class="d-flex flex-column gap-2">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="days" id="pur30" value="30" checked />
+                            <label class="form-check-label" for="pur30">@T["logs.purge.30days"]</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="days" id="pur90" value="90" />
+                            <label class="form-check-label" for="pur90">@T["logs.purge.90days"]</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="days" id="pur0" value="0" />
+                            <label class="form-check-label text-danger" for="pur0">@T["logs.purge.all"]</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">@T["common.cancel"]</button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash3 me-1"></i>@T["logs.purge.confirm"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+$(function () {
+    $('#logsTable').DataTable({
+        language: window.dtLang(),
+        order: [],
+        pageLength: 100,
+        dom: '<"d-flex justify-content-between align-items-center mb-2"lf>rtip'
+    });
+});
+</script>
+}

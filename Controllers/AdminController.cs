@@ -26,6 +26,9 @@ public class AdminController : Controller
     private readonly RolePermissionRepository _rolePerms;
     private readonly ProductionScriptGenerator _scriptGenerator;
     private readonly IAuditLogger _audit;
+    private readonly SystemLogRepository _logRepo;
+    private readonly ApiKeyRepository _apiKeyRepo;
+    private readonly ApiKeyService _apiKeys;
 
     public AdminController(
         UserRepository users,
@@ -43,7 +46,10 @@ public class AdminController : Controller
         PlatformRepository platforms,
         RolePermissionRepository rolePerms,
         ProductionScriptGenerator scriptGenerator,
-        IAuditLogger audit)
+        IAuditLogger audit,
+        SystemLogRepository logRepo,
+        ApiKeyRepository apiKeyRepo,
+        ApiKeyService apiKeys)
     {
         _users = users;
         _courses = courses;
@@ -61,6 +67,9 @@ public class AdminController : Controller
         _rolePerms = rolePerms;
         _scriptGenerator = scriptGenerator;
         _audit = audit;
+        _logRepo = logRepo;
+        _apiKeyRepo = apiKeyRepo;
+        _apiKeys = apiKeys;
     }
 
     public IActionResult Index()
@@ -1121,6 +1130,97 @@ public class AdminController : Controller
         HttpContext.Session.Remove("ProdScriptFileName");
 
         return File(bytes, "application/sql", fileName);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> SystemLogs(
+        string? logType, string? filterUser, string? outcome,
+        DateTime? dateFrom, DateTime? dateTo, int page = 1)
+    {
+        const int pageSize = 200;
+        var (logs, total) = await _logRepo.GetPagedAsync(
+            logType, filterUser, outcome, dateFrom, dateTo, page, pageSize);
+
+        var vm = new SystemLogsViewModel
+        {
+            Logs        = logs,
+            TotalCount  = total,
+            Page        = page,
+            PageSize    = pageSize,
+            FilterType  = logType,
+            FilterUser  = filterUser,
+            FilterOutcome = outcome,
+            DateFrom    = dateFrom,
+            DateTo      = dateTo,
+        };
+        return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> PurgeLogs(int days = 0)
+    {
+        int deleted;
+        if (days <= 0)
+            deleted = await _logRepo.DeleteAllAsync();
+        else
+            deleted = await _logRepo.DeleteOlderThanAsync(days);
+
+        _audit.Log("admin.logs_purged", $"days={days}", "success");
+        TempData["Success"] = $"Eliminati {deleted} record dai log di sistema.";
+        return RedirectToAction(nameof(SystemLogs));
+    }
+
+    // ============================================================
+    //  API Keys (gestione chiavi per accesso esterno alle API)
+    // ============================================================
+    public async Task<IActionResult> ApiKeys()
+    {
+        var keys = await _apiKeyRepo.ListAsync();
+        var vm = new ApiKeysListVm
+        {
+            Keys = keys,
+            NewlyGeneratedKey = TempData["NewApiKey"] is string json
+                ? System.Text.Json.JsonSerializer.Deserialize<GeneratedApiKeyVm>(json)
+                : null,
+        };
+        return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateApiKey(CreateApiKeyVm vm)
+    {
+        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(vm.Name))
+        {
+            TempData["Error"] = _translationService.T("apikeys.error.name_required");
+            return RedirectToAction(nameof(ApiKeys));
+        }
+
+        var createdBy = User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value
+                     ?? User.Identity?.Name;
+
+        var generated = await _apiKeys.GenerateAsync(vm.Name, vm.Scopes, createdBy);
+
+        _audit.Log(
+            action: "admin.apikey_created",
+            target: $"name={generated.Name} prefix={generated.KeyPrefix} scopes={generated.Scopes}",
+            outcome: "success");
+
+        TempData["NewApiKey"] = System.Text.Json.JsonSerializer.Serialize(generated);
+        return RedirectToAction(nameof(ApiKeys));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> RevokeApiKey(int id)
+    {
+        var ok = await _apiKeyRepo.RevokeAsync(id);
+        _audit.Log(
+            action: "admin.apikey_revoked",
+            target: $"id={id}",
+            outcome: ok ? "success" : "not_found");
+        return RedirectToAction(nameof(ApiKeys));
     }
 
     private async Task<bool> CanAccessMenuAsync(string permission)

@@ -1,7 +1,7 @@
 # Diagramma E-R — Didasco LMS (Università Bocconi)
 
-Versione: 1.1 — aggiornata al 2026-04-30  
-Fonte: `Migrations/000_baseline_schema.sql` + migrazioni 001–021
+Versione: 1.2 — aggiornata al 2026-05-02  
+Fonte: `artifacts/bocconi-lms/schema.sql` (DDL completo + seed iniziale, idempotente)
 
 ---
 
@@ -234,10 +234,16 @@ erDiagram
     materials ||--o{ material_versions : "ha versioni (CASCADE)"
     materials ||--o{ lesson_materials : "usato in (CASCADE)"
 
-    schema_migrations {
-        int id PK
-        varchar name
-        datetime applied_at
+    system_logs {
+        bigint id PK
+        varchar log_type
+        varchar user_email
+        varchar ip
+        varchar action
+        varchar target
+        varchar outcome
+        int duration_ms
+        datetime created_at
     }
 
     app_settings {
@@ -537,14 +543,22 @@ erDiagram
 
 ---
 
-### `schema_migrations`
-| Colonna    | Tipo         | Vincoli                          | Descrizione                                                        |
-|------------|--------------|----------------------------------|--------------------------------------------------------------------|
-| id         | INT          | PK, AUTO_INCREMENT               | Identificativo del record di migrazione                           |
-| name       | VARCHAR(255) | NOT NULL, UNIQUE KEY `uk_name`   | Nome del file di migrazione (es. `001_add_areas.sql`)             |
-| applied_at | DATETIME     | NOT NULL DEFAULT CURRENT_TIMESTAMP | Timestamp di applicazione al DB                                  |
+### `system_logs`
+| Colonna     | Tipo         | Vincoli                              | Descrizione                                                                 |
+|-------------|--------------|--------------------------------------|-----------------------------------------------------------------------------|
+| id          | BIGINT       | PK, AUTO_INCREMENT                   | Identificativo del record                                                  |
+| log_type    | VARCHAR(20)  | NOT NULL, INDEX `idx_type`           | Categoria (`http_access`, `app_audit`)                                     |
+| user_email  | VARCHAR(255) | NULL, INDEX `idx_user`               | E-mail utente (NULL se anonimo)                                            |
+| ip          | VARCHAR(45)  | NULL                                 | Indirizzo IP del client (supporta IPv4/IPv6)                               |
+| action      | VARCHAR(500) | NOT NULL                             | Identificatore azione (es. `auth.login`, `course.create`) o `METHOD PATH STATUS` |
+| target      | VARCHAR(500) | NULL                                 | Risorsa coinvolta (es. `course#42`)                                        |
+| outcome     | VARCHAR(50)  | NULL                                 | Esito (`success`, `failure`)                                               |
+| duration_ms | INT          | NULL                                 | Durata richiesta in ms (solo HTTP access)                                  |
+| created_at  | DATETIME(3)  | NOT NULL DEFAULT CURRENT_TIMESTAMP(3)| Timestamp con precisione al millisecondo                                   |
 
-**Uso:** creata/gestita da `MigrationRunner` al boot. Non ha FK verso altre tabelle. Nessuna relazione nel diagramma E-R. Serve a tenere traccia delle migrazioni già eseguite per evitare doppia applicazione.
+**Uso:** alimentata in fire-and-forget da `SystemLogRepository` (canale secondario di logging — vedi `log-strategy.md`). Non ha FK verso altre tabelle (per non bloccare le scritture audit). Consultabile dall'Admin via **Admin → Log di Sistema**. Pulizia manuale via purge (30/90 giorni o tutto). Le scritture sono disattivabili con il flag `AuditLog:WriteToDatabase` in `appsettings.json`.
+
+> **GDPR (art. 17):** in caso di richiesta di cancellazione, includere anche `system_logs.user_email` nella procedura — vedi `right-to-erasure.md`.
 
 ---
 

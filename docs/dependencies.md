@@ -1,6 +1,6 @@
 # Dipendenze — Didasco LMS (Università Bocconi)
 
-Versione: 1.2 — aggiornata al 2026-04-30  
+Versione: 1.3 — aggiornata al 2026-05-02  
 Versioni pinate alle rispettive dichiarazioni in `BocconiLMS.csproj`, `BocconiLMS.Tests/BocconiLMS.Tests.csproj` e `Views/Shared/_Layout.cshtml`.
 
 ---
@@ -13,7 +13,7 @@ Versioni pinate alle rispettive dichiarazioni in `BocconiLMS.csproj`, `BocconiLM
 | `ClosedXML`          | 0.104.2     | MIT                  | Generazione di file Excel (.xlsx) per export materiali             |
 | `MailKit`            | 4.16.0      | MIT                  | Invio e-mail transazionali via SMTP (registrazione, reset pwd…)    |
 | `MySqlConnector`     | 2.3.7       | MIT                  | Driver ADO.NET asincrono per MySQL — nessun ORM                    |
-| `QuestPDF`           | 2024.12.5   | QuestPDF Community\* | Generazione di PDF (export materiali, report)                      |
+| `QuestPDF`           | 2025.1.0    | QuestPDF Community\* | Generazione di PDF (export materiali, report)                      |
 
 \* **QuestPDF Community License**: gratuita per progetti non commerciali o con fatturato annuo < 1 M USD. Verificare la conformità con Università Bocconi prima del deploy in produzione.
 
@@ -77,7 +77,7 @@ Versioni pinate alle rispettive dichiarazioni in `BocconiLMS.csproj`, `BocconiLM
 | 2 | ClosedXML                          | 0.104.2     | MIT                  | NuGet app       |
 | 3 | MailKit                            | 4.16.0      | MIT                  | NuGet app       |
 | 4 | MySqlConnector                     | 2.3.7       | MIT                  | NuGet app       |
-| 5 | QuestPDF                           | 2024.12.5   | QuestPDF Community   | NuGet app       |
+| 5 | QuestPDF                           | 2025.1.0    | QuestPDF Community   | NuGet app       |
 | 6 | .NET 9 / ASP.NET Core              | 9.0         | MIT                  | Runtime         |
 | 7 | Bootstrap                          | 5.3.3       | MIT                  | Front-end CDN   |
 | 8 | Bootstrap Icons                    | 1.11.3      | MIT                  | Front-end CDN   |

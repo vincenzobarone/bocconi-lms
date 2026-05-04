@@ -26,6 +26,9 @@ var connectionString = Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRI
 
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<DbHelper>(_ => new DbHelper(connectionString));
+builder.Services.AddSingleton<SystemLogRepository>();
+builder.Services.AddScoped<ApiKeyRepository>();
+builder.Services.AddScoped<ApiKeyService>();
 builder.Services.AddScoped<CourseRepository>();
 builder.Services.AddScoped<LessonRepository>();
 builder.Services.AddScoped<QuizRepository>();
@@ -91,7 +94,6 @@ builder.Services.AddSession(options =>
 
 var app = builder.Build();
 
-
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
@@ -103,6 +105,7 @@ app.UseRouting();
 app.UseSession();
 app.UseAuthentication();
 app.UseMiddleware<HttpAccessLogMiddleware>();
+app.UseMiddleware<ApiKeyAuthenticationMiddleware>();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health", new HealthCheckOptions
@@ -142,6 +145,8 @@ app.MapHealthChecks("/health", new HealthCheckOptions
     var startupLogger = app.Services.GetRequiredService<ILogger<Program>>();
     startupLogger.LogInformation("[$HEALTH-CHECK] registered path=/health");
 }
+
+app.MapControllers();
 
 app.MapControllerRoute(
     name: "default",

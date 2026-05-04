@@ -387,3 +387,29 @@ public class MaterialsIndexViewModel
     public string? FilterFolderName { get; set; }
     public int? FilterFolderId { get; set; }
 }
+
+public class SystemLogEntry
+{
+    public long Id { get; set; }
+    public string LogType { get; set; } = "";
+    public string? UserEmail { get; set; }
+    public string? Ip { get; set; }
+    public string Action { get; set; } = "";
+    public string? Target { get; set; }
+    public string? Outcome { get; set; }
+    public int? DurationMs { get; set; }
+    public DateTime CreatedAt { get; set; }
+}
+
+public class SystemLogsViewModel
+{
+    public List<SystemLogEntry> Logs { get; set; } = new();
+    public int TotalCount { get; set; }
+    public int Page { get; set; } = 1;
+    public int PageSize { get; set; } = 200;
+    public string? FilterType { get; set; }
+    public string? FilterUser { get; set; }
+    public string? FilterOutcome { get; set; }
+    public DateTime? DateFrom { get; set; }
+    public DateTime? DateTo { get; set; }
+}

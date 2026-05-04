@@ -1,19 +1,34 @@
 # Formato Log — Didasco LMS (Università Bocconi)
 
-Versione: 1.0 — aggiornata al 2026-04-30  
-Riferimento: `Services/AuditLogger.cs`, `Middleware/HttpAccessLogMiddleware.cs`
+Versione: 1.1 — aggiornata al 2026-05-02  
+Riferimento: `Services/AuditLogger.cs`, `Middleware/HttpAccessLogMiddleware.cs`, `Data/SystemLogRepository.cs`  
+Documento collegato: [`log-strategy.md`](log-strategy.md) — strategia dual-write e razionale
 
 ---
 
 ## Panoramica
 
-L'applicazione produce tre categorie di log, tutte convogliate nel sistema di logging standard di ASP.NET Core (`Microsoft.Extensions.Logging`). Il backend di output predefinito è lo **stdout** (console), compatibile con `systemd`, Docker e qualsiasi aggregatore log (Elastic, Loki, Azure Monitor, ecc.).
+L'applicazione produce tre categorie di log, tutte convogliate nel sistema di logging standard di ASP.NET Core (`Microsoft.Extensions.Logging`). Il backend di output **primario** è lo **stdout** (console — canale richiesto dal capitolato Bocconi), compatibile con `systemd`, Docker e qualsiasi aggregatore log (Elastic, Loki, Azure Monitor, ecc.).
 
-| Categoria        | Tag             | Classe sorgente                | Livello ASP.NET | Configurazione             |
-|------------------|-----------------|-------------------------------|-----------------|----------------------------|
-| Audit applicativo| `[APP-AUDIT]`   | `AuditLogger`                 | Information     | `AuditLog:Enabled/Level`   |
-| Accesso HTTP     | `[HTTP-ACCESS]` | `HttpAccessLogMiddleware`     | Information     | sempre attivo              |
-| Health Check     | `[$HEALTH-CHECK]`| `Program.cs` (MapHealthChecks)| Information     | sempre attivo              |
+In parallelo, le righe `[APP-AUDIT]` e `[HTTP-ACCESS]` vengono replicate sulla tabella DB **`system_logs`** (canale secondario, fire-and-forget) per consultazione via UI quando manca un aggregatore esterno. Il canale DB è disattivabile (vedi `log-strategy.md`).
+
+| Categoria        | Tag             | Classe sorgente                | Livello ASP.NET | Stdout | DB `system_logs` |
+|------------------|-----------------|-------------------------------|-----------------|--------|------------------|
+| Audit applicativo| `[APP-AUDIT]`   | `AuditLogger`                 | Information     | sempre | sì (toggleable)  |
+| Accesso HTTP     | `[HTTP-ACCESS]` | `HttpAccessLogMiddleware`     | Information     | sempre | sì (toggleable)  |
+| Health Check     | `[$HEALTH-CHECK]`| `Program.cs` (MapHealthChecks)| Information     | sempre | no               |
+
+**Configurazione** (`appsettings.json`):
+```json
+"AuditLog": {
+  "Enabled": true,            // master switch (false = nessun log applicativo)
+  "Level": "minimal|standard|verbose",
+  "WriteToDatabase": true     // canale secondario su tabella system_logs
+}
+```
+Override via env var: `AuditLog__WriteToDatabase=false`.
+
+**Viewer admin:** `GET /Admin/SystemLogs` (solo Admin) — paginato, filtri per tipo/utente/esito/data, purge 30/90 giorni o tutto. Accessibile dalla card "Log di Sistema" nella Dashboard admin.
 
 ---
 

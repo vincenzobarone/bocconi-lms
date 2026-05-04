@@ -1,0 +1,204 @@
+@model ApiKeysListVm
+@{
+    ViewData["Title"] = T["apikeys.title"];
+    var newKey = Model.NewlyGeneratedKey;
+}
+
+<div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="mb-0">
+        <i class="bi bi-key-fill me-2 text-secondary"></i>@T["apikeys.title"]
+    </h2>
+    <div class="d-flex gap-2">
+        <a asp-controller="Home" asp-action="Dashboard" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left me-1"></i>@T["common.back_dashboard"]
+        </a>
+        <button type="button" class="btn btn-primary btn-sm"
+                data-bs-toggle="modal" data-bs-target="#newKeyModal">
+            <i class="bi bi-plus-lg me-1"></i>@T["apikeys.new"]
+        </button>
+    </div>
+</div>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-1"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="alert alert-info d-flex align-items-start mb-3 py-2" role="alert">
+    <i class="bi bi-info-circle me-2 mt-1"></i>
+    <div class="small">
+        @T["apikeys.intro"]
+        <br />
+        <code class="small">GET /api/v1/logs</code>
+        <span class="text-muted ms-2">@T["apikeys.header_hint"]</span>
+        <code class="small">X-Api-Key: dida_pk_…</code>
+    </div>
+</div>
+
+@* ── Chiave appena generata: mostrata UNA SOLA VOLTA ────────────────────── *@
+@if (newKey != null)
+{
+    <div class="card border-success shadow-sm mb-4">
+        <div class="card-header bg-success text-white d-flex align-items-center">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <strong>@T["apikeys.generated.title"]</strong>
+        </div>
+        <div class="card-body">
+            <p class="mb-2">
+                <strong>@T["apikeys.col.name"]:</strong> @newKey.Name
+                <span class="text-muted ms-2">|
+                    <strong>@T["apikeys.col.scopes"]:</strong> <code>@newKey.Scopes</code>
+                </span>
+            </p>
+            <div class="alert alert-warning small mb-3">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                <strong>@T["apikeys.generated.warning_title"]</strong> @T["apikeys.generated.warning_desc"]
+            </div>
+            <label class="form-label small text-muted mb-1">@T["apikeys.generated.your_key"]</label>
+            <div class="input-group">
+                <input type="text" id="newKeyValue" class="form-control font-monospace"
+                       value="@newKey.PlainKey" readonly aria-label="API key" />
+                <button type="button" class="btn btn-outline-primary"
+                        onclick="(function(b){var i=document.getElementById('newKeyValue'); i.select(); navigator.clipboard.writeText(i.value).then(function(){b.textContent='@T["common.copied"]'; b.disabled=true;});})(this)">
+                    <i class="bi bi-clipboard me-1"></i>@T["common.copy"]
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th scope="col">@T["apikeys.col.name"]</th>
+                        <th scope="col" style="width:160px">@T["apikeys.col.prefix"]</th>
+                        <th scope="col" style="width:140px">@T["apikeys.col.scopes"]</th>
+                        <th scope="col" style="width:160px">@T["apikeys.col.created"]</th>
+                        <th scope="col" style="width:160px">@T["apikeys.col.last_used"]</th>
+                        <th scope="col" style="width:120px">@T["apikeys.col.status"]</th>
+                        <th scope="col" style="width:100px" class="text-end">@T["common.actions"]</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Keys.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-5">
+                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                @T["apikeys.empty"]
+                            </td>
+                        </tr>
+                    }
+                    @foreach (var k in Model.Keys)
+                    {
+                        <tr class="@(k.IsRevoked ? "text-muted" : "")">
+                            <td>
+                                <strong>@k.Name</strong>
+                                @if (!string.IsNullOrEmpty(k.CreatedBy))
+                                {
+                                    <br /><small class="text-muted">@k.CreatedBy</small>
+                                }
+                            </td>
+                            <td><code class="small">dida_pk_@k.KeyPrefix…</code></td>
+                            <td><code class="small">@k.Scopes</code></td>
+                            <td class="small">@k.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td class="small">
+                                @(k.LastUsedAt.HasValue
+                                    ? k.LastUsedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                                    : "—")
+                            </td>
+                            <td>
+                                @if (k.IsRevoked)
+                                {
+                                    <span class="badge bg-secondary">
+                                        <i class="bi bi-x-circle me-1"></i>@T["apikeys.status.revoked"]
+                                    </span>
+                                    <br /><small class="text-muted">@k.RevokedAt?.ToString("dd/MM/yy HH:mm")</small>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>@T["apikeys.status.active"]
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (!k.IsRevoked)
+                                {
+                                    <form method="post" asp-action="RevokeApiKey" class="d-inline"
+                                          onsubmit="return confirm('@T["apikeys.revoke_confirm"]');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@k.Id" />
+                                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                aria-label="@T["apikeys.revoke"]">
+                                            <i class="bi bi-trash3"></i>
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="newKeyModal" tabindex="-1" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-action="CreateApiKey">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-plus-lg me-2"></i>@T["apikeys.new"]
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">@T["apikeys.col.name"]</label>
+                        <input type="text" name="Name" class="form-control"
+                               required maxlength="100"
+                               placeholder="@T["apikeys.name_placeholder"]" />
+                        <div class="form-text">@T["apikeys.name_hint"]</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">@T["apikeys.col.scopes"]</label>
+                        <select name="Scopes" class="form-select">
+                            <option value="logs:read" selected>logs:read — @T["apikeys.scope.logs_read"]</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                        @T["common.cancel"]
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-key-fill me-1"></i>@T["apikeys.generate"]
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    @if (newKey != null)
+    {
+        <text>
+        document.addEventListener('DOMContentLoaded', function () {
+            var i = document.getElementById('newKeyValue');
+            if (i) i.focus();
+        });
+        </text>
+    }
+</script>
+}

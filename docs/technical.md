@@ -302,6 +302,7 @@ Usata solo per il quiz in esecuzione (risposte parziali salvate in `HttpContext.
 | `quiz_attempts` | Tentativi quiz con punteggio e timestamp |
 | `settings` | Chiave/valore runtime (SMTP, lingue abilitate, feature flag) |
 | `translations` | Traduzioni UI per 4 lingue (en/it/es/de) |
+| `system_logs` | Log applicativi e accessi HTTP (canale DB, alimentato da `SystemLogRepository` in fire-and-forget; consultabile via Admin → Log di Sistema) |
 
 ### Modifiche allo schema
 
@@ -596,6 +597,32 @@ Configurare **nginx** come reverse proxy davanti alla porta 5000.
 3. In *Configurazione → Impostazioni applicazione* aggiungere:
    - `MYSQL_CONNECTION_STRING` = connection string di produzione
 4. La cartella `wwwroot/uploads/` su Azure non è persistente: considerare **Azure Blob Storage** per i file caricati dagli utenti
+
+---
+
+## 12.bis Logging e audit
+
+L'applicazione adotta una strategia **dual-write** (vedi documento dedicato `docs/log-strategy.md`):
+
+1. **Canale primario — stdout** (sempre attivo, conforme al capitolato Bocconi)
+   - Tag `[APP-AUDIT]` e `[HTTP-ACCESS]` per machine-parsing
+   - Catturato da Docker / systemd / Azure Monitor in produzione
+2. **Canale secondario — tabella DB `system_logs`** (default attivo, disattivabile)
+   - Fire-and-forget, non blocca mai la request pipeline
+   - Consultabile da **Admin → Log di Sistema** (card sulla Dashboard admin)
+   - Purge manuale 30 / 90 giorni o tutto
+
+**Configurazione** in `appsettings.json`:
+```json
+"AuditLog": {
+  "Enabled": true,
+  "Level": "standard",
+  "WriteToDatabase": true
+}
+```
+Override via env var: `AuditLog__WriteToDatabase=false` (consigliato in produzione quando esiste un aggregatore log esterno).
+
+Per il formato esatto dei tag, dei campi e l'elenco completo delle azioni, vedi [`docs/log-format.md`](log-format.md).
 
 ---
 

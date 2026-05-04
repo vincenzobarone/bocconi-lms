@@ -215,9 +215,33 @@ SELECT COUNT(*) FROM material_versions WHERE uploaded_by = <USER_ID>; -- deve es
 
 ## Step 5 — Gestione dei log
 
-I log `[APP-AUDIT]` e `[HTTP-ACCESS]` possono contenere l'indirizzo e-mail e l'IP dell'utente. Questi log sono conservati su file di sistema (non nel database MySQL).
+I log `[APP-AUDIT]` e `[HTTP-ACCESS]` possono contenere l'indirizzo e-mail e l'IP dell'utente. Questi log sono prodotti su due canali (vedi `log-strategy.md`):
 
-**Procedura per i log:**
+- **stdout** — raccolto dall'infrastruttura di hosting (file rotanti, Azure Monitor, Loki, ecc.).
+- **Tabella DB `system_logs`** (canale secondario, attivo per default in dev/Replit; spesso disattivato in produzione tramite `AuditLog:WriteToDatabase=false`).
+
+### 5.a — Pseudonimizzazione nella tabella `system_logs`
+
+Eseguire (solo se la tabella è attiva — verificare con `SELECT COUNT(*) FROM system_logs WHERE user_email = '<EMAIL>'`):
+
+```sql
+-- Pseudonimizzazione (mantiene la riga ma rimuove il riferimento personale)
+UPDATE system_logs
+SET user_email = CONCAT('deleted_user_', <USER_ID>),
+    ip         = NULL
+WHERE user_email = '<EMAIL_ORIGINALE>';
+```
+
+In alternativa, per cancellazione completa dei record audit dell'utente:
+```sql
+DELETE FROM system_logs WHERE user_email = '<EMAIL_ORIGINALE>';
+```
+
+> **Avvertenza:** la cancellazione dei record audit potrebbe compromettere la catena probatoria. Preferire la pseudonimizzazione salvo diversa indicazione del DPO. La tabella `system_logs` può anche essere svuotata in blocco dalla pagina **Admin → Log di Sistema** (purge 30/90 giorni o tutto), ma questa è un'operazione di manutenzione, non una risposta GDPR mirata.
+
+### 5.b — Gestione dei log su file/aggregatore
+
+**Procedura per i log su stdout:**
 1. Identificare i file di log che coprono il periodo di attività dell'utente.
 2. Se tecnicamente possibile e non in conflitto con obblighi di sicurezza, applicare una pseudonimizzazione (sostituzione dell'e-mail con `[CANCELLATO_<USER_ID>]`) tramite `sed` o strumenti equivalenti.
 3. Documentare l'operazione nel registro dei trattamenti.

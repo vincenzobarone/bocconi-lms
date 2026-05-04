@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
+using BocconiLMS.Data;
+using BocconiLMS.Models;
 
 namespace BocconiLMS.Services;
 
@@ -10,6 +12,7 @@ public sealed class AuditLogger : IAuditLogger
 
     private readonly ILogger<AuditLogger> _logger;
     private readonly IHttpContextAccessor _httpContextAccessor;
+    private readonly SystemLogRepository _logRepo;
 
     public bool IsEnabled { get; }
     public string Level { get; }
@@ -17,10 +20,12 @@ public sealed class AuditLogger : IAuditLogger
     public AuditLogger(
         ILogger<AuditLogger> logger,
         IHttpContextAccessor httpContextAccessor,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        SystemLogRepository logRepo)
     {
         _logger = logger;
         _httpContextAccessor = httpContextAccessor;
+        _logRepo = logRepo;
 
         var section = configuration.GetSection("AuditLog");
         IsEnabled = section.GetValue<bool>("Enabled", defaultValue: true);
@@ -63,5 +68,15 @@ public sealed class AuditLogger : IAuditLogger
         _logger.LogInformation(
             $"{Tag} {ts} | user={{User}} | ip={{Ip}} | action={{Action}}{targetPart} | outcome={{Outcome}}",
             resolvedUser, resolvedIp, action, outcome);
+
+        _logRepo.InsertFireAndForget(new SystemLogEntry
+        {
+            LogType   = "audit",
+            UserEmail = resolvedUser,
+            Ip        = resolvedIp,
+            Action    = action,
+            Target    = target,
+            Outcome   = outcome ?? "success",
+        });
     }
 }

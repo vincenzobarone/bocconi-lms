@@ -329,6 +329,42 @@ CREATE TABLE IF NOT EXISTS lesson_materials (
 ) ENGINE=InnoDB;
 
 -- ============================================================
+-- Log di sistema (HTTP access + audit events)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS system_logs (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    log_type    VARCHAR(20)  NOT NULL,
+    user_email  VARCHAR(255) NULL,
+    ip          VARCHAR(45)  NULL,
+    action      VARCHAR(500) NOT NULL,
+    target      VARCHAR(500) NULL,
+    outcome     VARCHAR(50)  NULL,
+    duration_ms INT          NULL,
+    created_at  DATETIME(3)  NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    INDEX idx_created (created_at),
+    INDEX idx_user    (user_email),
+    INDEX idx_type    (log_type)
+) ENGINE=InnoDB;
+
+-- ============================================================
+-- API Keys per accesso esterno (es. lettura log via /api/v1/logs)
+-- prefix in chiaro per lookup; secret salvato come BCrypt hash.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS api_keys (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    name          VARCHAR(100) NOT NULL,
+    key_prefix    VARCHAR(16)  NOT NULL,
+    key_hash      VARCHAR(255) NOT NULL,
+    scopes        VARCHAR(255) NOT NULL DEFAULT 'logs:read',
+    created_by    VARCHAR(255) NULL,
+    created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_used_at  DATETIME     NULL,
+    revoked_at    DATETIME     NULL,
+    UNIQUE KEY uk_api_keys_prefix (key_prefix),
+    INDEX idx_api_keys_revoked (revoked_at)
+) ENGINE=InnoDB;
+
+-- ============================================================
 -- Tabella traduzioni multilingua
 -- Lingue supportate: en (base), it, es, de
 -- ============================================================

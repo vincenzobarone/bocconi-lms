@@ -7,7 +7,6 @@
     var missing           = ViewBag.MissingCounts as Dictionary<string, int> ?? new();
     var allOtherLangs     = TranslationService.AllLanguages.Where(l => l.Code != "en").ToList();
     var currentTz         = ViewBag.PlatformTimezone as string ?? "Europe/Rome";
-
     var timezones = new (string Group, (string Id, string Label)[] Zones)[]
     {
         ("Europa", new[]
@@ -247,6 +246,7 @@
             document.getElementById('coursesEnabledInput').value = this.checked ? 'true' : 'false';
             document.getElementById('coursesToggleForm').submit();
         });
+
     </script>
 }
 

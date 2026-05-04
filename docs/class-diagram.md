@@ -59,7 +59,7 @@ classDiagram
         -TranslationRepository translations
         -SettingsRepository settings
         -PlatformRepository platforms
-        -MigrationRunner migrations
+        -SystemLogRepository systemLogs
         -IAuditLogger audit
         +Dashboard() IActionResult
         +Users() IActionResult
@@ -71,7 +71,8 @@ classDiagram
         +DeleteRole() IActionResult
         +Dictionary() IActionResult
         +Settings() IActionResult
-        +Migrations() IActionResult
+        +SystemLogs() IActionResult
+        +PurgeSystemLogs() IActionResult
     }
 
     class CourseController {
@@ -215,14 +216,19 @@ classDiagram
         +DeleteAsync() Task
     }
 
-    class MigrationRunner {
+    class SystemLogRepository {
         -DbHelper db
-        +RunAsync() Task
+        -IConfiguration config
+        +WriteToDatabase bool
+        +InsertFireAndForget(entry) void
+        +QueryAsync(filters) Task
+        +PurgeAsync(olderThanDays) Task
     }
 
     class HttpAccessLogMiddleware {
         -RequestDelegate next
         -ILogger logger
+        -SystemLogRepository systemLogs
         +InvokeAsync(context) Task
     }
 
@@ -234,13 +240,15 @@ classDiagram
     QuizController --> IAuditLogger
     MaterialsController --> IAuditLogger
     AccountController --> EmailService
-    AdminController --> MigrationRunner
+    AdminController --> SystemLogRepository
     HomeController --> FeatureFlagService
     TranslationService --> TranslationRepository
     TranslationService --> SettingsRepository
     CustomUserStore --> DbHelper
     CustomRoleStore --> DbHelper
-    MigrationRunner --> DbHelper
+    AuditLogger --> SystemLogRepository
+    HttpAccessLogMiddleware --> SystemLogRepository
+    SystemLogRepository --> DbHelper
 ```
 
 ---
@@ -253,8 +261,8 @@ classDiagram
 - **Autenticazione:** Login via ASP.NET Identity + cookie; password hashing BCrypt
 
 ### `AdminController`
-- **Azioni:** `Dashboard`, `Users`, `CreateUser (GET/POST)`, `EditUser (GET/POST)`, `DeleteUser (POST)`, `ToggleUserActive (POST)`, `Roles`, `CreateRole (GET/POST)`, `EditRole (GET/POST)`, `DeleteRole (POST)`, `Dictionary`, `CreateArea (POST)`, `DeleteArea (POST)`, `CreateDocumentType (POST)`, `DeleteDocumentType (POST)`, `Settings (GET/POST)`, `Translations`, `EditTranslation (GET/POST)`, `Platforms`, `CreatePlatform (POST)`, `DeletePlatform (POST)`, `Migrations`
-- **Dipendenze:** `UserRepository`, `RolePermissionRepository`, `AreaRepository`, `DocumentTypeRepository`, `TranslationRepository`, `SettingsRepository`, `PlatformRepository`, `MigrationRunner`, `IAuditLogger`
+- **Azioni:** `Dashboard`, `Users`, `CreateUser (GET/POST)`, `EditUser (GET/POST)`, `DeleteUser (POST)`, `ToggleUserActive (POST)`, `Roles`, `CreateRole (GET/POST)`, `EditRole (GET/POST)`, `DeleteRole (POST)`, `Dictionary`, `CreateArea (POST)`, `DeleteArea (POST)`, `CreateDocumentType (POST)`, `DeleteDocumentType (POST)`, `Settings (GET/POST)`, `Translations`, `EditTranslation (GET/POST)`, `Platforms`, `CreatePlatform (POST)`, `DeletePlatform (POST)`, `SystemLogs (GET)`, `PurgeSystemLogs (POST)`
+- **Dipendenze:** `UserRepository`, `RolePermissionRepository`, `AreaRepository`, `DocumentTypeRepository`, `TranslationRepository`, `SettingsRepository`, `PlatformRepository`, `SystemLogRepository`, `IAuditLogger`
 - **Accesso:** Solo ruolo `Admin`
 
 ### `CourseController`
@@ -446,11 +454,14 @@ Ogni repository riceve `DbHelper` via DI e apre connessioni on-demand.
 - Implementa `IRoleStore<ApplicationRole>`
 - Gestisce `roles` + `role_permissions`
 
-### `MigrationRunner`
-- Esegue al boot le migrazioni SQL ordinate in `Migrations/`
-- Tiene traccia delle migrazioni già applicate su tabella `schema_migrations`
-- Usa `GetConnectionWithUserVariables()` per l'esecuzione
-- Fail-fast: qualsiasi errore interrompe il boot dell'applicazione
+### `SystemLogRepository`
+- **Singleton** — registrato in `Program.cs`
+- Costruttore: `(DbHelper db, IConfiguration config)`
+- `WriteToDatabase` (bool, da `AuditLog:WriteToDatabase`) controlla se le scritture sono attive
+- `InsertFireAndForget(entry)` — accoda con `Task.Run`, non blocca la request
+- `QueryAsync(filters)` — usa LIMIT/OFFSET con filtri opzionali (tipo, utente, esito, range date)
+- `PurgeAsync(olderThanDays?)` — cancella record più vecchi di N giorni (o tutti se null)
+- Schema sottostante: tabella `system_logs` (vedi `er-diagram.md`)
 
 ---
 
