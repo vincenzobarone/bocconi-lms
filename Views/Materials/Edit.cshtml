@@ -101,9 +101,9 @@
                         @if (canSetStatus)
                         {
                             <select asp-for="Status" id="statusSelect" class="form-select">
-                                <option value="bozza"        selected="@(Model.Status=="bozza"?"selected":null)">@T["mat.status_bozza"]</option>
-                                <option value="in_revisione" selected="@(Model.Status=="in_revisione"?"selected":null)">@T["mat.status_in_revisione"]</option>
-                                <option value="verificato"   selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato"]</option>
+                                <option value="draft"        selected="@(Model.Status=="draft"?"selected":null)">@T["mat.status_bozza"]</option>
+                                <option value="under_review" selected="@(Model.Status=="under_review"?"selected":null)">@T["mat.status_in_revisione"]</option>
+                                <option value="verified"     selected="@(Model.Status=="verified"?"selected":null)">@T["mat.status_verificato"]</option>
                             </select>
                         }
                         else
@@ -111,7 +111,7 @@
                             @* Utenti senza flag: preserva lo stato attuale del materiale *@
                             <input type="hidden" id="statusSelect" name="Status" value="@Model.Status" />
                             <input type="text" class="form-control bg-light" readonly
-                                   value="@(Model.Status == "verificato" ? T["mat.status_verificato"] : Model.Status == "in_revisione" ? T["mat.status_in_revisione"] : T["mat.status_bozza"])" />
+                                   value="@(Model.Status == "verified" ? T["mat.status_verificato"] : Model.Status == "under_review" ? T["mat.status_in_revisione"] : T["mat.status_bozza"])" />
                             <div class="form-text">
                                 <i class="bi bi-lock me-1"></i>@T["mat.status_locked_edit"]
                             </div>
@@ -451,7 +451,7 @@
         }
 
         function needsModal() {
-            if (document.getElementById('statusSelect').value !== 'verificato') return false;
+            if (document.getElementById('statusSelect').value !== 'verified') return false;
             return !hasProtocol || !hasFolder;
         }
 
@@ -503,8 +503,8 @@
         });
 
         document.getElementById('modalCancelBtn').addEventListener('click', function() {
-            // Revert status to in_revisione
-            document.getElementById('statusSelect').value = 'in_revisione';
+            // Revert status to under_review
+            document.getElementById('statusSelect').value = 'under_review';
             verifiedModal.hide();
         });
 

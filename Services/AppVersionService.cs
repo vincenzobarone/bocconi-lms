@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace BocconiLMS.Services;
 
 public class AppVersionService
@@ -13,6 +15,19 @@ public class AppVersionService
 
     private static string ReadGitHash()
     {
+        // 1. AssemblyInformationalVersion — incorporato dal target MSBuild EmbedGitHash
+        //    al momento di dotnet build/publish. Funziona sempre, anche senza .git.
+        var infoVersion = Assembly
+            .GetExecutingAssembly()
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion
+            ?.Trim();
+
+        if (!string.IsNullOrEmpty(infoVersion) && infoVersion != "1.0.0")
+            return infoVersion.Length >= 7 ? infoVersion[..7] : infoVersion;
+
+        // 2. Fallback runtime: legge .git/HEAD (funziona in sviluppo quando
+        //    il processo gira nella stessa cartella del repo).
         try
         {
             var gitDir = FindGitDir(AppContext.BaseDirectory);

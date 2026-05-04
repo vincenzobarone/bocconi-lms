@@ -195,8 +195,8 @@ else
                             <td class="text-center">
                                 @{
                                     var (statusCss, statusLabel) = m.Status switch {
-                                        "verificato"   => ("success",   T["mat.status_verificato"]),
-                                        "in_revisione" => ("warning",   T["mat.status_in_revisione"]),
+                                        "verified"     => ("success",   T["mat.status_verificato"]),
+                                        "under_review" => ("warning",   T["mat.status_in_revisione"]),
                                         _              => ("secondary", T["mat.status_bozza"])
                                     };
                                 }

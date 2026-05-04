@@ -182,7 +182,7 @@ public class DbTestHelper : IAsyncDisposable
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             INSERT INTO materials (title, owner_id, document_type_id, language, status, created_at)
-            VALUES (@title, @owner, @dtype, 'Italiano', 'bozza', NOW())", conn);
+            VALUES (@title, @owner, @dtype, 'Italiano', 'draft', NOW())", conn);
         cmd.Parameters.AddWithValue("@title", title);
         cmd.Parameters.AddWithValue("@owner", ownerId);
         cmd.Parameters.AddWithValue("@dtype", (object?)documentTypeId ?? DBNull.Value);

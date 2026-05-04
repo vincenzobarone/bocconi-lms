@@ -324,7 +324,7 @@ erDiagram
 | teacher_id   | INT          | NOT NULL, FK → users(id) **CASCADE**     | Docente responsabile; se eliminato il corso viene eliminato |
 | start_date   | DATE         | NULL                                     | Data inizio                         |
 | end_date     | DATE         | NULL                                     | Data fine                           |
-| is_published | TINYINT(1)   | NOT NULL DEFAULT 0                       | 1 = pubblicato, 0 = bozza           |
+| is_published | TINYINT(1)   | NOT NULL DEFAULT 0                       | 1 = pubblicato, 0 = non pubblicato  |
 | created_at   | DATETIME     | NOT NULL DEFAULT NOW()                   |                                     |
 | created_by   | INT NULL     | FK → users(id) SET NULL                  |                                     |
 
@@ -470,7 +470,7 @@ erDiagram
 | owner_id               | INT NULL     | FK → users(id) SET NULL                    | Utente proprietario                 |
 | language               | VARCHAR(50)  | NOT NULL DEFAULT 'Italiano'                |                                     |
 | document_type_id       | INT NULL     | FK → document_types(id) SET NULL           |                                     |
-| status                 | VARCHAR(50)  | NOT NULL DEFAULT 'bozza'                   | `bozza`, `pubblicato`, ecc.         |
+| status                 | VARCHAR(50)  | NOT NULL DEFAULT 'draft'                   | `draft`, `under_review`, `verified` |
 | protocol_number        | INT NULL     | —                                          | Numero protocollo interno           |
 | folder_id              | INT NULL     | FK → material_folders(id) SET NULL         |                                     |
 | folder                 | VARCHAR(255) | NULL                                       | Percorso cartella (legacy)          |
@@ -587,7 +587,7 @@ erDiagram
 | permission_key       | Stringa puntata che identifica un permesso funzionale (es. `courses.teach`) |
 | label_key            | Identificatore unico di una stringa dell'interfaccia utente multilingua     |
 | password_hash        | Hash BCrypt (work factor 11) — la password in chiaro non viene mai salvata  |
-| status (materials)   | Ciclo di vita: `bozza` → `pubblicato`                                       |
+| status (materials)   | Ciclo di vita: `draft` → `under_review` → `verified`                        |
 | is_active (mv)       | Solo una versione per materiale è attiva contemporaneamente                 |
 
 ---

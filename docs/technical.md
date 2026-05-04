@@ -208,9 +208,14 @@ artifacts/bocconi-lms/
 │       └── mat_{id}/              # Cartella per ogni materiale
 │
 ├── BocconiLMS.Tests/              # Test di integrazione xUnit
+│   ├── Fixtures/LmsWebFactory.cs
+│   ├── Helpers/{CsrfHelper,DbTestHelper}.cs
 │   ├── LoginFlowTests.cs
 │   ├── QuizFlowTests.cs
-│   └── DocumentVersioningTests.cs
+│   ├── CourseFlowTests.cs
+│   ├── MaterialFlowTests.cs
+│   ├── AdminCrudTests.cs
+│   └── RoleCrudTests.cs
 │
 ├── docs/
 │   └── TECHNICAL.md               # Questa guida
@@ -438,7 +443,7 @@ La Libreria Materiali è il modulo principale dell'applicazione. Accessibile da 
 
 ### Funzionalità principali
 
-- **CRUD materiali** — titolo, lingua, tipo documento, stato (bozza/in revisione/verificato), area tematica, data catalogazione, numero protocollo
+- **CRUD materiali** — titolo, lingua, tipo documento, stato (draft/under_review/verified), area tematica, data catalogazione, numero protocollo
 - **Versionamento file** — ogni materiale può avere più versioni; una sola è "attiva". L'upload di una nuova versione non sovrascrive le precedenti
 - **Ripristino versione** — una versione non attiva può essere riportata ad attiva (Teacher/Admin)
 - **Eliminazione versione** — una versione può essere eliminata singolarmente; se era attiva, la versione precedente viene promossa automaticamente. Non è possibile eliminare l'unica versione di un materiale
@@ -497,7 +502,10 @@ dotnet test --logger "console;verbosity=detailed"
 |---|---|
 | `LoginFlowTests.cs` | Login/logout per tutti i 3 ruoli, credenziali errate, redirect |
 | `QuizFlowTests.cs` | Esecuzione quiz, submit risposte corrette/errate, storico, accesso non autorizzato |
-| `DocumentVersioningTests.cs` | Storico versioni, upload documento, caricamento nuova versione, ripristino, accesso studente negato |
+| `CourseFlowTests.cs` | Index corsi, creazione corso (instructor con `can_teach`), divieto per attendee senza permessi, dettaglio corso, iscrizione, accesso lezione per iscritti |
+| `MaterialFlowTests.cs` | Index materiali, creazione materiale (admin/instructor), divieto per attendee senza `can_teach`, redirect a login per anonimi, visualizzazione dettaglio materiale pubblicato |
+| `AdminCrudTests.cs` | Lista utenti (Admin OK, non-Admin vietato), creazione utente, creazione/eliminazione area, gestione anagrafiche dal pannello admin |
+| `RoleCrudTests.cs` | Creazione ruolo (con/senza flag `can_teach`), tab Ruoli nella pagina utenti, modifica nome ruolo, eliminazione ruolo se non assegnato |
 
 ### Struttura helper
 
@@ -533,22 +541,79 @@ dotnet publish -c Release -o ./publish
 1. Installare **.NET 10 Hosting Bundle** sul server
 2. Creare un nuovo sito in IIS Manager che punta alla cartella `publish/`
 3. Impostare l'application pool su **"No Managed Code"** (ASP.NET Core è self-hosted)
-4. Configurare le variabili d'ambiente nel sito IIS:
-   - *Configuration Editor → system.webServer/aspNetCore → environmentVariables*
-   - Aggiungere `MYSQL_CONNECTION_STRING` e `ASPNETCORE_ENVIRONMENT=Production`
+4. Configurare la connection string MySQL — **scegliere una delle due modalità qui sotto, mai entrambe**
 5. Assicurarsi che l'utente del pool IIS abbia accesso in scrittura a `wwwroot/uploads/`
 
-Esempio `web.config` (generato automaticamente da `dotnet publish`):
+#### Modalità A — Connection string nel `web.config` (segreto per-sito)
+
+Più semplice da impostare; il segreto resta nel `web.config` del sito (file ACL ristretta a Administrators + identità del pool).
+
 ```xml
 <aspNetCore processPath="dotnet" arguments=".\BocconiLMS.dll"
             stdoutLogEnabled="false" stdoutLogFile=".\logs\stdout"
             hostingModel="inprocess">
     <environmentVariables>
         <environmentVariable name="ASPNETCORE_ENVIRONMENT" value="Production" />
-        <environmentVariable name="MYSQL_CONNECTION_STRING" value="Server=...;" />
+        <environmentVariable name="MYSQL_CONNECTION_STRING"
+                             value="Server=HOST;Port=3306;Database=BocconiEdu;User=UTENTE;Password=PASSWORD;SslMode=Required;" />
     </environmentVariables>
 </aspNetCore>
 ```
+
+⚠️ Con questa modalità **`web.config` contiene un segreto**: non committarlo nel repo. Vedi sezione *12.3.1* qui sotto per le strategie git.
+
+#### Modalità B — Connection string come variabile d'ambiente di sistema (consigliata)
+
+Il `web.config` resta privo di segreti e versionabile. La connection string vive a livello macchina, condivisibile tra più siti, e sopravvive ai redeploy / `git pull`.
+
+Impostazione una tantum sul server (PowerShell come Administrator):
+
+```powershell
+[System.Environment]::SetEnvironmentVariable(
+  'MYSQL_CONNECTION_STRING',
+  'Server=HOST;Port=3306;Database=BocconiEdu;User=UTENTE;Password=PASSWORD;SslMode=Required;',
+  'Machine'
+)
+```
+
+Poi **`iisreset`** (la prima volta serve il restart completo del servizio W3SVC perché IIS legga le env var di sistema; ai redeploy successivi basta il restart del solo App Pool).
+
+Verifica che IIS la veda:
+```powershell
+[System.Environment]::GetEnvironmentVariable('MYSQL_CONNECTION_STRING', 'Machine')
+```
+
+Il `web.config` corrispondente, **senza segreti**, è:
+
+```xml
+<aspNetCore processPath="dotnet" arguments=".\BocconiLMS.dll"
+            stdoutLogEnabled="false" stdoutLogFile=".\logs\stdout"
+            hostingModel="inprocess">
+    <environmentVariables>
+        <environmentVariable name="ASPNETCORE_ENVIRONMENT" value="Production" />
+    </environmentVariables>
+</aspNetCore>
+```
+
+#### 12.3.1 Gestione del `web.config` con git pull
+
+Se fai deploy con `git pull` sul server:
+
+- **Modalità A** (segreto nel file) → tre opzioni per evitare che il pull lo sovrascriva:
+  1. `git update-index --skip-worktree web.config` (congela la copia locale, soluzione rapida)
+  2. Aggiungere `web.config` al `.gitignore` e versionare invece `web.config.template` con placeholder
+  3. Rimuovere dal tracking: `git rm --cached web.config && git commit ...`
+- **Modalità B** (env var) → nessun problema: il `web.config` non contiene segreti, può stare tranquillamente nel repo e venire sovrascritto a ogni `git pull`.
+
+#### 12.3.2 Debug startup IIS
+
+Se l'app non parte, attiva temporaneamente i log di stdout nel `web.config`:
+
+```xml
+<aspNetCore ... stdoutLogEnabled="true" stdoutLogFile=".\logs\stdout" ... />
+```
+
+Crea la cartella `logs\` accanto a `BocconiLMS.dll` con permessi di scrittura per `IIS AppPool\<NomeAppPool>`. Riavvia il sito, riproduci l'errore e leggi `logs\stdout_*.log`. **Rimetti `false` quando finito**, altrimenti il file cresce indefinitamente.
 
 ### 12.4 Deploy su Linux con systemd
 

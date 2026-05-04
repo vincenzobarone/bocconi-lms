@@ -73,7 +73,7 @@ Gli studenti vedono un avviso che ricorda loro che per caricamenti o modifiche d
 | **Titolo** | Obbligatorio, univoco nell'intera libreria. |
 | **Tipo documento** | Lista configurabile dall'Admin (Admin → Dictionary → tab "Tipi documento"). |
 | **Lingua** | Italiano, English, Français, Español, Deutsch, Altro. |
-| **Stato** | `bozza` / `in_revisione` / `verificato` — vedi workflow sotto. |
+| **Stato** | `draft` / `under_review` / `verified` — vedi workflow sotto. |
 | **Cartella** | Organizzazione logica. Digitare un nome esistente (autocomplete) o uno nuovo (la cartella viene creata automaticamente). |
 | **Area didattica** | L'Admin vede tutte le aree; il Teacher vede solo le aree assegnate al proprio account. |
 | **Data catalogazione** | Data di riferimento del documento (opzionale). |
@@ -86,18 +86,18 @@ Gli studenti vedono un avviso che ricorda loro che per caricamenti o modifiche d
 1. Cliccare **"Carica Documento"** — il form rimane bloccato finché non si sceglie un file
 2. Dopo la selezione del file, il sistema estrae automaticamente autore e numero pagine dai metadati (.docx, .pptx) e controlla se esistono materiali con titolo simile
 3. Compilare titolo, tipo documento, lingua e gli altri campi
-4. Cliccare **"Salva"** — il materiale viene creato con stato `in_revisione` (chi possiede il permesso `setstatus` può scegliere liberamente lo stato)
+4. Cliccare **"Salva"** — il materiale viene creato con stato `under_review` (chi possiede il permesso `setstatus` può scegliere liberamente lo stato)
 
 ### Workflow stato
 
 ```
-bozza  →  in_revisione  →  verificato
+draft  →  under_review  →  verified
 ```
 
-- **bozza** — stato iniziale; il materiale non è ancora pronto per la distribuzione.
-  - Se l'utente non possiede il permesso `setstatus`, il campo stato è bloccato su _bozza_ in creazione.
-- **in_revisione** — materiale inviato alla revisione.
-- **verificato** — materiale approvato e pronto all'uso.
+- **draft** — stato iniziale; il materiale non è ancora pronto per la distribuzione.
+  - Se l'utente non possiede il permesso `setstatus`, il campo stato è bloccato su _draft_ in creazione.
+- **under_review** — materiale inviato alla revisione.
+- **verified** — materiale approvato e pronto all'uso.
   - Richiede obbligatoriamente l'assegnazione a una **cartella**.
   - Viene assegnato automaticamente un **numero protocollo** progressivo univoco.
   - Se l'utente non possiede il permesso `setstatus`, lo stato non può essere modificato in modifica.
@@ -184,7 +184,7 @@ Percorso: **Admin → Utenti → tab "Ruoli"**
   - *Corsi — sezione accesso*: abilita l'accesso al modulo Corsi. Sotto-permessi:
     - **Teach a course** — l'utente può creare e gestire i propri corsi, aggiungere lezioni, collegare materiali e creare quiz (equivalente al ruolo Teacher)
     - **Participate in a course** — l'utente può iscriversi ai corsi pubblicati, visualizzare le lezioni e sostenere i quiz (equivalente al ruolo Student)
-  - *Accesso Menu — Materiali*: abilita l'accesso alla sezione Materiali con controllo granulare delle operazioni consentite (crea, modifica) e del flag "Consenti modifica stato" (bypassa il blocco automatico bozza/in revisione)
+  - *Accesso Menu — Materiali*: abilita l'accesso alla sezione Materiali con controllo granulare delle operazioni consentite (crea, modifica) e del flag "Consenti modifica stato" (bypassa il blocco automatico draft/under_review)
   - *Accesso Menu — Utenti*: visibilità del pannello Utenti
   - *Accesso Menu — Dictionary*: visibilità del pannello Traduzioni
 

@@ -165,14 +165,14 @@
                         @if (canSetStatus)
                         {
                             <select asp-for="Status" id="statusSelect" class="form-select" data-lockable>
-                                <option value="bozza"        selected="@(Model.Status=="bozza"?"selected":null)">@T["mat.status_bozza"]</option>
-                                <option value="in_revisione" selected="@(Model.Status=="in_revisione"?"selected":null)">@T["mat.status_in_revisione"]</option>
-                                <option value="verificato"   selected="@(Model.Status=="verificato"?"selected":null)">@T["mat.status_verificato"]</option>
+                                <option value="draft"        selected="@(Model.Status=="draft"?"selected":null)">@T["mat.status_bozza"]</option>
+                                <option value="under_review" selected="@(Model.Status=="under_review"?"selected":null)">@T["mat.status_in_revisione"]</option>
+                                <option value="verified"     selected="@(Model.Status=="verified"?"selected":null)">@T["mat.status_verificato"]</option>
                             </select>
                         }
                         else
                         {
-                            <input type="hidden" id="statusSelect" name="Status" value="bozza" />
+                            <input type="hidden" id="statusSelect" name="Status" value="draft" />
                             <input type="text" class="form-control bg-light" readonly
                                    value="@T["mat.status_bozza"]" />
                         }
@@ -416,7 +416,7 @@
         }
         function needsModal() {
             var sel = document.getElementById('statusSelect');
-            return sel ? sel.value === 'verificato' : false;
+            return sel ? sel.value === 'verified' : false;
         }
         function openVerifiedModal() {
             // Reset selezione
@@ -530,7 +530,7 @@
 
         document.getElementById('modalCancelBtn').addEventListener('click', function() {
             var sel = document.getElementById('statusSelect');
-            if (sel) sel.value = 'in_revisione';
+            if (sel) sel.value = 'under_review';
             verifiedModal.hide();
         });
 

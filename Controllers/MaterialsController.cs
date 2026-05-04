@@ -546,9 +546,9 @@ public class MaterialsController : Controller
             return View(vm);
         }
 
-        // Enforce status permission: se l'utente non può cambiare stato, forza "in_revisione"
+        // Enforce status permission: se l'utente non può cambiare stato, forza "under_review"
         if (!await CanSetStatusAsync("create"))
-            vm.Status = "in_revisione";
+            vm.Status = "under_review";
 
         // Enforce publish permission: se l'utente non può pubblicare, azzera i campi publish
         bool canPublish = await CanPublishMaterialAsync();
@@ -560,10 +560,10 @@ public class MaterialsController : Controller
             vm.ExternalLink = null;
         }
 
-        // Resolve folder and assign protocol when status = verificato
+        // Resolve folder and assign protocol when status = verified
         int? resolvedFolderId = null;
         int? assignedProtocol = null;
-        if (vm.Status == "verificato")
+        if (vm.Status == "verified")
         {
             if (vm.FolderId.HasValue)
                 resolvedFolderId = vm.FolderId;
@@ -676,12 +676,12 @@ public class MaterialsController : Controller
         }
 
         // Enforce status permission: se l'utente non può cambiare stato,
-        // promuove da "bozza" a "in_revisione"; lascia invariato altrimenti
+        // promuove da "draft" a "under_review"; lascia invariato altrimenti
         if (!await CanSetStatusAsync("edit"))
         {
             var current = await _materials.GetByIdAsync(id);
-            var currentStatus = current?.Status ?? "bozza";
-            vm.Status = currentStatus == "bozza" ? "in_revisione" : currentStatus;
+            var currentStatus = current?.Status ?? "draft";
+            vm.Status = currentStatus == "draft" ? "under_review" : currentStatus;
         }
 
         // Enforce publish permission: se l'utente non può pubblicare, preserva i valori attuali del DB
@@ -695,10 +695,10 @@ public class MaterialsController : Controller
             vm.ExternalLink         = current?.ExternalLink;
         }
 
-        // Resolve folder and assign protocol if transitioning to verificato without them
+        // Resolve folder and assign protocol if transitioning to verified without them
         int? resolvedFolderId = null;
         int? assignedProtocol = null;
-        if (vm.Status == "verificato")
+        if (vm.Status == "verified")
         {
             var existing = await _materials.GetByIdAsync(id);
             if (vm.FolderId.HasValue)

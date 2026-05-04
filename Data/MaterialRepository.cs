@@ -193,7 +193,7 @@ public class MaterialRepository
 
     public async Task<int> CreateAsync(
         string title, string? authorName, int? ownerId, string language,
-        int? documentTypeId, string status = "bozza",
+        int? documentTypeId, string status = "draft",
         int? folderId = null, int? areaId = null, DateTime? catalogationDate = null,
         int? protocolNumber = null, int? pageCount = null,
         bool isPublishable = false, string? externalProtocolCode = null,
@@ -526,7 +526,7 @@ public class MaterialRepository
             DocumentTypeId = r.IsDBNull(r.GetOrdinal("document_type_id")) ? null : r.GetInt32("document_type_id"),
             DocumentTypeName = r.IsDBNull(r.GetOrdinal("type_name")) ? "" : r.GetString("type_name"),
             CreatedAt = r.GetDateTime("created_at"),
-            Status = r.IsDBNull(r.GetOrdinal("status")) ? "bozza" : r.GetString("status"),
+            Status = r.IsDBNull(r.GetOrdinal("status")) ? "draft" : r.GetString("status"),
             ProtocolNumber = r.IsDBNull(r.GetOrdinal("protocol_number")) ? null : r.GetInt32("protocol_number"),
             AreaId = r.IsDBNull(r.GetOrdinal("area_id")) ? null : r.GetInt32("area_id"),
             AreaName = r.IsDBNull(r.GetOrdinal("area_name")) ? "" : r.GetString("area_name"),

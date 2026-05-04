@@ -34,7 +34,7 @@ public class Material
     public int? DocumentTypeId { get; set; }
     public string DocumentTypeName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
-    public string Status { get; set; } = "bozza";
+    public string Status { get; set; } = "draft";
     public int? ProtocolNumber { get; set; }
     public int? FolderId { get; set; }
     public string FolderName { get; set; } = string.Empty;
@@ -61,7 +61,7 @@ public class Material
         "Russo", "Cinese", "Arabo", "Portoghese", "Altro"
     ];
 
-    public static readonly string[] Statuses = ["bozza", "in_revisione", "verificato"];
+    public static readonly string[] Statuses = ["draft", "under_review", "verified"];
 
     public static string LangPrefix(string language) => language switch
     {

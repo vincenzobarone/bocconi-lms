@@ -279,7 +279,7 @@ CREATE TABLE IF NOT EXISTS materials (
     owner_id            INT NULL,
     language            VARCHAR(50) NOT NULL DEFAULT 'Italiano',
     document_type_id    INT NULL,
-    status              VARCHAR(50) NOT NULL DEFAULT 'bozza',
+    status              VARCHAR(50) NOT NULL DEFAULT 'draft',
     protocol_number     INT NULL,
     folder_id           INT NULL,
     folder              VARCHAR(255) NULL,

@@ -144,8 +144,8 @@ Tutte le funzionalità necessarie per la gestione documentale di un LMS sono imp
 - Eliminazione selettiva di singole versioni (con protezione: impossibile eliminare l'unica versione).
 
 **Metadati strutturati e workflow**
-- Ogni documento ha: titolo, autore, tipo, lingua, stato (`bozza / in_revisione / verificato`), area didattica, cartella, data, numero protocollo.
-- Flusso di approvazione: `bozza → in_revisione → verificato`, con numero protocollo progressivo assegnato automaticamente ai documenti verificati.
+- Ogni documento ha: titolo, autore, tipo, lingua, stato (`draft / under_review / verified`), area didattica, cartella, data, numero protocollo.
+- Flusso di approvazione: `draft → under_review → verified`, con numero protocollo progressivo assegnato automaticamente ai documenti verificati.
 - Il permesso `setstatus` è configurabile per ruolo: solo chi ha l'autorizzazione può cambiare lo stato.
 
 **Archiviazione fisica**
@@ -204,7 +204,7 @@ Il sistema di **feature flag** permette di abilitare o disabilitare interi modul
 
 ### 4.4 Ruoli personalizzati con permessi granulari
 
-Oltre ai tre ruoli di sistema (Admin, Teacher, Student), Didasco introduce un sistema di **ruoli personalizzati** configurabili dall'interfaccia. Ogni ruolo può avere permessi specifici su:
+L'unico ruolo di sistema fisso è **Admin**. Tutti gli altri ruoli sono completamente dinamici: Didasco introduce un sistema di **ruoli personalizzati** configurabili dall'interfaccia senza toccare il codice. Ogni ruolo può avere permessi specifici su:
 
 - Accesso al modulo Corsi (docente o studente)
 - Accesso al modulo Materiali (con controllo su creazione, modifica, cambio stato)
@@ -235,20 +235,20 @@ Di seguito la mappatura tra i requisiti espressi dall'Università Bocconi e le f
 **Requisito:** Catalogo ricercabile dei materiali con classificazione per tipo, lingua, area didattica e stato.
 
 **Implementazione:**
-- Ogni materiale ha: titolo, autore (estratto automaticamente dai metadati del file), tipo documento, lingua, stato di workflow (`bozza` / `in_revisione` / `verificato`), area didattica, cartella logica, data catalogazione, numero protocollo automatico.
+- Ogni materiale ha: titolo, autore (estratto automaticamente dai metadati del file), tipo documento, lingua, stato di workflow (`draft` / `under_review` / `verified`), area didattica, cartella logica, data catalogazione, numero protocollo automatico.
 - **Filtri combinabili**: titolo, lingua, tipo documento, anno catalogazione, anno ultima modifica, cartella.
 - **DataTable interattivo** con paginazione, ordinamento e ricerca inline.
 - **Estrazione automatica metadati** da `.docx`, `.pptx` e `.pdf` (autore, numero pagine).
 - **Rilevamento duplicati**: al caricamento, il sistema segnala se esiste un materiale con titolo simile.
-- **Numero protocollo progressivo** assegnato automaticamente ai materiali in stato `verificato`.
+- **Numero protocollo progressivo** assegnato automaticamente ai materiali in stato `verified`.
 
 ### 5.3 Workflow di revisione e stato dei materiali
 
 **Requisito:** Processo strutturato di approvazione dei documenti prima della pubblicazione.
 
 **Implementazione:**
-- Flusso: `bozza → in_revisione → verificato`
-- Lo stato `verificato` richiede obbligatoriamente l'assegnazione a una cartella.
+- Flusso: `draft → under_review → verified`
+- Lo stato `verified` richiede obbligatoriamente l'assegnazione a una cartella.
 - Il permesso `setstatus` è configurabile per ruolo: chi non lo possiede vede il campo stato bloccato.
 - Il cambio stato è tracciato nell'audit log.
 
@@ -257,7 +257,7 @@ Di seguito la mappatura tra i requisiti espressi dall'Università Bocconi e le f
 **Requisito:** Piattaforma e-learning con percorsi didattici strutturati, contenuti multimediali e valutazione.
 
 **Implementazione:**
-- **Corsi** con titolo, descrizione, categoria, date, docente assegnato, stato (bozza/pubblicato).
+- **Corsi** con titolo, descrizione, categoria, date, docente assegnato, stato (pubblicato/non pubblicato).
 - **Lezioni** ordinate con contenuto HTML, collegabili a più materiali dalla libreria centralizzata.
 - **Quiz** con: titolo, descrizione, limite di tempo (countdown real-time), punteggio minimo di superamento, domande a scelta multipla.
 - **Cronologia tentativi**: lo studente può ripetere il quiz e visualizzare tutti i tentativi precedenti.
@@ -288,8 +288,8 @@ Di seguito la mappatura tra i requisiti espressi dall'Università Bocconi e le f
 **Implementazione:**
 - Configurazione SMTP **modificabile a runtime** senza riavviare l'applicazione (Admin → Email Settings).
 - Notifiche configurabili singolarmente:
-  - Studente: conferma iscrizione al corso, risultato quiz.
-  - Docente: nuovo studente iscritto, quiz completato da uno studente.
+  - Utenti con permesso `can_attend`: conferma iscrizione al corso, risultato quiz.
+  - Utenti con permesso `can_teach`: nuovo iscritto al corso, quiz completato.
   - Admin/altri ruoli: creazione o modifica di materiali.
 - **Reminder automatici** per le lezioni pianificate, inviati da un background service.
 - **Bottone "Invia email di test"** per verificare la configurazione SMTP prima dell'uso in produzione.
@@ -321,9 +321,9 @@ Di seguito la mappatura tra i requisiti espressi dall'Università Bocconi e le f
 
 **Implementazione:**
 - **Dashboard Admin**: statistiche globali, accesso rapido a tutte le sezioni di gestione.
-- **Dashboard Teacher**: corsi propri, studenti iscritti, materiali caricati, ultimi 30 giorni.
-- **Dashboard Student**: corsi iscritti con barra avanzamento, materiali disponibili, quiz in sospeso.
-- Il routing post-login è automatico: ogni ruolo arriva alla propria dashboard senza configurazione.
+- **Dashboard docente** (ruolo con `can_teach`): corsi propri, iscritti, materiali caricati, attività ultimi 30 giorni.
+- **Dashboard studente** (ruolo con `can_attend`): corsi iscritti con barra avanzamento, materiali disponibili, quiz in sospeso.
+- Il routing post-login è automatico: ogni utente arriva alla dashboard appropriata in base ai permessi del proprio ruolo.
 
 ### 5.10 Anteprima documenti senza download
 

@@ -336,7 +336,7 @@ public class MaterialFormViewModel
     [Required]
     public int? DocumentTypeId { get; set; }
 
-    public string Status { get; set; } = "bozza";
+    public string Status { get; set; } = "draft";
 
     public string? Notes { get; set; }
 
