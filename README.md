@@ -1,6 +1,6 @@
 # Bocconi LMS
 
-Piattaforma E-Learning dell'Università Bocconi — ASP.NET Core 9 MVC + MySQL.
+Piattaforma E-Learning dell'Università Bocconi — ASP.NET Core 10 (LTS) MVC + MySQL.
 
 ## Documentazione
 
@@ -11,7 +11,7 @@ Piattaforma E-Learning dell'Università Bocconi — ASP.NET Core 9 MVC + MySQL.
 
 ## Stack tecnologico
 
-- **Backend**: ASP.NET Core 9 MVC (Razor Pages)
+- **Backend**: ASP.NET Core 10 (LTS) MVC (Razor Pages)
 - **Frontend**: Bootstrap 5, jQuery, DataTables
 - **Database**: MySQL (connettore diretto: MySqlConnector, nessun ORM)
 - **Autenticazione**: Cookie authentication ASP.NET Core + BCrypt password hashing

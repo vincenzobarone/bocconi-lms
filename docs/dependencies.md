@@ -19,15 +19,15 @@ Versioni pinate alle rispettive dichiarazioni in `BocconiLMS.csproj`, `BocconiLM
 
 ---
 
-## Framework e runtime (inclusi nel SDK .NET 9)
+## Framework e runtime (inclusi nel SDK .NET 10)
 
 | Componente                                         | Versione  | Licenza SPDX | Scopo                                           |
 |----------------------------------------------------|-----------|--------------|-------------------------------------------------|
-| .NET / ASP.NET Core MVC                            | 9.0       | MIT          | Runtime, MVC, routing, middleware pipeline      |
-| ASP.NET Core Identity                              | 9.0       | MIT          | Gestione autenticazione e sessioni utente       |
-| `Microsoft.Extensions.HealthChecks`               | 9.0       | MIT          | Endpoint `/health` con check database           |
-| `Microsoft.Extensions.Logging`                    | 9.0       | MIT          | Sistema di logging strutturato (ILogger)        |
-| `Microsoft.Extensions.Caching.Memory`             | 9.0       | MIT          | Cache in-memory per traduzioni e feature flags  |
+| .NET / ASP.NET Core MVC                            | 10.0 (LTS)| MIT          | Runtime, MVC, routing, middleware pipeline      |
+| ASP.NET Core Identity                              | 10.0      | MIT          | Gestione autenticazione e sessioni utente       |
+| `Microsoft.Extensions.HealthChecks`               | 10.0      | MIT          | Endpoint `/health` con check database           |
+| `Microsoft.Extensions.Logging`                    | 10.0      | MIT          | Sistema di logging strutturato (ILogger)        |
+| `Microsoft.Extensions.Caching.Memory`             | 10.0      | MIT          | Cache in-memory per traduzioni e feature flags  |
 
 ---
 
@@ -52,7 +52,7 @@ Versioni pinate alle rispettive dichiarazioni in `BocconiLMS.csproj`, `BocconiLM
 | Pacchetto                          | Versione  | Licenza SPDX  | Scopo                                                  |
 |------------------------------------|-----------|---------------|--------------------------------------------------------|
 | `Microsoft.NET.Test.Sdk`           | 17.12.0   | MIT           | SDK test runner per `dotnet test`                      |
-| `Microsoft.AspNetCore.Mvc.Testing` | 9.0.5     | MIT           | WebApplicationFactory per test d'integrazione HTTP     |
+| `Microsoft.AspNetCore.Mvc.Testing` | 10.0.0    | MIT           | WebApplicationFactory per test d'integrazione HTTP     |
 | `xunit`                            | 2.9.2     | Apache-2.0    | Framework di test unitari e d'integrazione             |
 | `xunit.runner.visualstudio`        | 2.8.2     | Apache-2.0    | Runner xUnit per Visual Studio e `dotnet test`         |
 | `coverlet.collector`               | 6.0.2     | MIT           | Raccolta code coverage durante `dotnet test`           |
@@ -78,7 +78,7 @@ Versioni pinate alle rispettive dichiarazioni in `BocconiLMS.csproj`, `BocconiLM
 | 3 | MailKit                            | 4.16.0      | MIT                  | NuGet app       |
 | 4 | MySqlConnector                     | 2.3.7       | MIT                  | NuGet app       |
 | 5 | QuestPDF                           | 2025.1.0    | QuestPDF Community   | NuGet app       |
-| 6 | .NET 9 / ASP.NET Core              | 9.0         | MIT                  | Runtime         |
+| 6 | .NET 10 / ASP.NET Core (LTS)       | 10.0        | MIT                  | Runtime         |
 | 7 | Bootstrap                          | 5.3.3       | MIT                  | Front-end CDN   |
 | 8 | Bootstrap Icons                    | 1.11.3      | MIT                  | Front-end CDN   |
 | 9 | jQuery                             | 3.7.1       | MIT                  | Front-end CDN   |
@@ -87,7 +87,7 @@ Versioni pinate alle rispettive dichiarazioni in `BocconiLMS.csproj`, `BocconiLM
 |12 | jquery-validation                  | 1.21.0      | MIT                  | Front-end CDN   |
 |13 | jquery-validation-unobtrusive      | 4.0.0       | MIT                  | Front-end CDN   |
 |14 | Microsoft.NET.Test.Sdk             | 17.12.0     | MIT                  | NuGet test      |
-|15 | Microsoft.AspNetCore.Mvc.Testing   | 9.0.5       | MIT                  | NuGet test      |
+|15 | Microsoft.AspNetCore.Mvc.Testing   | 10.0.0      | MIT                  | NuGet test      |
 |16 | xunit                              | 2.9.2       | Apache-2.0           | NuGet test      |
 |17 | xunit.runner.visualstudio          | 2.8.2       | Apache-2.0           | NuGet test      |
 |18 | coverlet.collector                 | 6.0.2       | MIT                  | NuGet test      |

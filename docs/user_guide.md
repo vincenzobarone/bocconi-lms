@@ -1,7 +1,7 @@
 # Bocconi LMS — User Guide
 
 **Piattaforma:** Università Bocconi — E-Learning Management System  
-**Stack:** ASP.NET Core 9 MVC · Razor · Bootstrap 5 · jQuery · MySqlConnector · MySQL  
+**Stack:** ASP.NET Core 10 (LTS) MVC · Razor · Bootstrap 5 · jQuery · MySqlConnector · MySQL  
 **Ruoli disponibili:** Admin, Teacher, Student
 
 ---
@@ -482,7 +482,7 @@ Percorso: Menu utente in alto a destra → **"Profilo"** o **"Cambia password"**
 ## 13. Struttura tecnica e note per sviluppatori
 
 ### Stack
-- **Framework:** ASP.NET Core 9 MVC con Razor Pages
+- **Framework:** ASP.NET Core 10 (LTS) MVC con Razor Pages
 - **Frontend:** Bootstrap 5, jQuery, Bootstrap Icons, DataTables (per le griglie admin)
 - **DB:** MySQL (Kamatera), accesso via `MySqlConnector` (NO Entity Framework)
 - **IDE target:** Visual Studio 2026

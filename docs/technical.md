@@ -27,7 +27,7 @@
 
 | Componente | Versione minima | Note |
 |---|---|---|
-| .NET SDK | 9.0 | [Download](https://dotnet.microsoft.com/download/dotnet/9.0) |
+| .NET SDK | 10.0 (LTS) | [Download](https://dotnet.microsoft.com/download/dotnet/10.0) |
 | MySQL | 8.0+ | Locale o remoto (testato su Kamatera) |
 | Visual Studio | 2022 (17.x) | Workload "ASP.NET and web development" |
 | Git | qualsiasi | Per il clone del repository |
@@ -217,7 +217,7 @@ artifacts/bocconi-lms/
 ├── schema.sql                     # DDL completo + seed iniziale
 ├── appsettings.json               # Configurazione base (SMTP placeholder)
 ├── Program.cs                     # Entry point, DI, configurazione startup
-└── BocconiLMS.csproj              # File progetto VS2026 (.NET 9)
+└── BocconiLMS.csproj              # File progetto VS2026 (.NET 10 LTS)
 ```
 
 ---
@@ -511,7 +511,7 @@ dotnet test --logger "console;verbosity=detailed"
 
 ### 12.1 Prerequisiti sul server
 
-- **.NET 9 Runtime** (o Hosting Bundle per IIS): [download](https://dotnet.microsoft.com/download/dotnet/9.0)
+- **.NET 10 Runtime** (o Hosting Bundle per IIS): [download](https://dotnet.microsoft.com/download/dotnet/10.0)
 - **MySQL 8** raggiungibile dalla macchina (IP whitelistato se necessario)
 - Schema già applicato al DB di produzione (`schema.sql`)
 
@@ -530,7 +530,7 @@ dotnet publish -c Release -o ./publish
 
 ### 12.3 Deploy su IIS (Windows Server)
 
-1. Installare **.NET 9 Hosting Bundle** sul server
+1. Installare **.NET 10 Hosting Bundle** sul server
 2. Creare un nuovo sito in IIS Manager che punta alla cartella `publish/`
 3. Impostare l'application pool su **"No Managed Code"** (ASP.NET Core è self-hosted)
 4. Configurare le variabili d'ambiente nel sito IIS:
@@ -593,7 +593,7 @@ Configurare **nginx** come reverse proxy davanti alla porta 5000.
 ### 12.5 Deploy su Azure App Service
 
 1. In VS2026: tasto destro → Publish → Azure App Service
-2. Creare o selezionare un App Service (almeno B1, .NET 9)
+2. Creare o selezionare un App Service (almeno B1, .NET 10)
 3. In *Configurazione → Impostazioni applicazione* aggiungere:
    - `MYSQL_CONNECTION_STRING` = connection string di produzione
 4. La cartella `wwwroot/uploads/` su Azure non è persistente: considerare **Azure Blob Storage** per i file caricati dagli utenti

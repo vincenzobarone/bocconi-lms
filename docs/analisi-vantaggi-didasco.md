@@ -11,7 +11,7 @@
 ## Indice
 
 1. [Premessa](#1-premessa)
-2. [Confronto tecnologico: .NET Standard vs .NET 9](#2-confronto-tecnologico-net-standard-vs-net-9)
+2. [Confronto tecnologico: .NET Standard vs .NET 10](#2-confronto-tecnologico-net-standard-vs-net-10)
 3. [SQL Server + OpenText vs MySQL + gestione documentale integrata](#3-sql-server--opentext-vs-mysql--gestione-documentale-integrata)
 4. [Vantaggi architetturali di Didasco](#4-vantaggi-architetturali-di-didasco)
 5. [Requisiti del cliente soddisfatti](#5-requisiti-del-cliente-soddisfatti)
@@ -26,31 +26,31 @@ La piattaforma **Didasco** è il nuovo sistema LMS (Learning Management System) 
 
 ---
 
-## 2. Confronto tecnologico: .NET Standard vs .NET 9
+## 2. Confronto tecnologico: .NET Standard vs .NET 10
 
 ### 2.1 Ciclo di vita e supporto
 
-| Aspetto | Vecchia piattaforma (.NET Standard) | Didasco (.NET 9) |
+| Aspetto | Vecchia piattaforma (.NET Standard) | Didasco (.NET 10 LTS) |
 |---|---|---|
 | **Stato** | Fine vita (deprecated dal 2021) | Attivo — supporto ufficiale Microsoft |
 | **Aggiornamenti di sicurezza** | Non garantiti | Patch mensili garantite da Microsoft |
-| **Supporto a lungo termine** | Nessuno | LTS disponibile (.NET 8 LTS / .NET 10 LTS prossimo) |
+| **Supporto a lungo termine** | Nessuno | LTS attivo (.NET 10 LTS, supporto fino a novembre 2028) |
 | **Compatibilità futura** | Bloccata | Aggiornamento annuale al costo di pochi giorni |
 
 .NET Standard era una specifica di interfaccia, non un runtime autonomo. Le applicazioni costruite su di esso dipendevano da runtime ormai obsoleti (ASP.NET 4.x su Windows, Mono su Linux) privi di aggiornamenti di sicurezza. Microsoft ha ufficialmente dichiarato .NET Standard 2.x come il punto finale della linea: tutti gli investimenti futuri sono su .NET (Core) 5 e successivi.
 
 ### 2.2 Prestazioni
 
-.NET 9 introduce miglioramenti sostanziali rispetto alle versioni precedenti e, a maggior ragione, rispetto all'ecosistema .NET Standard:
+.NET 10 (LTS, supporto Microsoft fino a novembre 2028) introduce miglioramenti sostanziali rispetto alle versioni precedenti e, a maggior ragione, rispetto all'ecosistema .NET Standard:
 
 - **Kestrel HTTP Server**: il server web integrato di ASP.NET Core gestisce fino a **10 volte più richieste al secondo** rispetto a IIS+ASP.NET 4.x nelle configurazioni equivalenti (benchmark ufficiali Microsoft, TechEmpower Framework Benchmarks 2024).
-- **JIT e AOT compilation**: il compilatore Just-In-Time di .NET 9 produce codice nativo ottimizzato; le operazioni critiche (hashing password, parsing JSON, query SQL) sono sensibilmente più veloci.
+- **JIT e AOT compilation**: il compilatore Just-In-Time di .NET 10 produce codice nativo ottimizzato; le operazioni critiche (hashing password, parsing JSON, query SQL) sono sensibilmente più veloci.
 - **Garbage Collector migliorato**: riduzione delle pause GC del 30-40% rispetto a .NET Standard, con minor impatto sulla latenza delle richieste HTTP concorrenti.
 - **Async/await nativo**: ASP.NET Core è costruito interamente su I/O asincrono. Ogni operazione di database, lettura file e invio email in Didasco è non bloccante, permettendo al server di gestire molte richieste concorrenti con un singolo thread pool.
 
 ### 2.3 Portabilità e deploy
 
-| Scenario | .NET Standard | .NET 9 |
+| Scenario | .NET Standard | .NET 10 |
 |---|---|---|
 | **Windows (IIS)** | ✅ | ✅ |
 | **Windows (self-hosted)** | Limitato | ✅ |
@@ -364,7 +364,7 @@ In conformità con le linee guida **WCAG 2.1 livello AA** (recepite dalla Dirett
 
 La migrazione dalla piattaforma esistente a Didasco porta vantaggi concreti su quattro dimensioni:
 
-**Tecnologica:** il runtime .NET 9 garantisce prestazioni superiori, sicurezza aggiornata con patch mensili, deploy su qualsiasi infrastruttura (Windows, Linux, cloud) e un ciclo di vita con supporto attivo Microsoft fino almeno al 2027 (e oltre con .NET 10 LTS).
+**Tecnologica:** il runtime .NET 10 LTS garantisce prestazioni superiori, sicurezza aggiornata con patch mensili, deploy su qualsiasi infrastruttura (Windows, Linux, cloud) e un ciclo di vita con supporto attivo Microsoft fino a novembre 2028.
 
 **Economica:** la sostituzione di SQL Server con MySQL elimina i costi di licenza database ricorrenti; l'eliminazione di OpenText rimuove un contratto enterprise significativo, la necessità di infrastruttura dedicata e le figure specializzate per la sua amministrazione. Il risparmio complessivo si stima in decine di migliaia di euro per anno, a parità di funzionalità operative.
 

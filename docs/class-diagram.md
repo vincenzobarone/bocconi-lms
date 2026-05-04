@@ -6,7 +6,7 @@ Versione: 1.1 — aggiornata al 2026-04-30
 
 ## Panoramica dell'architettura
 
-L'applicazione segue il pattern **MVC (Model-View-Controller)** di ASP.NET Core 9.  
+L'applicazione segue il pattern **MVC (Model-View-Controller)** di ASP.NET Core 10.  
 Nessun ORM: l'accesso ai dati avviene tramite classi **Repository** con query SQL raw via `MySqlConnector`.
 
 ```
