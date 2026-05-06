@@ -1,18 +1,27 @@
 @model Course
+@using BocconiLMS.Models
 @{
     ViewData["Title"] = Model.Title;
     var lessons = ViewBag.Lessons as List<Lesson> ?? new List<Lesson>();
+    var lessonGroups = ViewBag.LessonGroups as List<LessonGroup> ?? new List<LessonGroup>();
     var isEnrolled = (bool)(ViewBag.IsEnrolled ?? false);
     var isOwner = (bool)(ViewBag.IsOwner ?? false);
     var deleteMsg = T["course.confirm_delete"];
+
+    // Build lookup: groupId (non-null) -> lessons
+    var groupedLessons = lessons
+        .Where(l => l.GroupId.HasValue)
+        .GroupBy(l => l.GroupId!.Value)
+        .ToDictionary(g => g.Key, g => g.ToList());
+    var ungrouped = lessons.Where(l => !l.GroupId.HasValue).ToList();
 }
 
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Index">@T["nav.courses"]</a></li>
-        <li class="breadcrumb-item active">@Model.Title</li>
-    </ol>
-</nav>
+<div class="mb-2">
+    <a asp-controller="Course" asp-action="Index" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>@T["nav.courses"]
+    </a>
+</div>
+
 
 <div class="row">
     <div class="col-lg-8">
@@ -28,10 +37,13 @@
             </div>
             @if (isOwner)
             {
-                <div class="d-flex gap-2">
+                <div class="d-flex gap-2 flex-wrap justify-content-end">
                     <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-sm btn-outline-secondary">
                         <i class="bi bi-pencil me-1"></i>@T["common.edit"]
                     </a>
+                    <button class="btn btn-sm btn-outline-primary" id="btnNewGroup">
+                        <i class="bi bi-folder-plus me-1"></i>@T["lesson.group.new"]
+                    </button>
                     <a asp-controller="Lesson" asp-action="Create" asp-route-courseId="@Model.Id"
                        class="btn btn-sm btn-bocconi"><i class="bi bi-plus-lg me-1"></i>@T["common.lesson"]</a>
                 </div>
@@ -39,49 +51,127 @@
         </div>
         <p class="lead mb-4">@Model.Description</p>
 
-        <h4 class="fw-semibold mb-3">@T["course.lessons"] (@lessons.Count)</h4>
-        @if (lessons.Any())
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-semibold mb-0">@T["course.lessons"] (@lessons.Count)</h4>
+        </div>
+
+        @if (isOwner)
         {
-            <div class="list-group mb-4">
-                @foreach (var l in lessons)
-                {
-                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center @(!l.IsPublished && isOwner ? "bg-light" : "")">
-                        <div class="d-flex align-items-center gap-3">
-                            @if (l.IsCompleted)
-                            {
-                                <i class="bi bi-check-circle-fill text-success"></i>
-                            }
-                            else
-                            {
-                                <i class="bi bi-circle text-muted"></i>
-                            }
-                            <div>
-                                <a asp-controller="Lesson" asp-action="Details" asp-route-id="@l.Id"
-                                   class="fw-semibold text-decoration-none">@l.Title</a>
-                                @if (!l.IsPublished)
-                                {
-                                    <span class="badge bg-secondary ms-2">@T["common.draft"]</span>
-                                }
-                            </div>
-                        </div>
-                        @if (isOwner)
-                        {
-                            <a asp-controller="Lesson" asp-action="Edit" asp-route-id="@l.Id"
-                               class="btn btn-sm btn-outline-secondary"
-                               aria-label="@T["lesson.edit_aria"]"><i class="bi bi-pencil"></i></a>
-                        }
+            <div id="newGroupForm" class="card border-primary mb-3" style="display:none;">
+                <div class="card-body py-2 px-3">
+                    <div class="d-flex gap-2 align-items-center">
+                        <i class="bi bi-folder text-primary"></i>
+                        <input id="newGroupTitle" type="text" class="form-control form-control-sm"
+                               placeholder="@T["lesson.group.name_placeholder"]" style="max-width:280px;" />
+                        <button class="btn btn-sm btn-primary" id="btnSaveGroup">Crea</button>
+                        <button class="btn btn-sm btn-outline-secondary" id="btnCancelGroup">Annulla</button>
                     </div>
-                }
+                </div>
             </div>
         }
-        else
+
+        @if (!lessons.Any())
         {
             <p class="text-muted">@T["course.no_lessons"]</p>
         }
+
+        @if (lessons.Any())
+        {
+            if (isOwner)
+            {
+                <p class="text-muted small mb-3"><i class="bi bi-grip-vertical me-1"></i>@T["lesson.drag_hint"]</p>
+            }
+        }
+
+        <div id="allGroupsContainer" @(!lessons.Any() ? "style=display:none;" : "")>
+
+        @foreach (var grp in lessonGroups)
+        {
+            var grpLessons = groupedLessons.TryGetValue(grp.Id, out var gl) ? gl : new List<Lesson>();
+            <div class="lesson-group-block mb-3" data-group-id="@grp.Id">
+                <div class="lesson-group-header d-flex align-items-center gap-2 px-3 py-2 rounded-top"
+                     style="background:var(--bocconi-blue);color:#fff;">
+                    <i class="bi bi-folder2-open flex-shrink-0"></i>
+                    @if (isOwner)
+                    {
+                        <span class="group-title-display fw-semibold flex-grow-1">@grp.Title</span>
+                        <input class="group-title-input form-control form-control-sm fw-semibold"
+                               style="display:none;max-width:220px;color:#000;"
+                               value="@grp.Title" />
+                        <button class="btn btn-sm btn-link text-white py-0 btn-rename-group" title="@T["lesson.group.rename"]">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-link text-white py-0 btn-save-rename" style="display:none;" title="Salva">
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                        <button class="btn btn-sm btn-link text-white-50 py-0 btn-delete-group"
+                                title="@T["lesson.group.delete_confirm"]"
+                                data-confirm="@T["lesson.group.delete_confirm"]">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    }
+                    @if (!isOwner)
+                    {
+                        <span class="fw-semibold flex-grow-1">@grp.Title</span>
+                    }
+                    <span class="badge bg-white text-primary ms-1">@grpLessons.Count</span>
+                </div>
+                <div class="list-group lesson-drop-zone rounded-0 rounded-bottom border border-top-0"
+                     data-group-id="@grp.Id" style="min-height:48px;">
+                    @foreach (var l in grpLessons)
+                    {
+                        var rowVd1 = new ViewDataDictionary(ViewData);
+                        rowVd1["isOwner"] = isOwner;
+                        rowVd1["hasGroups"] = true;
+                        rowVd1["groups"] = lessonGroups;
+                        @await Html.PartialAsync("_LessonRow", l, rowVd1)
+                    }
+                    @if (!grpLessons.Any())
+                    {
+                        <div class="text-muted text-center small py-3 drop-placeholder">
+                            <i class="bi bi-arrow-down-circle me-1"></i>Trascina qui una lezione
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @if (ungrouped.Any() || !lessonGroups.Any())
+        {
+            <div class="lesson-group-block mb-3" data-group-id="null">
+                @if (lessonGroups.Any())
+                {
+                    <div class="lesson-group-header d-flex align-items-center gap-2 px-3 py-2 rounded-top"
+                         style="background:#6c757d;color:#fff;">
+                        <i class="bi bi-folder2 flex-shrink-0"></i>
+                        <span class="fw-semibold flex-grow-1">@T["lesson.group.ungrouped"]</span>
+                        <span class="badge bg-white text-secondary ms-1">@ungrouped.Count</span>
+                    </div>
+                }
+                @{
+                    var zoneClass = lessonGroups.Any()
+                        ? "list-group lesson-drop-zone rounded-0 rounded-bottom border border-top-0"
+                        : "list-group lesson-drop-zone border rounded";
+                }
+                <div class="@zoneClass" data-group-id="null" style="min-height:48px;">
+                    @foreach (var l in ungrouped)
+                    {
+                        var rowVd2 = new ViewDataDictionary(ViewData);
+                        rowVd2["isOwner"] = isOwner;
+                        rowVd2["hasGroups"] = lessonGroups.Any();
+                        rowVd2["groups"] = lessonGroups;
+                        @await Html.PartialAsync("_LessonRow", l, rowVd2)
+                    }
+                </div>
+            </div>
+        }
+
+        </div>
+        <div id="reorderStatus" class="small text-muted mb-3" style="display:none;"></div>
     </div>
 
     <div class="col-lg-4">
-        <div class="card sticky-top" style="top:80px;">
+        <div class="card sticky-lg-top" style="top:80px;">
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-3">
                     <span class="text-muted"><i class="bi bi-people me-1"></i>@Model.EnrolledCount @T["course.enrolled_count"]</span>
@@ -142,3 +232,182 @@
         </div>
     </div>
 </div>
+
+@if (isOwner)
+{
+    @section Scripts {
+        <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+        <script>
+        (function () {
+            var courseId = @Model.Id;
+            var statusEl = document.getElementById('reorderStatus');
+
+            function showStatus(msg) {
+                if (!statusEl) return;
+                statusEl.style.display = 'block';
+                statusEl.textContent = msg;
+            }
+            function hideStatus() {
+                if (!statusEl) return;
+                setTimeout(function () { statusEl.style.display = 'none'; }, 2000);
+            }
+
+            function postJson(url, data) {
+                return fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+            }
+
+            // ── Sortable on every drop-zone ──────────────────────────────────
+            var zones = document.querySelectorAll('.lesson-drop-zone');
+            zones.forEach(function (zone) {
+                Sortable.create(zone, {
+                    group: 'lessons',
+                    handle: '.drag-handle',
+                    animation: 150,
+                    ghostClass: 'list-group-item-primary',
+                    onAdd: function (evt) {
+                        // Lesson moved into a new group
+                        var lessonId = parseInt(evt.item.getAttribute('data-id'));
+                        var rawGid = zone.getAttribute('data-group-id');
+                        var groupId = (rawGid === 'null' || rawGid === null) ? null : parseInt(rawGid);
+                        postJson('/Lesson/SetLessonGroup', { lessonId: lessonId, groupId: groupId })
+                            .then(function (r) {
+                                if (!r.ok) showStatus('Errore nel cambio gruppo');
+                                else {
+                                    // Update dropdown if present
+                                    var sel = evt.item.querySelector('.lesson-group-select');
+                                    if (sel) sel.value = groupId === null ? '' : groupId;
+                                    // Hide/show placeholder
+                                    updatePlaceholders();
+                                }
+                            });
+                    },
+                    onEnd: function () {
+                        saveOrder();
+                    }
+                });
+            });
+
+            function updatePlaceholders() {
+                document.querySelectorAll('.lesson-drop-zone').forEach(function (zone) {
+                    var items = zone.querySelectorAll('[data-id]');
+                    var ph = zone.querySelector('.drop-placeholder');
+                    if (ph) ph.style.display = items.length === 0 ? 'block' : 'none';
+                });
+            }
+
+            function saveOrder() {
+                // Collect all lesson ids in global order (flattened across zones)
+                var ids = Array.from(document.querySelectorAll('.lesson-drop-zone [data-id]'))
+                               .map(function (el) { return parseInt(el.getAttribute('data-id')); });
+                if (ids.length === 0) return;
+                showStatus('@T["lesson.reorder_saving"]');
+                postJson('/Lesson/Reorder', { courseId: courseId, ids: ids })
+                    .then(function (r) {
+                        showStatus(r.ok ? '@T["lesson.reorder_saved"]' : '@T["lesson.reorder_error"]');
+                        hideStatus();
+                    }).catch(function () {
+                        showStatus('@T["lesson.reorder_error"]');
+                    });
+            }
+
+            // ── Group dropdown per-lesson ────────────────────────────────────
+            document.querySelectorAll('.lesson-group-select').forEach(function (sel) {
+                sel.addEventListener('change', function () {
+                    var lessonId = parseInt(this.closest('[data-id]').getAttribute('data-id'));
+                    var gid = this.value === '' ? null : parseInt(this.value);
+                    postJson('/Lesson/SetLessonGroup', { lessonId: lessonId, groupId: gid })
+                        .then(function (r) {
+                            if (r.ok) { location.reload(); }
+                            else showStatus('Errore');
+                        });
+                });
+            });
+
+            // ── Nuovo gruppo ─────────────────────────────────────────────────
+            var btnNew = document.getElementById('btnNewGroup');
+            var newForm = document.getElementById('newGroupForm');
+            var newInput = document.getElementById('newGroupTitle');
+            var btnSave = document.getElementById('btnSaveGroup');
+            var btnCancel = document.getElementById('btnCancelGroup');
+
+            if (btnNew) {
+                btnNew.addEventListener('click', function () {
+                    newForm.style.display = 'block';
+                    newInput.focus();
+                });
+                btnCancel.addEventListener('click', function () {
+                    newForm.style.display = 'none';
+                    newInput.value = '';
+                });
+                btnSave.addEventListener('click', function () {
+                    var title = newInput.value.trim();
+                    if (!title) return;
+                    postJson('/Lesson/CreateGroup', { courseId: courseId, title: title })
+                        .then(function (r) {
+                            if (r.ok) location.reload();
+                            else showStatus('Errore nella creazione del gruppo');
+                        });
+                });
+                newInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') btnSave.click();
+                    if (e.key === 'Escape') btnCancel.click();
+                });
+            }
+
+            // ── Rinomina gruppo ──────────────────────────────────────────────
+            document.querySelectorAll('.btn-rename-group').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var block = btn.closest('.lesson-group-block');
+                    block.querySelector('.group-title-display').style.display = 'none';
+                    block.querySelector('.group-title-input').style.display = 'inline-block';
+                    block.querySelector('.btn-rename-group').style.display = 'none';
+                    block.querySelector('.btn-save-rename').style.display = 'inline-flex';
+                    block.querySelector('.group-title-input').focus();
+                });
+            });
+
+            document.querySelectorAll('.btn-save-rename').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var block = btn.closest('.lesson-group-block');
+                    var groupId = parseInt(block.getAttribute('data-group-id'));
+                    var title = block.querySelector('.group-title-input').value.trim();
+                    if (!title) return;
+                    postJson('/Lesson/RenameGroup', { groupId: groupId, title: title })
+                        .then(function (r) {
+                            if (r.ok) {
+                                block.querySelector('.group-title-display').textContent = title;
+                                block.querySelector('.group-title-display').style.display = '';
+                                block.querySelector('.group-title-input').style.display = 'none';
+                                block.querySelector('.btn-rename-group').style.display = '';
+                                block.querySelector('.btn-save-rename').style.display = 'none';
+                            }
+                        });
+                });
+            });
+
+            document.querySelectorAll('.group-title-input').forEach(function (inp) {
+                inp.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') inp.closest('.lesson-group-block').querySelector('.btn-save-rename').click();
+                    if (e.key === 'Escape') location.reload();
+                });
+            });
+
+            // ── Elimina gruppo ───────────────────────────────────────────────
+            document.querySelectorAll('.btn-delete-group').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    if (!confirm(btn.getAttribute('data-confirm'))) return;
+                    var groupId = parseInt(btn.closest('.lesson-group-block').getAttribute('data-group-id'));
+                    postJson('/Lesson/DeleteGroup', { groupId: groupId })
+                        .then(function (r) { if (r.ok) location.reload(); });
+                });
+            });
+
+            updatePlaceholders();
+        })();
+        </script>
+    }
+}

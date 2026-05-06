@@ -1,0 +1,73 @@
+@model BocconiLMS.Models.Lesson
+@{
+    var isOwner = (bool)(ViewData["isOwner"] ?? false);
+    var hasGroups = (bool)(ViewData["hasGroups"] ?? false);
+    var groups = ViewData["groups"] as List<BocconiLMS.Models.LessonGroup> ?? new();
+}
+
+@if (isOwner)
+{
+    <div class="list-group-item lesson-owner-row py-2 px-3" data-id="@Model.Id">
+        <div class="d-flex align-items-center gap-2">
+            <span class="drag-handle text-muted flex-shrink-0" style="cursor:grab;" title="Trascina per riordinare">
+                <i class="bi bi-grip-vertical fs-5"></i>
+            </span>
+            <div class="flex-grow-1 min-w-0">
+                <a asp-controller="Lesson" asp-action="Details" asp-route-id="@Model.Id"
+                   class="fw-semibold text-decoration-none text-dark text-truncate d-block">@Model.Title</a>
+            </div>
+            @if (!Model.IsPublished)
+            {
+                <span class="badge bg-secondary flex-shrink-0">@T["common.draft"]</span>
+            }
+            <a asp-controller="Lesson" asp-action="Edit" asp-route-id="@Model.Id"
+               class="btn btn-sm btn-outline-secondary flex-shrink-0"
+               title="@T["lesson.edit_aria"]"
+               aria-label="@T["lesson.edit_aria"]">
+                <i class="bi bi-pencil"></i>
+            </a>
+        </div>
+        @if (hasGroups)
+        {
+            <div class="d-flex align-items-center gap-1 mt-1" style="padding-left:1.6rem;">
+                <i class="bi bi-folder2 text-muted" style="font-size:.8rem;"></i>
+                <select class="form-select form-select-sm lesson-group-select"
+                        style="width:auto;max-width:200px;font-size:.78rem;">
+                    <option value="">@T["lesson.group.none"]</option>
+                    @foreach (var g in groups)
+                    {
+                        if (Model.GroupId == g.Id)
+                        {
+                            <option value="@g.Id" selected="selected">@g.Title</option>
+                        }
+                        else
+                        {
+                            <option value="@g.Id">@g.Title</option>
+                        }
+                    }
+                </select>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <a asp-controller="Lesson" asp-action="Details" asp-route-id="@Model.Id"
+       class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-3 text-decoration-none lesson-row"
+       data-id="@Model.Id">
+        @if (Model.IsCompleted)
+        {
+            <span class="lesson-icon lesson-icon--done flex-shrink-0" aria-hidden="true">
+                <i class="bi bi-check-lg"></i>
+            </span>
+        }
+        else
+        {
+            <span class="lesson-icon lesson-icon--todo flex-shrink-0" aria-hidden="true">
+                <i class="bi bi-play-fill"></i>
+            </span>
+        }
+        <span class="fw-semibold flex-grow-1">@Model.Title</span>
+        <i class="bi bi-chevron-right text-muted flex-shrink-0" aria-hidden="true"></i>
+    </a>
+}

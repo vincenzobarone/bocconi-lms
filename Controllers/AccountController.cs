@@ -109,7 +109,7 @@ public class AccountController : Controller
 
         await _signInManager.RefreshSignInAsync(user);
         _audit.LogMinimal("auth.password_change", $"user#{user.Id} \"{user.Email}\"", "success");
-        TempData["Success"] = "Password aggiornata con successo.";
+        TempData["Success"] = "§account.msg_password_changed";
         return RedirectToAction("Dashboard", "Home");
     }
 

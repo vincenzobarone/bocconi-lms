@@ -81,10 +81,15 @@
     transition: all 0.15s;
 }
 
-.quiz-option input:checked + label {
-    background-color: #e8f0fe;
-    border-color: var(--bocconi-blue);
-    font-weight: 500;
+.quiz-option .opt-checked {
+    display: none;
+    color: var(--bocconi-blue);
+}
+.quiz-option input:checked + label .opt-unchecked {
+    display: none;
+}
+.quiz-option input:checked + label .opt-checked {
+    display: inline-block;
 }
 
 footer {
@@ -102,3 +107,112 @@ main { flex: 1; }
 
 .rev-dev  { color: #f5a623; font-size: 0.85em; }
 .rev-prod { color: #4caf50; font-size: 0.85em; }
+
+/* ── Lesson row (student view) ───────────────────────────────── */
+.lesson-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    border-radius: 50%;
+    font-size: 1rem;
+    user-select: none;
+    flex-shrink: 0;
+    transition: transform .15s ease;
+}
+.lesson-icon--todo {
+    background-color: #e8edf5;
+    color: var(--bocconi-blue);
+}
+.lesson-icon--done {
+    background-color: #d4edda;
+    color: #198754;
+}
+.lesson-row {
+    transition: background-color .15s ease, padding-left .15s ease;
+    color: #212529;
+}
+.lesson-row:hover {
+    background-color: #f0f4ff !important;
+    padding-left: 1.25rem !important;
+    color: var(--bocconi-blue);
+}
+.lesson-row:hover .lesson-icon--todo {
+    background-color: var(--bocconi-blue);
+    color: #fff;
+    transform: scale(1.1);
+}
+.lesson-row:hover .bi-chevron-right {
+    color: var(--bocconi-blue) !important;
+}
+
+/* ── Lesson groups ─────────────────────────────── */
+.lesson-group-block {
+    border-radius: 8px;
+    overflow: hidden;
+}
+.lesson-group-header {
+    border-radius: 8px 8px 0 0;
+    user-select: none;
+}
+.lesson-group-header .btn-link {
+    opacity: .75;
+    transition: opacity .15s;
+    text-decoration: none;
+}
+.lesson-group-header .btn-link:hover {
+    opacity: 1;
+}
+.lesson-drop-zone {
+    transition: background-color .2s;
+}
+.lesson-drop-zone.sortable-drag-over {
+    background-color: #eef3ff;
+}
+.lesson-drop-zone .list-group-item {
+    border-left: none;
+    border-right: none;
+}
+.lesson-drop-zone .list-group-item:first-child {
+    border-top: none;
+}
+.drop-placeholder {
+    pointer-events: none;
+    opacity: .55;
+}
+.lesson-group-select {
+    font-size: .78rem;
+    border-color: #ced4da;
+    border-radius: 6px;
+    padding: 2px 6px;
+}
+
+/* ── Teacher course preview card ────────────────── */
+.teacher-course-card {
+    transition: box-shadow .15s, transform .15s;
+}
+.teacher-course-card:hover {
+    box-shadow: 0 .5rem 1.5rem rgba(0,0,0,.12) !important;
+    transform: translateY(-2px);
+}
+
+/* ── Owner lesson row (two-line layout) ─────────── */
+.lesson-owner-row {
+    transition: background-color .15s;
+}
+.lesson-owner-row:hover {
+    background-color: #f8f9fa;
+}
+.lesson-owner-row .lesson-title-link,
+.lesson-owner-row a.fw-semibold {
+    color: #212529;
+}
+.lesson-owner-row .lesson-title-link:hover,
+.lesson-owner-row a.fw-semibold:hover {
+    color: var(--bocconi-blue);
+}
+.lesson-owner-row .lesson-group-select {
+    border-color: #dee2e6;
+    background-color: #fff;
+}

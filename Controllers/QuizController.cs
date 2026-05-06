@@ -90,12 +90,12 @@ public class QuizController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Submit(int id, Dictionary<int, int> answers)
+    public async Task<IActionResult> Submit(int id, Dictionary<int, int>? answers)
     {
         var access = await RequireQuizAccessAsync(id);
         if (access != null) return access;
 
-        var attempt = await _quizzes.SubmitAttemptAsync(id, CurrentUserId, answers);
+        var attempt = await _quizzes.SubmitAttemptAsync(id, CurrentUserId, answers ?? new());
         _audit.Log("quiz.submit", $"quiz#{id} attempt#{attempt.Id} score={attempt.Score}% passed={attempt.Passed}");
 
         int capturedQuizId = id;
@@ -245,7 +245,7 @@ public class QuizController : Controller
             await _quizzes.AddQuestionAsync(q);
         }
         _audit.Log("quiz.create", $"quiz#{quizId} \"{quiz.Title}\" lesson#{model.LessonId}");
-        TempData["Success"] = "Quiz creato!";
+        TempData["Success"] = "§quiz.msg_created";
         return RedirectToAction("Details", "Lesson", new { id = model.LessonId });
     }
 
@@ -259,7 +259,7 @@ public class QuizController : Controller
         if (!await IsOwnerOrAdminOfCourseAsync(courseId)) return Forbid();
         await _quizzes.DeleteQuizAsync(id);
         _audit.Log("quiz.delete", $"quiz#{id} \"{quiz.Title}\" lesson#{quiz.LessonId}");
-        TempData["Success"] = "Quiz eliminato.";
+        TempData["Success"] = "§quiz.msg_deleted";
         return RedirectToAction("Details", "Lesson", new { id = quiz.LessonId });
     }
 }

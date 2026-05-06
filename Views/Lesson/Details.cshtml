@@ -5,15 +5,15 @@
     var isOwner = (bool)(ViewBag.IsOwner ?? false);
     var linkedMaterials = ViewBag.LinkedMaterials as List<BocconiLMS.Models.Material> ?? new();
     var availableMaterials = ViewBag.AvailableMaterials as List<BocconiLMS.Models.Material> ?? new();
+    var missingFileIds = ViewBag.MissingFileIds as HashSet<int> ?? new HashSet<int>();
 }
 
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Index">@T["nav.courses"]</a></li>
-        <li class="breadcrumb-item"><a asp-controller="Course" asp-action="Details" asp-route-id="@Model.CourseId">@Model.CourseTitle</a></li>
-        <li class="breadcrumb-item active">@Model.Title</li>
-    </ol>
-</nav>
+<div class="mb-2">
+    <a asp-controller="Course" asp-action="Details" asp-route-id="@Model.CourseId" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>@Model.CourseTitle
+    </a>
+</div>
+
 
 <div class="row">
     <div class="col-lg-8">
@@ -103,17 +103,22 @@
                                 <div class="d-flex gap-2">
                                     @if (m.ActiveVersion != null && !m.ActiveVersion.IsVideo)
                                     {
-                                        <a asp-controller="Materials" asp-action="Download"
-                                           asp-route-versionId="@m.ActiveVersion.Id"
-                                           class="btn btn-sm btn-bocconi"
-                                           aria-label="@T["mat.download_aria"]"><i class="bi bi-download"></i></a>
+                                        @if (missingFileIds.Contains(m.Id))
+                                        {
+                                            <span class="btn btn-sm btn-secondary disabled"
+                                                  title="File non disponibile sul server — ricarica il documento dalla libreria materiali"
+                                                  aria-disabled="true">
+                                                <i class="bi bi-download"></i>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <a asp-controller="Materials" asp-action="Download"
+                                               asp-route-versionId="@m.ActiveVersion.Id"
+                                               class="btn btn-sm btn-bocconi"
+                                               aria-label="@T["mat.download_aria"]"><i class="bi bi-download"></i></a>
+                                        }
                                     }
-                                    <a asp-controller="Materials" asp-action="Details" asp-route-id="@m.Id"
-                                       class="btn btn-sm btn-outline-secondary"
-                                       title="@T["mat.details_aria"]"
-                                       aria-label="@T["mat.details_aria"]">
-                                        <i class="bi bi-info-circle"></i>
-                                    </a>
                                     @if (isOwner)
                                     {
                                         <form asp-controller="Materials" asp-action="UnlinkFromLesson" method="post" class="d-inline">

@@ -1,0 +1,158 @@
+@model BocconiLMS.Models.ImportResultVm
+@{
+    ViewData["Title"] = T["dataimport.page_title"];
+    var actionColor = Model.DryRun ? "warning" : (Model.ErrorsCount > 0 ? "danger" : "success");
+    var actionIcon  = Model.DryRun ? "bi-play-circle" : (Model.ErrorsCount > 0 ? "bi-x-circle" : "bi-check-circle-fill");
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="fw-bold text-bocconi mb-0">
+        <i class="bi bi-cloud-arrow-down me-2"></i>@T["dataimport.page_title"]
+    </h2>
+    <a asp-controller="DataImport" asp-action="Cancel" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-house me-1"></i>@T["dataimport.back_to_db"]
+    </a>
+</div>
+
+@await Html.PartialAsync("_DataImportStepper", 3)
+
+<div class="alert alert-@actionColor d-flex align-items-center gap-3 py-3 shadow-sm">
+    <i class="bi @actionIcon fs-3 flex-shrink-0"></i>
+    <div>
+        <div class="fw-bold fs-5">
+            @T["dataimport.result_title"]
+            @if (Model.DryRun)
+            {
+                <span class="badge bg-warning text-dark ms-2">@T["dataimport.dry_run_badge"]</span>
+            }
+        </div>
+        <div class="small">
+            @T["dataimport.target_label"]:
+            <strong>@(Model.Target == BocconiLMS.Models.ImportTarget.MaterialFolders
+                ? T["dataimport.target_folders"]
+                : T["dataimport.target_materials"])</strong>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    @foreach (var (lbl, val, color, icon) in new[]
+    {
+        (T["dataimport.source_rows"], Model.SourceRows, "secondary", "bi-table"),
+        (T["dataimport.inserted"],    Model.Inserted,   "success",   "bi-plus-circle"),
+        (T["dataimport.updated"],     Model.Updated,    "primary",   "bi-pencil"),
+        (T["dataimport.skipped"],     Model.Skipped,    "secondary", "bi-skip-forward"),
+        (T["dataimport.errors"],      Model.ErrorsCount,"danger",    "bi-x-circle"),
+    })
+    {
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="card text-center border-@color h-100">
+                <div class="card-body py-3">
+                    <i class="bi @icon fs-4 text-@color"></i>
+                    <div class="fs-3 fw-bold text-@color mt-1">@val</div>
+                    <div class="small text-muted">@lbl</div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (Model.Errors.Any())
+{
+    <div class="card shadow-sm border-danger mb-4">
+        <div class="card-header fw-semibold bg-danger-subtle d-flex gap-2">
+            <i class="bi bi-bug"></i>Errori (@Model.Errors.Count
+            @if (Model.ErrorsCount > Model.Errors.Count) { <span>(mostro prime @Model.Errors.Count)</span> })
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:300px;overflow-y:auto;">
+                <table class="table table-sm table-danger mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th style="width:5rem;">Riga</th>
+                            <th>Motivo</th>
+                            <th>Dati (prima 4 col.)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var e in Model.Errors)
+                        {
+                            <tr>
+                                <td class="text-muted">@e.RowIndex</td>
+                                <td>@e.Reason</td>
+                                <td class="font-monospace small text-break">@e.Snippet</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.PreviewRows.Any())
+{
+    var cols = Model.PreviewRows.First().Keys.ToList();
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-semibold bg-light d-flex gap-2">
+            <i class="bi bi-eye"></i>@T["dataimport.preview"]
+            <span class="badge bg-secondary ms-auto">@Model.PreviewRows.Count righe</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height:400px;overflow-y:auto;">
+                <table class="table table-sm table-hover mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            @foreach (var c in cols)
+                            {
+                                <th>@c</th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var row in Model.PreviewRows)
+                        {
+                            var action = row.TryGetValue("__action", out var a) ? a?.ToString() : null;
+                            var rowCss = action switch {
+                                "insert"     => "table-success",
+                                "update"     => "table-primary",
+                                "skip-exists"=> "table-secondary",
+                                _            => ""
+                            };
+                            <tr class="@rowCss">
+                                @foreach (var c in cols)
+                                {
+                                    var v = row.TryGetValue(c, out var val) ? val : null;
+                                    if (c == "__action")
+                                    {
+                                        <td><span class="badge bg-@(action == "insert" ? "success" : action == "update" ? "primary" : "secondary")">@action</span></td>
+                                    }
+                                    else
+                                    {
+                                        <td class="small">@(v?.ToString() ?? "")</td>
+                                    }
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+<div class="d-flex gap-2">
+    @if (Model.DryRun && Model.ErrorsCount == 0)
+    {
+        <p class="text-muted small align-self-center mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            Simulazione completata senza errori. Puoi eseguire l'importazione reale tornando al mapping.
+        </p>
+    }
+    <a asp-action="Tables" class="btn btn-outline-secondary ms-auto">
+        <i class="bi bi-arrow-left me-1"></i>Nuova importazione
+    </a>
+    <a asp-controller="DataImport" asp-action="Cancel" class="btn btn-outline-dark">
+        <i class="bi bi-house me-1"></i>@T["dataimport.back_to_db"]
+    </a>
+</div>

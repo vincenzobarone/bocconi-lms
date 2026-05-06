@@ -35,7 +35,23 @@ public class LessonReminderHostedService : BackgroundService
         try
         {
             using var scope = _scopeFactory.CreateScope();
-            var enrollments = scope.ServiceProvider.GetRequiredService<EnrollmentRepository>();
+            var settings    = scope.ServiceProvider.GetRequiredService<SettingsRepository>();
+
+            var emailEnabled   = (await settings.GetAsync("Email:Enabled"))                  == "true";
+            var coursesNotifOn = (await settings.GetAsync("Notifications:CoursesEnabled"))   == "true";
+
+            if (!emailEnabled)
+            {
+                _logger.LogDebug("Lesson reminders skipped: email sending is disabled.");
+                return;
+            }
+            if (!coursesNotifOn)
+            {
+                _logger.LogDebug("Lesson reminders skipped: course notifications are disabled.");
+                return;
+            }
+
+            var enrollments  = scope.ServiceProvider.GetRequiredService<EnrollmentRepository>();
             var emailService = scope.ServiceProvider.GetRequiredService<EmailService>();
 
             var reminders = await enrollments.GetIncompleteEnrollmentsForReminderAsync();

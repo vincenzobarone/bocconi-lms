@@ -1,7 +1,8 @@
 @model MaterialsIndexViewModel
 @{
     ViewData["Title"] = T["mat.page_title"];
-    var docTypes = Model.DocumentTypes;
+    var docTypes      = Model.DocumentTypes;
+    var lessonCounts  = ViewBag.LessonCounts as Dictionary<int, int> ?? new();
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -172,6 +173,18 @@ else
                 <tbody>
                     @foreach (var m in Model.Materials)
                     {
+                        var (statusCss, statusLabel) = m.Status switch {
+                            "verified"     => ("success",   T["mat.status_verificato"]),
+                            "under_review" => ("warning",   T["mat.status_in_revisione"]),
+                            _              => ("secondary", T["mat.status_bozza"])
+                        };
+                        var lc             = lessonCounts.GetValueOrDefault(m.Id, 0);
+                        var _tUsed         = T["mat.delete_used_in_lessons"].ToString();
+                        var _tDelete       = T["common.delete"].ToString();
+                        var delConfirm     = $"{_tDelete} «{m.Title}»?";
+                        var delBtnCss      = lc > 0 ? "btn-outline-secondary" : "btn-outline-danger";
+                        var delTitle       = lc > 0 ? $"{_tUsed} ({lc})" : _tDelete;
+                        var delDisabled    = lc > 0;
                         <tr>
                             <td>
                                 <input type="checkbox" name="ids" value="@m.Id"
@@ -193,13 +206,6 @@ else
                             <td>@m.Language</td>
                             <td class="text-muted small">@(string.IsNullOrEmpty(m.AuthorName) ? "—" : m.AuthorName)</td>
                             <td class="text-center">
-                                @{
-                                    var (statusCss, statusLabel) = m.Status switch {
-                                        "verified"     => ("success",   T["mat.status_verificato"]),
-                                        "under_review" => ("warning",   T["mat.status_in_revisione"]),
-                                        _              => ("secondary", T["mat.status_bozza"])
-                                    };
-                                }
                                 <span class="badge bg-@statusCss" style="font-size:.7rem;">@statusLabel</span>
                             </td>
                             <td class="text-center">
@@ -242,12 +248,27 @@ else
                                            title="@T["common.edit"]">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-outline-danger"
-                                                data-confirm="@T["common.delete"] «@m.Title»?"
-                                                data-delete-url="@Url.Action("Delete", "Materials", new { id = m.Id })"
-                                                title="@T["common.delete"]">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                        @if (delDisabled)
+                                        {
+                                            <span title="@delTitle" style="cursor:not-allowed;">
+                                                <button type="button"
+                                                        class="btn btn-sm @delBtnCss"
+                                                        disabled
+                                                        style="pointer-events:none;">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <button type="button"
+                                                    class="btn btn-sm @delBtnCss"
+                                                    data-confirm="@delConfirm"
+                                                    data-delete-url="@Url.Action("Delete", "Materials", new { id = m.Id })"
+                                                    title="@delTitle">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        }
                                     }
                                 </div>
                             </td>

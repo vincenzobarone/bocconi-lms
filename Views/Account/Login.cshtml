@@ -43,6 +43,7 @@
                         <div class="input-group">
                             <span class="input-group-text"><i class="bi bi-lock"></i></span>
                             <input asp-for="Password" class="form-control" placeholder="••••••••" autocomplete="current-password" />
+                            <button type="button" class="btn btn-outline-secondary" tabindex="-1" onclick="togglePwd(this)" aria-label="Mostra/nascondi password"><i class="bi bi-eye"></i></button>
                         </div>
                         <span asp-validation-for="Password" class="text-danger small"></span>
                     </div>

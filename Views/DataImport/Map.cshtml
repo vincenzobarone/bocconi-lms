@@ -1,0 +1,346 @@
+@model BocconiLMS.Models.ImportMappingVm
+@using BocconiLMS.Models
+@{
+    ViewData["Title"] = T["dataimport.page_title"];
+    var masked  = ViewBag.Masked as string ?? "";
+    var srcCols = Model.AvailableSourceColumns ?? new();
+
+    var targetLabels = Model.Target == ImportTarget.MaterialFolders
+        ? new Dictionary<string, string>
+        {
+            ["name"] = "Nome cartella"
+        }
+        : new Dictionary<string, string>
+        {
+            ["title"]                  = "Titolo",
+            ["author_name"]            = "Autore",
+            ["language"]               = "Lingua",
+            ["status"]                 = "Stato",
+            ["protocol_number"]        = "N. protocollo",
+            ["catalogation_date"]      = "Data catalogazione",
+            ["document_type_id"]       = "Tipo documento",
+            ["owner_id"]               = "Proprietario",
+            ["area_id"]                = "Area",
+            ["folder_id"]              = "Cartella",
+            ["page_count"]             = "N. pagine",
+            ["is_publishable"]         = "Pubblicabile (0/1)",
+            ["external_protocol_code"] = "Cod. protocollo esterno",
+            ["external_link"]          = "Link esterno",
+        };
+
+    var requiredFields = Model.Target == ImportTarget.MaterialFolders
+        ? new[] { "name" }
+        : new[] { "title" };
+
+    var transformsForField = new Dictionary<string, ImportTransform[]>
+    {
+        ["document_type_id"]  = new[] { ImportTransform.None, ImportTransform.LookupDocTypeByName },
+        ["owner_id"]          = new[] { ImportTransform.None, ImportTransform.LookupOwnerByEmail },
+        ["area_id"]           = new[] { ImportTransform.None, ImportTransform.LookupAreaByName },
+        ["folder_id"]         = new[] { ImportTransform.None, ImportTransform.LookupFolderByName,
+                                        ImportTransform.AutoCreateFolderByName },
+        ["catalogation_date"] = new[] { ImportTransform.None, ImportTransform.ParseDate },
+        ["title"]             = new[] { ImportTransform.None, ImportTransform.Concat,
+                                        ImportTransform.Lower, ImportTransform.Upper },
+        ["author_name"]       = new[] { ImportTransform.None, ImportTransform.Concat,
+                                        ImportTransform.Lower, ImportTransform.Upper },
+        ["language"]          = new[] { ImportTransform.None, ImportTransform.Lower,
+                                        ImportTransform.Upper },
+        ["name"]              = new[] { ImportTransform.None, ImportTransform.Concat,
+                                        ImportTransform.Lower, ImportTransform.Upper },
+    };
+
+    var transformLabels = new Dictionary<ImportTransform, string>
+    {
+        [ImportTransform.None]                  = "— nessuna —",
+        [ImportTransform.Concat]                = "Concatena due campi",
+        [ImportTransform.Lower]                 = "Minuscolo",
+        [ImportTransform.Upper]                 = "MAIUSCOLO",
+        [ImportTransform.ParseDate]             = "Parse data (formato custom)",
+        [ImportTransform.BoolFromInt]           = "Bool da intero",
+        [ImportTransform.LookupAreaByName]      = "Cerca area per nome",
+        [ImportTransform.LookupDocTypeByName]   = "Cerca tipo doc per nome",
+        [ImportTransform.LookupOwnerByEmail]    = "Cerca utente per email",
+        [ImportTransform.LookupFolderByName]    = "Cerca cartella per nome",
+        [ImportTransform.AutoCreateFolderByName]= "Crea cartella se non esiste",
+    };
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="fw-bold text-bocconi mb-0">
+        <i class="bi bi-cloud-arrow-down me-2"></i>@T["dataimport.page_title"]
+    </h2>
+    <a asp-controller="DataImport" asp-action="Cancel" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-x-circle me-1"></i>@T["dataimport.cancel"]
+    </a>
+</div>
+
+@await Html.PartialAsync("_DataImportStepper", 2)
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-1"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<form method="post" asp-action="Execute" id="frmMap">
+    @Html.AntiForgeryToken()
+    <input type="hidden" name="SourceSchema" value="@Model.SourceSchema" />
+    <input type="hidden" name="SourceTable"  value="@Model.SourceTable" />
+    <input type="hidden" name="Target"       value="@((int)Model.Target)" />
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header fw-semibold bg-light d-flex align-items-center gap-2">
+            <i class="bi bi-arrow-left-right text-bocconi"></i>@T["dataimport.map_title"]
+            <span class="badge bg-secondary ms-auto font-monospace">
+                @Model.SourceSchema.@Model.SourceTable
+            </span>
+        </div>
+        <div class="card-body p-0">
+            <div class="alert alert-secondary d-flex gap-2 py-2 mx-3 mt-3">
+                <i class="bi bi-database flex-shrink-0 mt-1"></i>
+                <span class="small font-monospace">@masked</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:22%">@T["dataimport.target_field"]</th>
+                            <th style="width:28%">@T["dataimport.source_field"]</th>
+                            <th style="width:28%">@T["dataimport.transform"]</th>
+                            <th>Param (opz.)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (int i = 0; i < Model.Mappings.Count; i++)
+                        {
+                            var m     = Model.Mappings[i];
+                            var isReq = requiredFields.Contains(m.TargetField);
+                            var lbl   = targetLabels.TryGetValue(m.TargetField, out var l) ? l : m.TargetField;
+                            var avail = transformsForField.TryGetValue(m.TargetField, out var ta)
+                                ? ta
+                                : new[] { ImportTransform.None };
+                            <tr>
+                                <td>
+                                    <input type="hidden" name="Mappings[@i].TargetField" value="@m.TargetField" />
+                                    <span class="fw-semibold">@lbl</span>
+                                    @if (isReq) { <span class="text-danger ms-1" title="obbligatorio">*</span> }
+                                </td>
+                                <td>
+                                    <select name="Mappings[@i].SourceField"
+                                            class="form-select form-select-sm">
+                                        <option value="">— non mappare —</option>
+                                        @foreach (var col in srcCols)
+                                        {
+                                            if (m.SourceField == col.Name)
+                                            {
+                                                <option value="@col.Name" selected>@col.Name (@col.DataType)</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@col.Name">@col.Name (@col.DataType)</option>
+                                            }
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="Mappings[@i].Transform"
+                                            class="form-select form-select-sm">
+                                        @foreach (var tr in avail)
+                                        {
+                                            if (m.Transform == tr)
+                                            {
+                                                <option value="@((int)tr)" selected>@(transformLabels.TryGetValue(tr, out var tl) ? tl : tr.ToString())</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@((int)tr)">@(transformLabels.TryGetValue(tr, out var tl2) ? tl2 : tr.ToString())</option>
+                                            }
+                                        }
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="text" name="Mappings[@i].TransformParam"
+                                           class="form-control form-control-sm font-monospace"
+                                           value="@m.TransformParam"
+                                           placeholder="es. yyyy-MM-dd, ' '" />
+                                    @if (avail.Contains(ImportTransform.Concat))
+                                    {
+                                        <select name="Mappings[@i].SourceField2"
+                                                class="form-select form-select-sm mt-1">
+                                            <option value="">— 2° campo (Concat) —</option>
+                                            @foreach (var col in srcCols)
+                                            {
+                                                if (m.SourceField2 == col.Name)
+                                                {
+                                                    <option value="@col.Name" selected>@col.Name</option>
+                                                }
+                                                else
+                                                {
+                                                    <option value="@col.Name">@col.Name</option>
+                                                }
+                                            }
+                                        </select>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-semibold bg-light d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-circle text-bocconi"></i>@T["dataimport.conflict_label"]
+        </div>
+        <div class="card-body d-flex gap-4">
+            @foreach (var cp in new[] {
+                (BocconiLMS.Models.ConflictPolicy.DryRunOnly, "Salta — solo simulazione"),
+                (BocconiLMS.Models.ConflictPolicy.Skip,       "Salta — ignora duplicati"),
+                (BocconiLMS.Models.ConflictPolicy.Update,     "Aggiorna — sovrascrive esistenti")
+            })
+            {
+                <div class="form-check">
+                    <input class="form-check-input" type="radio"
+                           name="Conflict" id="cp_@((int)cp.Item1)"
+                           value="@((int)cp.Item1)"
+                           @(Model.Conflict == cp.Item1 ? "checked" : "") />
+                    <label class="form-check-label" for="cp_@((int)cp.Item1)">
+                        @cp.Item2
+                    </label>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 flex-wrap">
+        <button type="submit" name="dryRun" value="true" class="btn btn-outline-primary">
+            <i class="bi bi-play-circle me-1"></i>@T["dataimport.dry_run_btn"]
+        </button>
+        <button type="submit" name="dryRun" value="false" class="btn btn-danger"
+                onclick="return confirm('Eseguire l\'importazione reale nel database? L\'operazione non è reversibile.')">
+            <i class="bi bi-database-up me-1"></i>@T["dataimport.execute_btn"]
+        </button>
+        <a asp-action="Tables" class="btn btn-outline-secondary ms-auto">
+            <i class="bi bi-arrow-left me-1"></i>Indietro
+        </a>
+    </div>
+</form>
+
+@{
+    var dryResult = ViewBag.DryRunResult as ImportResultVm;
+}
+@if (dryResult != null)
+{
+    <div class="card shadow-sm border-warning mt-4" id="dryRunSection">
+        <div class="card-header fw-semibold bg-warning-subtle d-flex align-items-center gap-2">
+            <i class="bi bi-play-circle text-warning"></i>
+            <span>@T["dataimport.dry_run_badge"] — anteprima</span>
+            <small class="text-muted ms-auto">Nessun dato scritto nel database</small>
+        </div>
+        <div class="card-body">
+
+            <div class="row g-3 mb-3">
+                @foreach (var (lbl, val, color, icon) in new (string, object, string, string)[]
+                {
+                    (T["dataimport.source_rows"], dryResult.SourceRows,  "secondary", "bi-table"),
+                    (T["dataimport.inserted"],    dryResult.Inserted,    "success",   "bi-plus-circle"),
+                    (T["dataimport.updated"],     dryResult.Updated,     "primary",   "bi-pencil"),
+                    (T["dataimport.skipped"],     dryResult.Skipped,     "secondary", "bi-skip-forward"),
+                    (T["dataimport.errors"],      dryResult.ErrorsCount, "danger",    "bi-x-circle"),
+                })
+                {
+                    <div class="col-6 col-sm-4 col-lg-2">
+                        <div class="card text-center border-@color h-100">
+                            <div class="card-body py-3">
+                                <i class="bi @icon fs-4 text-@color"></i>
+                                <div class="fs-3 fw-bold text-@color mt-1">@val</div>
+                                <div class="small text-muted">@lbl</div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            @if (dryResult.Errors.Any())
+            {
+                <div class="alert alert-danger mb-3">
+                    <strong><i class="bi bi-bug me-1"></i>Errori (@dryResult.Errors.Count):</strong>
+                    <ul class="mb-0 mt-2 small">
+                        @foreach (var e in dryResult.Errors.Take(5))
+                        {
+                            <li>Riga @e.RowIndex: @e.Reason &mdash; <code>@e.Snippet</code></li>
+                        }
+                        @if (dryResult.ErrorsCount > 5)
+                        {
+                            <li class="text-muted">…e altri @(dryResult.ErrorsCount - 5) errori (visibili nel risultato finale)</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            @if (dryResult.PreviewRows.Any())
+            {
+                var cols = dryResult.PreviewRows.First().Keys.ToList();
+                <div class="table-responsive" style="max-height:320px;overflow-y:auto;">
+                    <table class="table table-sm table-hover mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                @foreach (var c in cols)
+                                {
+                                    <th class="small">@c</th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in dryResult.PreviewRows)
+                            {
+                                var rowAction = row.TryGetValue("__action", out var ra) ? ra?.ToString() : null;
+                                var rowCss = rowAction switch {
+                                    "insert"     => "table-success",
+                                    "update"     => "table-primary",
+                                    "skip-exists"=> "table-secondary",
+                                    _            => ""
+                                };
+                                <tr class="@rowCss">
+                                    @foreach (var c in cols)
+                                    {
+                                        var cellVal = row.TryGetValue(c, out var cv) ? cv : null;
+                                        if (c == "__action")
+                                        {
+                                            <td><span class="badge bg-@(rowAction == "insert" ? "success" : rowAction == "update" ? "primary" : "secondary") small">@rowAction</span></td>
+                                        }
+                                        else
+                                        {
+                                            <td class="small">@(cellVal?.ToString() ?? "")</td>
+                                        }
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+
+            <div class="alert alert-info mt-3 mb-0 d-flex gap-2 small">
+                <i class="bi bi-info-circle flex-shrink-0 mt-1"></i>
+                <span>
+                    Soddisfatto? Scorri in su e clicca
+                    <strong>@T["dataimport.execute_btn"]</strong> per eseguire l'importazione reale.
+                </span>
+            </div>
+        </div>
+    </div>
+
+    @section Scripts {
+    <script>
+        document.getElementById('dryRunSection')
+            ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    </script>
+    }
+}

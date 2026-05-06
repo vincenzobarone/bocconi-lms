@@ -194,6 +194,7 @@
 @* ── Docente ──────────────────────────────────────────────────────────────── *@
 @if (Model.IsTeacher && !Model.IsAdmin)
 {
+    @* Contatori sintetici *@
     <div class="row g-3 mb-4">
         @if (Model.CoursesEnabled)
         {
@@ -239,6 +240,89 @@
         }
     </div>
 
+    @* Card preview corsi del docente *@
+    @if (Model.CoursesEnabled)
+    {
+        <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="fw-semibold mb-0">
+                <i class="bi bi-collection-play me-2 text-bocconi"></i>@T["dashboard.teacher.my_courses"]
+            </h5>
+            <a asp-controller="Course" asp-action="Create" class="btn btn-bocconi btn-sm">
+                <i class="bi bi-plus-lg me-1"></i>@T["course.create"]
+            </a>
+        </div>
+
+        @if (Model.TeacherCourses.Any())
+        {
+            <div class="row g-3 mb-4">
+                @foreach (var c in Model.TeacherCourses)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card h-100 shadow-sm border-0 teacher-course-card" style="overflow:hidden;">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+                                    <h6 class="fw-bold mb-0 lh-sm">
+                                        <a asp-controller="Course" asp-action="Stats" asp-route-id="@c.Id"
+                                           class="stretched-link text-decoration-none text-dark">@c.Title</a>
+                                    </h6>
+                                    @if (c.IsPublished)
+                                    {
+                                        <span class="badge bg-success text-nowrap flex-shrink-0" style="position:relative;z-index:1;">
+                                            <i class="bi bi-globe2 me-1"></i>@T["course.published"]
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary text-nowrap flex-shrink-0" style="position:relative;z-index:1;">
+                                            <i class="bi bi-pencil-square me-1"></i>@T["course.draft"]
+                                        </span>
+                                    }
+                                </div>
+
+                                @if (!string.IsNullOrWhiteSpace(c.Description))
+                                {
+                                    <p class="text-muted small mb-3 flex-grow-1" style="
+                                        display: -webkit-box;
+                                        -webkit-line-clamp: 3;
+                                        -webkit-box-orient: vertical;
+                                        overflow: hidden;">@c.Description</p>
+                                }
+                                else
+                                {
+                                    <p class="text-muted small fst-italic mb-3 flex-grow-1">@T["course.no_description"]</p>
+                                }
+
+                                <div class="d-flex align-items-center justify-content-between mt-auto pt-2 border-top"
+                                     style="position:relative;z-index:1;">
+                                    <span class="small text-muted">
+                                        <i class="bi bi-collection me-1"></i>
+                                        @c.LessonCount @T["common.lessons"]
+                                        @if (c.EnrolledCount > 0)
+                                        {
+                                            <span class="ms-2">
+                                                <i class="bi bi-people me-1"></i>@c.EnrolledCount
+                                            </span>
+                                        }
+                                    </span>
+                                    <a asp-controller="Course" asp-action="Details" asp-route-id="@c.Id"
+                                       class="btn btn-sm btn-outline-bocconi" style="position:relative;z-index:1;">
+                                        <i class="bi bi-pencil-square me-1"></i>@T["dashboard.teacher.manage_btn"]
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info mb-4">
+                <i class="bi bi-info-circle me-2"></i>@T["dashboard.teacher.no_courses"]
+                <a asp-controller="Course" asp-action="Create">@T["dashboard.teacher.create_first"]</a>.
+            </div>
+        }
+    }
 }
 
 @* ── Studente ─────────────────────────────────────────────────────────────── *@

@@ -8,13 +8,6 @@
     bool showDe = enabled.Contains("de");
 }
 
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a asp-action="Translations">@T["admin.translations.page_title"]</a></li>
-        <li class="breadcrumb-item active font-monospace">@Model.Key</li>
-    </ol>
-</nav>
 
 <div class="row justify-content-center">
     <div class="col-lg-7">

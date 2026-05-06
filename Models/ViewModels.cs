@@ -21,6 +21,7 @@ public class DashboardViewModel
     // Teacher
     public int TeacherCourseCount { get; set; }
     public int TeacherStudentCount { get; set; }
+    public List<Course> TeacherCourses { get; set; } = [];
     // Student
     public int StudentEnrolledCount { get; set; }
     public int StudentCompletedLessons { get; set; }
@@ -30,6 +31,34 @@ public class DashboardViewModel
     public DashboardStats? AdminStats { get; set; }
     // Platform
     public string PlatformTimezone { get; set; } = "Europe/Rome";
+}
+
+public class CourseStatsViewModel
+{
+    public Course Course { get; set; } = null!;
+    public int EnrolledCount { get; set; }
+    public List<LessonCompletionStat> LessonStats { get; set; } = [];
+    public List<QuizStat>             QuizStats    { get; set; } = [];
+}
+
+public class LessonCompletionStat
+{
+    public int    LessonId      { get; set; }
+    public string LessonTitle   { get; set; } = "";
+    public int    CompletedCount { get; set; }
+}
+
+public class QuizStat
+{
+    public int    QuizId        { get; set; }
+    public string QuizTitle     { get; set; } = "";
+    public string LessonTitle   { get; set; } = "";
+    public int    PassingScore  { get; set; }
+    public int    TotalAttempts { get; set; }
+    public int    UniqueStudents { get; set; }
+    public double AvgScore      { get; set; }
+    public int    MaxScore      { get; set; }
+    public int    PassedCount   { get; set; }
 }
 
 public class AjaxToggleRequest
@@ -132,6 +161,12 @@ public class CourseFormViewModel
 
 public record TeacherOption(int Id, string FullName);
 
+public class ReorderRequest
+{
+    public int CourseId { get; set; }
+    public List<int> Ids { get; set; } = new();
+}
+
 public class LessonFormViewModel
 {
     public int Id { get; set; }
@@ -141,7 +176,6 @@ public class LessonFormViewModel
     public string Title { get; set; } = string.Empty;
 
     public string Content { get; set; } = string.Empty;
-    public int SortOrder { get; set; }
     public bool IsPublished { get; set; }
 }
 

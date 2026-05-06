@@ -100,11 +100,12 @@ public class QuizRepository
         await cmd.ExecuteNonQueryAsync();
     }
 
-    public async Task<QuizAttempt> SubmitAttemptAsync(int quizId, int userId, Dictionary<int, int> answers)
+    public async Task<QuizAttempt> SubmitAttemptAsync(int quizId, int userId, Dictionary<int, int>? answers)
     {
         var quiz = await GetByIdAsync(quizId, withQuestions: true)
             ?? throw new InvalidOperationException("Quiz not found");
 
+        answers ??= new();
         int correct = 0;
         foreach (var q in quiz.Questions)
         {

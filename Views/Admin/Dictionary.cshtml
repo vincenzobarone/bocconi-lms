@@ -93,16 +93,17 @@
         <div class="card">
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover table-sm mb-0" id="translationsTable">
+                    <table class="table table-hover table-sm mb-0" id="translationsTable"
+                           style="table-layout:fixed; width:100%">
                         <thead class="table-light">
                             <tr>
                                 <th scope="col" style="width:20%">@T["admin.translations.col_key"]</th>
-                                <th scope="col" style="width:20%">🇬🇧 English</th>
-                                @if (enabledLangs.Contains("it")) { <th scope="col">🇮🇹 Italiano</th> }
-                                @if (enabledLangs.Contains("es")) { <th scope="col">🇪🇸 Español</th> }
-                                @if (enabledLangs.Contains("de")) { <th scope="col">🇩🇪 Deutsch</th> }
-                                <th scope="col" style="width:9%">@T["admin.translations.col_created"]</th>
-                                <th scope="col" style="width:5%"></th>
+                                <th scope="col" style="width:27%">🇬🇧 English</th>
+                                @if (enabledLangs.Contains("it")) { <th scope="col" style="width:27%">🇮🇹 Italiano</th> }
+                                @if (enabledLangs.Contains("es")) { <th scope="col" style="width:27%">🇪🇸 Español</th> }
+                                @if (enabledLangs.Contains("de")) { <th scope="col" style="width:27%">🇩🇪 Deutsch</th> }
+                                <th scope="col" style="width:90px">@T["admin.translations.col_created"]</th>
+                                <th scope="col" style="width:80px"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -112,11 +113,12 @@
                                                || (enabledLangs.Contains("es") && string.IsNullOrEmpty(row.Es))
                                                || (enabledLangs.Contains("de") && string.IsNullOrEmpty(row.De));
                                 <tr data-missing="@(hasMissing ? "true" : "false")">
-                                    <td class="font-monospace small text-muted align-middle">@row.Key</td>
-                                    <td class="align-middle">@row.En</td>
+                                    <td class="font-monospace small text-muted align-middle text-truncate"
+                                        title="@row.Key">@row.Key</td>
+                                    <td class="align-middle text-truncate" title="@row.En">@row.En</td>
                                     @if (enabledLangs.Contains("it"))
                                     {
-                                        <td class="align-middle">
+                                        <td class="align-middle text-truncate" title="@row.It">
                                             @if (string.IsNullOrEmpty(row.It))
                                             { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing"]</span> }
                                             else { @row.It }
@@ -124,7 +126,7 @@
                                     }
                                     @if (enabledLangs.Contains("es"))
                                     {
-                                        <td class="align-middle">
+                                        <td class="align-middle text-truncate" title="@row.Es">
                                             @if (string.IsNullOrEmpty(row.Es))
                                             { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing"]</span> }
                                             else { @row.Es }
@@ -132,7 +134,7 @@
                                     }
                                     @if (enabledLangs.Contains("de"))
                                     {
-                                        <td class="align-middle">
+                                        <td class="align-middle text-truncate" title="@row.De">
                                             @if (string.IsNullOrEmpty(row.De))
                                             { <span class="text-warning small"><i class="bi bi-exclamation-triangle me-1"></i>@T["admin.translations.missing"]</span> }
                                             else { @row.De }
@@ -141,7 +143,7 @@
                                     <td class="align-middle text-muted small text-nowrap">
                                         @row.CreatedAt.ToString("dd/MM/yyyy")
                                     </td>
-                                    <td class="align-middle text-end">
+                                    <td class="align-middle text-end text-nowrap">
                                         <div class="d-flex gap-1 justify-content-end">
                                             <a asp-action="EditTranslation" asp-route-key="@row.Key"
                                                class="btn btn-sm btn-outline-secondary" title="@T["common.edit"]">
@@ -578,6 +580,7 @@
             var dt = $('#translationsTable').DataTable({
                 language: window.dtLang(),
                 pageLength: 25,
+                autoWidth: false,
                 columnDefs: [{ orderable: false, targets: -1 }],
                 order: [[0, 'asc']]
             });

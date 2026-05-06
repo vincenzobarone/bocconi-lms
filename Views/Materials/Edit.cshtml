@@ -16,16 +16,6 @@
     bool hasFolder   = material?.FolderId != null;
 }
 
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-action="Index">@T["mat.nav"]</a></li>
-        @if (material != null)
-        {
-            <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@material.Id">@material.Title</a></li>
-        }
-        <li class="breadcrumb-item active">@T["mat.edit_breadcrumb"]</li>
-    </ol>
-</nav>
 
 <div class="row justify-content-center">
     <div class="col-lg-8">
@@ -41,8 +31,36 @@
                     <input type="hidden" asp-for="OwnerId" />
                     <input type="hidden" asp-for="FolderId" id="hidFolderId" />
                     <input type="hidden" asp-for="FolderName" id="hidFolderName" />
-                    <input type="hidden" asp-for="PageCount" id="hidPageCount" />
                     <div asp-validation-summary="ModelOnly" class="alert alert-danger d-none" id="valSummary"></div>
+
+                    @* ── Versione attiva ─────────────────────────────────── *@
+                    <div class="d-flex align-items-center justify-content-between gap-3 rounded border px-3 py-2 mb-3"
+                         style="background:#e8f4fd; border-color:#b6d4f5!important;">
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge bg-primary" style="font-size:.8rem;">
+                                <i class="bi bi-file-earmark me-1"></i>
+                                @if (material?.ActiveVersion != null)
+                                {
+                                    <text>v@(material.CurrentVersion)</text>
+                                }
+                                else
+                                {
+                                    <text>—</text>
+                                }
+                            </span>
+                            <span class="fw-semibold text-truncate" style="max-width:340px;">
+                                @(material?.ActiveVersion?.FileName ?? T["mat.no_files"])
+                            </span>
+                            @if (material?.ActiveVersion != null)
+                            {
+                                <span class="text-muted small">(@material.ActiveVersion.FileSizeFormatted)</span>
+                            }
+                        </div>
+                        <a asp-action="Details" asp-route-id="@Model.Id"
+                           class="btn btn-sm btn-outline-primary text-nowrap">
+                            <i class="bi bi-clock-history me-1"></i>@T["mat.versions"]
+                        </a>
+                    </div>
 
                     <div class="row mb-3 g-2 align-items-start">
                         <div class="col-md-4">
@@ -173,15 +191,22 @@
                         </div>
                     }
 
+                    <div class="row mb-3 g-2">
+                        <div class="col-md-3">
+                            <label asp-for="PageCount" class="form-label fw-semibold">
+                                @T["mat.label_page_count"]
+                            </label>
+                            <input asp-for="PageCount" id="pageCountInput" type="number" min="1"
+                                   class="form-control" placeholder="—" />
+                        </div>
+                    </div>
+
                     <hr />
 
                     @* ── Publish section ─────────────────────────────────── *@
                     @if (canPublish)
                     {
                         <div class="border border-primary rounded p-3 mb-3 bg-primary bg-opacity-10" id="publishSection">
-                            <h6 class="fw-semibold text-primary mb-3">
-                                <i class="bi bi-send me-1"></i>@T["mat.publish_section"]
-                            </h6>
                             <div class="mb-3">
                                 <div class="form-check">
                                     <input asp-for="IsPublishable" class="form-check-input" id="isPublishableCheck"
@@ -238,52 +263,6 @@
                             </div>
                         </div>
                     }
-
-                    <h6 class="text-muted mb-3">
-                        <i class="bi bi-upload me-1"></i>@T["mat.upload_new_section"]
-                    </h6>
-                    @if (material?.ActiveVersion != null)
-                    {
-                        <div class="alert alert-info py-2 mb-3">
-                            <i class="bi bi-info-circle me-1"></i>
-                            @T["mat.active_version_label"]
-                            <strong>v@(material.CurrentVersion)</strong> — @material.ActiveVersion.FileName
-                            (@material.ActiveVersion.FileSizeFormatted)
-                        </div>
-                    }
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">@T["mat.new_file"]</label>
-                        <div class="input-group">
-                            <label for="File" class="btn btn-outline-secondary mb-0">
-                                <i class="bi bi-folder2-open me-1"></i>@T["mat.choose_file"]
-                            </label>
-                            <span class="form-control text-muted"
-                                  id="fileName_File"
-                                  data-placeholder="@T["mat.no_file_chosen"]">@T["mat.no_file_chosen"]</span>
-                            <input asp-for="File" type="file" class="d-none" id="File"
-                                   onchange="matFileChanged(this)" />
-                        </div>
-                        <div class="form-text d-flex align-items-center gap-2">
-                            @T["mat.file_hint"]
-                            <span id="pageCountDisplay" class="text-muted fst-italic small"></span>
-                        </div>
-                    </div>
-
-                    <div id="convertPdfBox" class="alert alert-warning d-none py-2 mb-3">
-                        <div class="form-check mb-0">
-                            <input class="form-check-input" type="checkbox" id="ConvertToPdf" name="ConvertToPdf" value="true" />
-                            <label class="form-check-label fw-semibold" for="ConvertToPdf">
-                                <i class="bi bi-file-earmark-pdf me-1"></i>@T["mat.convert_to_pdf"]
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label asp-for="Notes" class="form-label fw-semibold">@T["mat.new_version_notes"]</label>
-                        <textarea asp-for="Notes" class="form-control" rows="3"
-                                  placeholder="@T["mat.version_notes_placeholder"]"></textarea>
-                    </div>
 
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <a asp-action="Index" class="btn btn-outline-secondary">
@@ -364,17 +343,12 @@
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
-    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         (function () {
             var summary = document.getElementById('valSummary');
             if (summary && summary.querySelectorAll('li').length > 0)
                 summary.classList.remove('d-none');
         })();
-
-        var OFFICE_EXTS = ['doc','docx','ppt','pptx'];
-        var ZIP_EXTS    = ['docx','pptx','xlsx'];
 
         var LANG_PREFIX = {
             'Italiano':'IT','Inglese':'EN','Francese':'FR','Tedesco':'DE',
@@ -507,167 +481,6 @@
             document.getElementById('statusSelect').value = 'under_review';
             verifiedModal.hide();
         });
-
-        // ── File input handling ───────────────────────────────────────────
-        function extractOfficeAuthor(file) {
-            if (typeof JSZip === 'undefined') return Promise.resolve(null);
-            return JSZip.loadAsync(file).then(function (zip) {
-                var entry = zip.file('docProps/core.xml');
-                if (!entry) return null;
-                return entry.async('string').then(function (xml) {
-                    var m = xml.match(/<dc:creator[^>]*>([\s\S]*?)<\/dc:creator>/);
-                    return (m && m[1].trim()) ? m[1].trim() : null;
-                });
-            }).catch(function () { return null; });
-        }
-
-        // Configura il worker di pdf.js
-        if (window.pdfjsLib) {
-            window.pdfjsLib.GlobalWorkerOptions.workerSrc =
-                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        }
-
-        function extractPdfMetadata(file) {
-            if (window.pdfjsLib) {
-                return file.arrayBuffer().then(function(ab) {
-                    return window.pdfjsLib.getDocument({ data: ab }).promise;
-                }).then(function(pdf) {
-                    var numPages = pdf.numPages;
-                    return pdf.getMetadata().then(function(meta) {
-                        var author = null;
-                        if (meta && meta.info) {
-                            author = (meta.info.Author || meta.info.author || '').trim() || null;
-                        }
-                        if (!author && meta && meta.metadata) {
-                            try {
-                                var raw = meta.metadata.getRaw ? meta.metadata.getRaw() : '';
-                                var mXmp = raw.match(/<dc:creator[\s\S]{0,400}?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/);
-                                if (mXmp && mXmp[1].trim()) author = mXmp[1].trim();
-                            } catch(e) {}
-                        }
-                        return { author: author, pageCount: numPages };
-                    }).catch(function() {
-                        return { author: null, pageCount: numPages };
-                    });
-                }).catch(function() {
-                    return _extractPdfFallback(file);
-                });
-            }
-            return _extractPdfFallback(file);
-        }
-
-        function _extractPdfFallback(file) {
-            return new Promise(function(resolve) {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    try {
-                        var text = e.target.result;
-                        var author = null;
-                        var mAuth = text.match(/\/Author\s*\(([^)\\]*(?:\\.[^)\\]*)*)\)/);
-                        if (mAuth && mAuth[1].trim()) author = mAuth[1].trim();
-                        if (!author) {
-                            var mXmp = text.match(/<dc:creator[\s\S]{0,200}?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>/);
-                            if (mXmp && mXmp[1].trim()) author = mXmp[1].trim();
-                        }
-                        var pageCount = null;
-                        var mPg = text.match(/\/Type\s*\/Pages[\s\S]{0,300}?\/Count\s+(\d+)/);
-                        if (mPg) {
-                            pageCount = parseInt(mPg[1]);
-                        } else {
-                            var all = [], re = /\/Count\s+(\d+)/g, mc;
-                            while ((mc = re.exec(text)) !== null) all.push(parseInt(mc[1]));
-                            if (all.length) pageCount = Math.max.apply(null, all);
-                        }
-                        resolve({ author: author, pageCount: pageCount });
-                    } catch(err) { resolve(null); }
-                };
-                reader.onerror = function() { resolve(null); };
-                reader.readAsText(file.slice(0, 65536), 'windows-1252');
-            });
-        }
-
-        function matFileChanged(inp) {
-            var span      = document.getElementById('fileName_File');
-            var pdfBox    = document.getElementById('convertPdfBox');
-            var titleInp  = document.getElementById('matTitle');
-            var authorInp = document.getElementById('AuthorName');
-            var pgHid     = document.getElementById('hidPageCount');
-            var pgDisp    = document.getElementById('pageCountDisplay');
-
-            if (!inp.files || inp.files.length === 0) {
-                if (span) span.textContent = span.dataset.placeholder || '';
-                if (pdfBox) pdfBox.classList.add('d-none');
-                return;
-            }
-
-            var file = inp.files[0];
-            if (span) span.textContent = file.name;
-
-            var ext       = file.name.split('.').pop().toLowerCase();
-            var nameNoExt = file.name.replace(/\.[^.]+$/, '');
-            var _tPages   = @Json.Serialize(T["mat.pages"]);
-            var _tSlides  = @Json.Serialize(T["mat.slides"]);
-
-            if (titleInp && titleInp.value.trim() === '') {
-                titleInp.value = nameNoExt;
-            }
-
-            if (OFFICE_EXTS.indexOf(ext) !== -1) {
-                if (pdfBox) pdfBox.classList.remove('d-none');
-            } else {
-                if (pdfBox) pdfBox.classList.add('d-none');
-                var cb = document.getElementById('ConvertToPdf');
-                if (cb) cb.checked = false;
-            }
-
-            // Estrai autore da metadati
-            if (authorInp && authorInp.value.trim() === '') {
-                if (ZIP_EXTS.indexOf(ext) !== -1) {
-                    extractOfficeAuthor(file).then(function (author) {
-                        if (author && authorInp.value.trim() === '')
-                            authorInp.value = author;
-                    });
-                } else if (ext === 'pdf') {
-                    extractPdfMetadata(file).then(function(meta) {
-                        if (meta && meta.author && authorInp.value.trim() === '')
-                            authorInp.value = meta.author;
-                    });
-                }
-            }
-
-            // Numero di pagine/slide
-            if (ext === 'pdf') {
-                extractPdfMetadata(file).then(function(meta) {
-                    if (meta && meta.pageCount) {
-                        if (pgDisp) pgDisp.textContent = meta.pageCount + ' ' + _tPages;
-                        if (pgHid) pgHid.value = meta.pageCount;
-                    } else {
-                        if (pgDisp) pgDisp.textContent = '';
-                        if (pgHid) pgHid.value = '';
-                    }
-                });
-            } else if (typeof JSZip !== 'undefined' && ZIP_EXTS.indexOf(ext) !== -1) {
-                JSZip.loadAsync(file).then(function(zip) {
-                    var entry = zip.file('docProps/app.xml');
-                    if (!entry) return null;
-                    return entry.async('string').then(function(xml) {
-                        var mp = xml.match(/<Pages>(\d+)<\/Pages>/);
-                        if (mp) return { count: parseInt(mp[1]), unit: _tPages };
-                        var ms = xml.match(/<Slides>(\d+)<\/Slides>/);
-                        if (ms) return { count: parseInt(ms[1]), unit: _tSlides };
-                        return null;
-                    });
-                }).then(function(result) {
-                    if (result) {
-                        if (pgDisp) pgDisp.textContent = result.count + ' ' + result.unit;
-                        if (pgHid) pgHid.value = result.count;
-                    } else {
-                        if (pgDisp) pgDisp.textContent = '';
-                        if (pgHid) pgHid.value = '';
-                    }
-                }).catch(function() {});
-            }
-        }
 
         // ── Author autocomplete ────────────────────────────────────────────
         (function() {

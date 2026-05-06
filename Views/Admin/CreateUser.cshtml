@@ -35,7 +35,10 @@
                     </div>
                     <div class="mb-3">
                         <label asp-for="Password" class="form-label fw-semibold">Password *</label>
-                        <input asp-for="Password" type="password" class="form-control" />
+                        <div class="input-group">
+                            <input asp-for="Password" type="password" class="form-control" />
+                            <button type="button" class="btn btn-outline-secondary" tabindex="-1" onclick="togglePwd(this)" aria-label="Mostra/nascondi password"><i class="bi bi-eye"></i></button>
+                        </div>
                         <div class="form-text">@T["admin.users.password_hint"]</div>
                         <span asp-validation-for="Password" class="text-danger small"></span>
                     </div>
@@ -44,7 +47,7 @@
                         <select asp-for="Role" class="form-select">
                             @foreach (var r in (ViewBag.AvailableRoles as List<string> ?? new List<string>()))
                             {
-                                <option value="@r">@r</option>
+                                <option value="@r" selected="@(r == Model.Role ? "selected" : null)">@r</option>
                             }
                         </select>
                     </div>

@@ -4,12 +4,6 @@
     var versions = ViewBag.Versions as List<BocconiLMS.Models.MaterialVersion> ?? new();
 }
 
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-action="Index">@T["mat.nav"]</a></li>
-        <li class="breadcrumb-item active">@Model.Title</li>
-    </ol>
-</nav>
 
 <div class="row">
     <div class="col-lg-8">
@@ -108,29 +102,59 @@
                     <i class="bi bi-upload me-2"></i>@T["mat.upload_version"]
                 </div>
                 <div class="card-body">
-                    <form asp-action="UploadVersion" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
+                    <form id="uploadVersionForm" asp-action="UploadVersion" asp-route-id="@Model.Id" method="post" enctype="multipart/form-data">
                         @Html.AntiForgeryToken()
-                        <div class="row g-2 align-items-end">
-                            <div class="col-md-5">
-                                <label class="form-label small fw-semibold">@T["mat.label_file"]</label>
-                                <div class="input-group input-group-sm">
-                                    <label for="fileUploadDetails" class="btn btn-outline-secondary btn-sm mb-0">
-                                        <i class="bi bi-folder2-open me-1"></i>@T["mat.choose_file"]
+
+                        @* Stato: nessun file selezionato *@
+                        <div id="uvNoFile" class="text-center py-4 mb-2 border rounded-3 bg-light"
+                             style="border: 2px dashed #ccc !important; cursor:pointer;">
+                            <i class="bi bi-cloud-upload text-bocconi" style="font-size:2.5rem;"></i>
+                            <div class="mt-2">
+                                <label for="uvFileInput" class="btn btn-bocconi btn-sm px-4" style="cursor:pointer;">
+                                    <i class="bi bi-upload me-1"></i>@T["mat.upload_document"]
+                                </label>
+                            </div>
+                            <p class="text-muted small mt-2 mb-0">@T["mat.upload_hint"]</p>
+                        </div>
+
+                        @* Stato: file selezionato *@
+                        <div id="uvHasFile" class="d-none mb-2">
+                            <div class="d-flex align-items-center gap-3 p-3 border rounded-3 bg-light">
+                                <i id="uvFileIcon" class="bi bi-file-earmark-text fs-2 text-bocconi flex-shrink-0"></i>
+                                <div class="flex-grow-1" style="min-width:0">
+                                    <div class="fw-semibold text-truncate" id="uvFileName"></div>
+                                    <div class="text-muted small mt-1">
+                                        <span id="uvFileSize"></span>
+                                        <span id="uvPageCount" class="ms-2 fw-semibold text-bocconi"></span>
+                                    </div>
+                                </div>
+                                <button type="button" id="uvRemoveBtn"
+                                        class="btn btn-sm btn-outline-secondary flex-shrink-0"
+                                        title="@T["mat.remove_file"]">
+                                    <i class="bi bi-x-lg"></i>
+                                </button>
+                            </div>
+                            <div id="uvConvertBox" class="alert alert-warning d-none py-2 mt-2 mb-0">
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input" type="checkbox"
+                                           id="uvConvertToPdf" name="convertToPdf" value="true" />
+                                    <label class="form-check-label fw-semibold" for="uvConvertToPdf">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i>@T["mat.convert_to_pdf"]
                                     </label>
-                                    <span class="form-control text-muted text-truncate"
-                                          id="fileNameDetails"
-                                          data-placeholder="@T["mat.no_file_chosen"]">@T["mat.no_file_chosen"]</span>
-                                    <input type="file" name="file" id="fileUploadDetails" class="d-none" required
-                                           onchange="bocconiFileInput(this,'fileNameDetails')" />
                                 </div>
                             </div>
-                            <div class="col-md-5">
+                        </div>
+
+                        <input type="file" name="file" id="uvFileInput" class="d-none" required />
+
+                        <div class="row g-2 mt-1 align-items-end">
+                            <div class="col-md-10">
                                 <label class="form-label small fw-semibold">@T["mat.notes"]</label>
                                 <input type="text" name="notes" class="form-control form-control-sm"
                                        placeholder="@T["mat.notes_placeholder"]" />
                             </div>
                             <div class="col-md-2">
-                                <button type="submit" class="btn btn-bocconi btn-sm w-100">
+                                <button type="submit" id="uvSubmitBtn" class="btn btn-bocconi btn-sm w-100" disabled>
                                     <i class="bi bi-upload me-1"></i>@T["mat.upload_btn"]
                                 </button>
                             </div>
@@ -273,19 +297,192 @@
 </div>
 
 @section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" crossorigin="anonymous"></script>
 <script>
+// ── Upload Version file picker ─────────────────────────────────────────
+(function () {
+    var OFFICE_EXTS = ['doc','docx','ppt','pptx'];
+    var ZIP_EXTS    = ['docx','pptx','xlsx'];
+    var FILE_ICONS  = {
+        pdf:'bi-file-earmark-pdf text-danger', doc:'bi-file-earmark-word text-primary',
+        docx:'bi-file-earmark-word text-primary', ppt:'bi-file-earmark-ppt text-warning',
+        pptx:'bi-file-earmark-ppt text-warning', xls:'bi-file-earmark-excel text-success',
+        xlsx:'bi-file-earmark-excel text-success', png:'bi-file-earmark-image text-info',
+        jpg:'bi-file-earmark-image text-info', jpeg:'bi-file-earmark-image text-info',
+        gif:'bi-file-earmark-image text-info', mp4:'bi-file-earmark-play text-purple',
+        mp3:'bi-file-earmark-music text-secondary'
+    };
+
+    var uvNoFile    = document.getElementById('uvNoFile');
+    var uvHasFile   = document.getElementById('uvHasFile');
+    var uvFileInput = document.getElementById('uvFileInput');
+    var uvSubmitBtn = document.getElementById('uvSubmitBtn');
+    var uvConvertBox= document.getElementById('uvConvertBox');
+    var uvConvert   = document.getElementById('uvConvertToPdf');
+
+    if (!uvFileInput) return;
+
+    function formatBytes(b) {
+        if (b < 1024) return b + ' B';
+        if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+        return (b/1048576).toFixed(1) + ' MB';
+    }
+
+    function extractOfficeAuthor(file) {
+        if (typeof JSZip === 'undefined') return Promise.resolve(null);
+        return JSZip.loadAsync(file).then(function(zip) {
+            var e = zip.file('docProps/core.xml');
+            if (!e) return null;
+            return e.async('string').then(function(xml) {
+                var m = xml.match(/<dc:creator[^>]*>([\s\S]*?)<\/dc:creator>/);
+                return (m && m[1].trim()) ? m[1].trim() : null;
+            });
+        }).catch(function() { return null; });
+    }
+
+    function extractPdfMetadata(file) {
+        if (window.pdfjsLib) {
+            window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            return file.arrayBuffer().then(function(ab) {
+                return window.pdfjsLib.getDocument({ data: ab }).promise;
+            }).then(function(pdf) {
+                return { pageCount: pdf.numPages };
+            }).catch(function() { return null; });
+        }
+        return Promise.resolve(null);
+    }
+
+    function extractPageCount(file) {
+        var ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'pdf') {
+            return extractPdfMetadata(file).then(function(m) {
+                return m && m.pageCount ? { count: m.pageCount, unit: '@T["mat.pages"]' } : null;
+            });
+        }
+        if (typeof JSZip === 'undefined') return Promise.resolve(null);
+        if (ZIP_EXTS.indexOf(ext) === -1) return Promise.resolve(null);
+        return JSZip.loadAsync(file).then(function(zip) {
+            var e = zip.file('docProps/app.xml');
+            if (!e) return null;
+            return e.async('string').then(function(xml) {
+                var mp = xml.match(/<Pages>(\d+)<\/Pages>/);
+                if (mp) return { count: parseInt(mp[1]), unit: '@T["mat.pages"]' };
+                var ms = xml.match(/<Slides>(\d+)<\/Slides>/);
+                if (ms) return { count: parseInt(ms[1]), unit: '@T["mat.slides"]' };
+                return null;
+            });
+        }).catch(function() { return null; });
+    }
+
+    uvFileInput.addEventListener('change', function() {
+        if (!this.files || !this.files.length) return;
+        var file = this.files[0];
+        var ext  = file.name.split('.').pop().toLowerCase();
+
+        document.getElementById('uvFileName').textContent = file.name;
+        document.getElementById('uvFileSize').textContent = formatBytes(file.size);
+        document.getElementById('uvPageCount').textContent = '';
+        var icon = document.getElementById('uvFileIcon');
+        icon.className = 'bi ' + (FILE_ICONS[ext] || 'bi-file-earmark-text text-bocconi') + ' fs-2 flex-shrink-0';
+
+        uvNoFile.classList.add('d-none');
+        uvHasFile.classList.remove('d-none');
+        uvSubmitBtn.disabled = false;
+
+        if (OFFICE_EXTS.indexOf(ext) !== -1) {
+            uvConvertBox.classList.remove('d-none');
+        } else {
+            uvConvertBox.classList.add('d-none');
+            uvConvert.checked = false;
+        }
+
+        extractPageCount(file).then(function(r) {
+            if (r) document.getElementById('uvPageCount').textContent = r.count + ' ' + r.unit;
+        });
+    });
+
+    document.getElementById('uvRemoveBtn').addEventListener('click', function() {
+        uvFileInput.value = '';
+        uvHasFile.classList.add('d-none');
+        uvNoFile.classList.remove('d-none');
+        uvConvertBox.classList.add('d-none');
+        uvConvert.checked = false;
+        uvSubmitBtn.disabled = true;
+    });
+
+    // click sulla drop zone apre il file picker
+    uvNoFile.addEventListener('click', function(e) {
+        if (e.target.tagName !== 'LABEL') uvFileInput.click();
+    });
+})();
+
+// ── Preview modal ──────────────────────────────────────────────────────
 (function () {
     var imageTypes = ['PNG','JPG','JPEG','GIF','SVG','BMP','WEBP'];
     var videoTypes = ['MP4','WEBM','MOV','AVI','MKV'];
+
+    var pendingRender = null;
+
+    function showSpinner(body) {
+        body.innerHTML =
+            '<div class="d-flex justify-content-center align-items-center" style="min-height:70vh;">' +
+            '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Caricamento...</span></div></div>';
+    }
+
+    function showError(body, downloadUrl) {
+        body.innerHTML =
+            '<div class="text-center p-5">' +
+            '<i class="bi bi-exclamation-triangle display-1 text-warning d-block mb-3"></i>' +
+            '<p class="text-muted mb-4">Impossibile caricare l\'anteprima.<br>Prova a scaricare il file.</p>' +
+            '<a href="' + downloadUrl + '" class="btn btn-bocconi"><i class="bi bi-download me-2"></i>Scarica</a></div>';
+    }
+
+    function renderPdf(pdf, body, downloadUrl) {
+        var wrap = document.createElement('div');
+        wrap.style.cssText = 'overflow-y:auto;height:80vh;background:#616161;padding:12px;box-sizing:border-box;';
+        body.innerHTML = '';
+        body.appendChild(wrap);
+
+        var containerW = wrap.clientWidth;
+        if (!containerW) {
+            var dlg = document.querySelector('#previewModal .modal-body');
+            containerW = dlg ? dlg.clientWidth : 0;
+        }
+        if (!containerW) containerW = 800;
+
+        body._pdfDoc = pdf;
+        var seq = Promise.resolve();
+        for (var n = 1; n <= pdf.numPages; n++) {
+            (function(pageNum) {
+                seq = seq.then(function() {
+                    return pdf.getPage(pageNum).then(function(page) {
+                        var vp0 = page.getViewport({ scale: 1 });
+                        var w = wrap.clientWidth || containerW;
+                        var scale = Math.max(Math.min((w - 24) / vp0.width, 2), 0.1);
+                        var vp = page.getViewport({ scale: scale });
+                        var canvas = document.createElement('canvas');
+                        canvas.width  = vp.width;
+                        canvas.height = vp.height;
+                        canvas.style.cssText = 'display:block;margin:0 auto 8px;box-shadow:0 2px 8px rgba(0,0,0,.5);background:#fff;max-width:100%;';
+                        wrap.appendChild(canvas);
+                        return page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+                    });
+                });
+            })(n);
+        }
+        seq.catch(function() { showError(body, downloadUrl); });
+    }
 
     document.addEventListener('click', function (e) {
         var btn = e.target.closest('.btn-preview');
         if (!btn) return;
         e.preventDefault();
-        var versionId  = btn.dataset.versionId;
-        var fileType   = (btn.dataset.fileType || '').toUpperCase();
-        var fileName   = btn.dataset.fileName || '';
+
+        var versionId   = btn.dataset.versionId;
+        var fileType    = (btn.dataset.fileType || '').toUpperCase();
+        var fileName    = btn.dataset.fileName || '';
         var previewUrl  = '/Materials/Preview?versionId=' + versionId;
         var downloadUrl = '/Materials/Download?versionId=' + versionId;
 
@@ -293,57 +490,26 @@
         document.getElementById('previewDownloadBtn').href = downloadUrl;
 
         var body = document.getElementById('previewModalBody');
-        bootstrap.Modal.getOrCreateInstance(document.getElementById('previewModal')).show();
+        pendingRender = null;
+        showSpinner(body);
 
         if (fileType === 'PDF') {
-            // PDF: PDF.js su canvas — evita blocchi Edge/Chrome per iframe con PDF
-            body.innerHTML =
-                '<div class="d-flex justify-content-center align-items-center" style="min-height:70vh;">' +
-                '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Caricamento...</span></div></div>';
+            pdfjsLib.GlobalWorkerOptions.workerSrc =
+                'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
             fetch(previewUrl, { credentials: 'same-origin' })
                 .then(function(r) { return r.ok ? r.arrayBuffer() : Promise.reject(r.status); })
-                .then(function(buf) {
-                    pdfjsLib.GlobalWorkerOptions.workerSrc =
-                        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                    return pdfjsLib.getDocument({ data: buf }).promise;
-                })
+                .then(function(buf) { return pdfjsLib.getDocument({ data: buf }).promise; })
                 .then(function(pdf) {
-                    body._pdfDoc = pdf;
-                    var wrap = document.createElement('div');
-                    wrap.style.cssText = 'overflow-y:auto;height:80vh;background:#616161;padding:12px;box-sizing:border-box;';
-                    body.innerHTML = '';
-                    body.appendChild(wrap);
-                    var seq = Promise.resolve();
-                    for (var n = 1; n <= pdf.numPages; n++) {
-                        (function(pageNum) {
-                            seq = seq.then(function() {
-                                return pdf.getPage(pageNum).then(function(page) {
-                                    var vp0 = page.getViewport({ scale: 1 });
-                                    var scale = Math.min((wrap.clientWidth - 24) / vp0.width, 2);
-                                    var vp = page.getViewport({ scale: scale });
-                                    var canvas = document.createElement('canvas');
-                                    canvas.width  = vp.width;
-                                    canvas.height = vp.height;
-                                    canvas.style.cssText = 'display:block;margin:0 auto 8px;box-shadow:0 2px 8px rgba(0,0,0,.5);background:#fff;';
-                                    wrap.appendChild(canvas);
-                                    return page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
-                                });
-                            });
-                        })(n);
+                    pendingRender = { type: 'pdf', pdf: pdf, downloadUrl: downloadUrl };
+                    var modalEl = document.getElementById('previewModal');
+                    if (modalEl.classList.contains('show')) {
+                        renderPdf(pdf, body, downloadUrl);
+                        pendingRender = null;
                     }
-                    return seq;
                 })
-                .catch(function() {
-                    body.innerHTML =
-                        '<div class="text-center p-5">' +
-                        '<i class="bi bi-exclamation-triangle display-1 text-warning d-block mb-3"></i>' +
-                        '<p class="text-muted mb-4">Impossibile caricare l\'anteprima.<br>Prova a scaricare il file.</p>' +
-                        '<a href="' + downloadUrl + '" class="btn btn-bocconi"><i class="bi bi-download me-2"></i>Scarica</a></div>';
-                });
+                .catch(function() { showError(body, downloadUrl); });
+
         } else if (imageTypes.includes(fileType) || videoTypes.includes(fileType)) {
-            body.innerHTML =
-                '<div class="d-flex justify-content-center align-items-center" style="min-height:70vh;">' +
-                '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Caricamento...</span></div></div>';
             fetch(previewUrl, { credentials: 'same-origin' })
                 .then(function(r) { return r.ok ? r.blob() : Promise.reject(r.status); })
                 .then(function(blob) {
@@ -355,15 +521,23 @@
                         body.innerHTML = '<video controls class="w-100 d-block" style="max-height:80vh;background:#000;"><source src="' + blobUrl + '" /></video>';
                     }
                 })
-                .catch(function() {
-                    body.innerHTML =
-                        '<div class="text-center p-5">' +
-                        '<i class="bi bi-exclamation-triangle display-1 text-warning d-block mb-3"></i>' +
-                        '<p class="text-muted mb-4">Impossibile caricare l\'anteprima.<br>Prova a scaricare il file.</p>' +
-                        '<a href="' + downloadUrl + '" class="btn btn-bocconi"><i class="bi bi-download me-2"></i>Scarica</a></div>';
-                });
+                .catch(function() { showError(body, downloadUrl); });
+
         } else {
-            body.innerHTML = '<div class="text-center p-5"><i class="bi bi-file-earmark-text display-1 text-muted d-block mb-3"></i><p class="text-muted mb-4">Anteprima non disponibile per i file <strong>.' + fileType + '</strong>.<br>Scarica il file per visualizzarlo.</p><a href="' + downloadUrl + '" class="btn btn-bocconi"><i class="bi bi-download me-2"></i>Scarica</a></div>';
+            body.innerHTML =
+                '<div class="text-center p-5"><i class="bi bi-file-earmark-text display-1 text-muted d-block mb-3"></i>' +
+                '<p class="text-muted mb-4">Anteprima non disponibile per i file <strong>.' + fileType + '</strong>.<br>Scarica il file per visualizzarlo.</p>' +
+                '<a href="' + downloadUrl + '" class="btn btn-bocconi"><i class="bi bi-download me-2"></i>Scarica</a></div>';
+        }
+
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('previewModal')).show();
+    });
+
+    document.getElementById('previewModal').addEventListener('shown.bs.modal', function () {
+        if (pendingRender && pendingRender.type === 'pdf') {
+            var body = document.getElementById('previewModalBody');
+            renderPdf(pendingRender.pdf, body, pendingRender.downloadUrl);
+            pendingRender = null;
         }
     });
 
@@ -372,6 +546,7 @@
         if (body._blobUrl) { URL.revokeObjectURL(body._blobUrl); body._blobUrl = null; }
         if (body._pdfDoc) { body._pdfDoc.destroy(); body._pdfDoc = null; }
         body.innerHTML = '';
+        pendingRender = null;
     });
 })();
 </script>

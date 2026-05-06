@@ -122,6 +122,7 @@ public class HomeController : Controller
                 if (vm.IsTeacher)
                 {
                     var myCourses = await _courses.GetByTeacherAsync(userId);
+                    vm.TeacherCourses      = myCourses;
                     vm.TeacherCourseCount  = myCourses.Count;
                     vm.TeacherStudentCount = await GetTeacherStudentCountAsync(userId);
                 }

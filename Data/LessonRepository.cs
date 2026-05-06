@@ -15,7 +15,7 @@ public class LessonRepository
         await conn.OpenAsync();
         var sql = @"
             SELECT l.id, l.course_id, c.title AS course_title, l.title, l.content,
-                   l.sort_order, l.is_published, l.created_at,
+                   l.sort_order, l.is_published, l.created_at, l.group_id,
                    CASE WHEN @uid IS NOT NULL AND EXISTS(SELECT 1 FROM lesson_progress lp WHERE lp.lesson_id=l.id AND lp.user_id=@uid) THEN 1 ELSE 0 END AS is_completed
             FROM lessons l
             JOIN courses c ON c.id = l.course_id
@@ -36,7 +36,7 @@ public class LessonRepository
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             SELECT l.id, l.course_id, c.title AS course_title, l.title, l.content,
-                   l.sort_order, l.is_published, l.created_at,
+                   l.sort_order, l.is_published, l.created_at, l.group_id,
                    CASE WHEN @uid IS NOT NULL AND EXISTS(SELECT 1 FROM lesson_progress lp WHERE lp.lesson_id=l.id AND lp.user_id=@uid) THEN 1 ELSE 0 END AS is_completed
             FROM lessons l
             JOIN courses c ON c.id = l.course_id
@@ -45,6 +45,16 @@ public class LessonRepository
         cmd.Parameters.AddWithValue("@uid", userId.HasValue ? userId.Value : DBNull.Value);
         using var reader = await cmd.ExecuteReaderAsync();
         return reader.Read() ? MapLesson(reader) : null;
+    }
+
+    public async Task<int> GetMaxSortOrderAsync(int courseId)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT COALESCE(MAX(sort_order), 0) FROM lessons WHERE course_id=@cid", conn);
+        cmd.Parameters.AddWithValue("@cid", courseId);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
 
     public async Task<int> CreateAsync(Lesson lesson)
@@ -78,6 +88,21 @@ public class LessonRepository
         await cmd.ExecuteNonQueryAsync();
     }
 
+    public async Task ReorderAsync(int courseId, List<int> orderedIds)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        for (int i = 0; i < orderedIds.Count; i++)
+        {
+            using var cmd = new MySqlCommand(
+                "UPDATE lessons SET sort_order=@sort WHERE id=@id AND course_id=@cid", conn);
+            cmd.Parameters.AddWithValue("@sort", i + 1);
+            cmd.Parameters.AddWithValue("@id", orderedIds[i]);
+            cmd.Parameters.AddWithValue("@cid", courseId);
+            await cmd.ExecuteNonQueryAsync();
+        }
+    }
+
     public async Task DeleteAsync(int id)
     {
         using var conn = _db.GetConnection();
@@ -97,6 +122,7 @@ public class LessonRepository
         SortOrder = r.GetInt32("sort_order"),
         IsPublished = r.GetBoolean("is_published"),
         CreatedAt = r.GetDateTime("created_at"),
-        IsCompleted = r.GetBoolean("is_completed")
+        IsCompleted = r.GetBoolean("is_completed"),
+        GroupId = r.IsDBNull(r.GetOrdinal("group_id")) ? null : r.GetInt32("group_id")
     };
 }

@@ -1,6 +1,19 @@
 @inject BocconiLMS.Services.AppVersionService _ver
 @inject BocconiLMS.Services.FeatureFlagService _features
 @inject BocconiLMS.Data.RolePermissionRepository _menuPerms
+@inject Microsoft.AspNetCore.Hosting.IWebHostEnvironment _env
+@functions {
+    string ResolveAlert(object? raw)
+    {
+        if (raw is not string s || s.Length == 0) return string.Empty;
+        if (s[0] != '§') return s;
+        var parts = s[1..].Split('|');
+        var translation = T[parts[0]];
+        if (parts.Length == 1) return translation;
+        try { return string.Format(translation, parts[1..]); }
+        catch { return translation; }
+    }
+}
 @{
     var coursesEnabled   = await _features.IsCoursesEnabledAsync();
     var materialsEnabled = await _features.IsMaterialsEnabledAsync();
@@ -155,21 +168,21 @@
         @if (TempData["Success"] != null)
         {
             <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle me-2"></i>@TempData["Success"]
+                <i class="bi bi-check-circle me-2"></i>@ResolveAlert(TempData["Success"])
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         }
         @if (TempData["Error"] != null)
         {
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-circle me-2"></i>@TempData["Error"]
+                <i class="bi bi-exclamation-circle me-2"></i>@ResolveAlert(TempData["Error"])
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         }
         @if (TempData["Warning"] != null)
         {
             <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle me-2"></i>@TempData["Warning"]
+                <i class="bi bi-exclamation-triangle me-2"></i>@ResolveAlert(TempData["Warning"])
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         }
@@ -201,6 +214,18 @@ window.dtIT = {
     zeroRecords: "Nessun risultato trovato", emptyTable: "Tabella vuota"
 };
 window.dtLang = function() { return window.currentLang === 'it' ? window.dtIT : {}; };
+function togglePwd(btn) {
+    var inp = btn.closest('.input-group').querySelector('input[type=password],input[type=text]');
+    var icon = btn.querySelector('i');
+    if (inp.type === 'password') { inp.type = 'text'; icon.className = 'bi bi-eye-slash'; }
+    else                         { inp.type = 'password'; icon.className = 'bi bi-eye'; }
+}
+setTimeout(function () {
+    document.querySelectorAll('.alert.alert-dismissible').forEach(function (el) {
+        var alert = bootstrap.Alert.getOrCreateInstance(el);
+        alert.close();
+    });
+}, 6000);
 </script>
 @await RenderSectionAsync("Scripts", required: false)
 
@@ -255,6 +280,80 @@ function bocconiFileInput(inp, spanId) {
     var span = document.getElementById(spanId);
     span.textContent = inp.files.length > 0 ? inp.files[0].name : (span.dataset.placeholder || '');
 }
+
+// ── Disabilita il pulsante di salvataggio durante il submit ───────────────
+(function () {
+    var _pendingBtn = null;
+
+    // Cattura quale pulsante è stato cliccato (fase capture, prima di tutto)
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('button[type="submit"], input[type="submit"]');
+        if (btn) _pendingBtn = btn;
+    }, true);
+
+    document.addEventListener('submit', function (e) {
+        // Se jQuery Unobtrusive Validation ha già chiamato preventDefault → validazione fallita, non disabilitare
+        if (e.defaultPrevented) { _pendingBtn = null; return; }
+
+        var form  = e.target;
+        var btn   = (_pendingBtn && form.contains(_pendingBtn))
+                        ? _pendingBtn
+                        : form.querySelector('button[type="submit"], input[type="submit"]');
+        _pendingBtn = null;
+
+        if (!btn || btn.disabled) return;
+
+        btn.disabled = true;
+
+        // Sostituisce l'icona Bootstrap Icons con uno spinner, altrimenti lo prepende
+        var icon = btn.querySelector('i[class*="bi-"]');
+        if (icon) {
+            icon.className = 'spinner-border spinner-border-sm';
+            icon.setAttribute('role', 'status');
+            icon.setAttribute('aria-hidden', 'true');
+        } else {
+            var sp = document.createElement('span');
+            sp.className = 'spinner-border spinner-border-sm me-1';
+            sp.setAttribute('role', 'status');
+            sp.setAttribute('aria-hidden', 'true');
+            btn.prepend(sp);
+        }
+    }, false);
+})();
 </script>
+@if (_env.IsDevelopment())
+{
+<script>
+(function () {
+    var connected = false;
+    function trySSE() {
+        var es = new EventSource('/_framework/aspnetcore-browser-refresh');
+        es.onopen = function () { connected = true; };
+        es.onmessage = function (e) {
+            if (e.data && (e.data.indexOf('reload') !== -1 || e.data.indexOf('Reload') !== -1)) {
+                window.location.reload();
+            }
+        };
+        es.onerror = function () {
+            es.close();
+            connected = false;
+            startPolling();
+        };
+    }
+    function startPolling() {
+        var wasDown = false;
+        setInterval(function () {
+            fetch('/health', { cache: 'no-store' })
+                .then(function (r) {
+                    if (wasDown && r.ok) { window.location.reload(); }
+                    wasDown = !r.ok;
+                })
+                .catch(function () { wasDown = true; });
+        }, 1000);
+    }
+    try { trySSE(); } catch (e) { startPolling(); }
+})();
+</script>
+}
 </body>
 </html>

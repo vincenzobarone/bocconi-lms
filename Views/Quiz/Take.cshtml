@@ -37,7 +37,8 @@
                         <input type="radio" name="Answers[@q.Id]" id="opt-@opt.Id"
                                value="@opt.Id" class="d-none opt-radio" data-q="@(qi+1)" />
                         <label for="opt-@opt.Id" class="d-block">
-                            <i class="bi bi-circle me-2 opt-icon"></i>@opt.OptionText
+                            <i class="bi bi-circle me-2 opt-unchecked"></i>
+                            <i class="bi bi-check-circle-fill me-2 opt-checked"></i>@opt.OptionText
                         </label>
                     </div>
                 }
@@ -101,9 +102,8 @@
 
     $(document).on('change', '.opt-radio', function() {
         var q = $(this).data('q');
+        // segna la domanda come risposta nel navigatore
         $('.q-nav[data-q=' + q + ']').removeClass('btn-outline-secondary').addClass('btn-success');
-        var optId = '#opt-' + $(this).attr('id').split('-')[1];
-        $(optId).find('.opt-icon').removeClass('bi-circle').addClass('bi-check-circle-fill text-primary');
     });
 </script>
 }

@@ -20,13 +20,16 @@ public class LessonController : Controller
     private readonly MaterialRepository _materials;
     private readonly SettingsRepository _settings;
     private readonly IAuditLogger _audit;
+    private readonly IWebHostEnvironment _env;
+    private readonly LessonGroupRepository _groups;
 
     public LessonController(LessonRepository lessons, CourseRepository courses,
         QuizRepository quizzes,
         EnrollmentRepository enrollments, ProgressRepository progress,
         EmailService email, ILogger<LessonController> logger,
         MaterialRepository materials, SettingsRepository settings,
-        IAuditLogger audit)
+        IAuditLogger audit, IWebHostEnvironment env,
+        LessonGroupRepository groups)
     {
         _lessons = lessons;
         _courses = courses;
@@ -38,6 +41,8 @@ public class LessonController : Controller
         _materials = materials;
         _settings = settings;
         _audit = audit;
+        _env = env;
+        _groups = groups;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -74,9 +79,22 @@ public class LessonController : Controller
         if (User.IsInRole("CanAttend"))
             await _progress.MarkLessonCompletedAsync(CurrentUserId, id);
 
+        // Determina quali materiali hanno il file fisicamente assente su disco
+        var missingFileIds = new HashSet<int>();
+        foreach (var mat in linkedMaterials)
+        {
+            if (mat.ActiveVersion != null)
+            {
+                var fullPath = Path.Combine(_env.WebRootPath, mat.ActiveVersion.FilePath.TrimStart('/'));
+                if (!System.IO.File.Exists(fullPath))
+                    missingFileIds.Add(mat.Id);
+            }
+        }
+
         ViewBag.Quizzes = quizzes;
         ViewBag.LinkedMaterials = linkedMaterials;
         ViewBag.IsOwner = isOwner;
+        ViewBag.MissingFileIds = missingFileIds;
 
         if (isOwner)
             ViewBag.AvailableMaterials = await _materials.GetNotLinkedToLessonAsync(id);
@@ -103,12 +121,13 @@ public class LessonController : Controller
     {
         if (!ModelState.IsValid) return View(model);
         if (!await IsOwnerOrAdminAsync(model.CourseId)) return Forbid();
+        var nextOrder = await _lessons.GetMaxSortOrderAsync(model.CourseId) + 1;
         var lesson = new Lesson
         {
             CourseId = model.CourseId,
             Title = model.Title,
             Content = model.Content,
-            SortOrder = model.SortOrder,
+            SortOrder = nextOrder,
             IsPublished = model.IsPublished
         };
         var lessonId = await _lessons.CreateAsync(lesson);
@@ -117,7 +136,7 @@ public class LessonController : Controller
         if (model.IsPublished)
             await NotifyEnrolledStudentsAsync(model.CourseId, model.Title);
 
-        TempData["Success"] = "Lezione creata!";
+        TempData["Success"] = "§lesson.msg_created";
         return RedirectToAction("Details", "Course", new { id = model.CourseId });
     }
 
@@ -134,7 +153,6 @@ public class LessonController : Controller
             CourseId = lesson.CourseId,
             Title = lesson.Title,
             Content = lesson.Content,
-            SortOrder = lesson.SortOrder,
             IsPublished = lesson.IsPublished
         });
     }
@@ -151,7 +169,6 @@ public class LessonController : Controller
         bool wasPublished = lesson.IsPublished;
         lesson.Title = model.Title;
         lesson.Content = model.Content;
-        lesson.SortOrder = model.SortOrder;
         lesson.IsPublished = model.IsPublished;
         await _lessons.UpdateAsync(lesson);
         _audit.Log("lesson.edit", $"lesson#{id} \"{lesson.Title}\" course#{lesson.CourseId}");
@@ -159,7 +176,7 @@ public class LessonController : Controller
         if (!wasPublished && model.IsPublished)
             await NotifyEnrolledStudentsAsync(lesson.CourseId, model.Title);
 
-        TempData["Success"] = "Lezione aggiornata!";
+        TempData["Success"] = "§lesson.msg_updated";
         return RedirectToAction("Details", new { id });
     }
 
@@ -194,6 +211,18 @@ public class LessonController : Controller
 
     [Authorize(Roles = "CanTeach,Admin")]
     [HttpPost]
+    public async Task<IActionResult> Reorder([FromBody] ReorderRequest req)
+    {
+        if (req?.Ids == null || req.Ids.Count == 0)
+            return BadRequest();
+        if (!await IsOwnerOrAdminAsync(req.CourseId)) return Forbid();
+        await _lessons.ReorderAsync(req.CourseId, req.Ids);
+        _audit.Log("lesson.reorder", $"course#{req.CourseId} ids=[{string.Join(",", req.Ids)}]");
+        return Ok();
+    }
+
+    [Authorize(Roles = "CanTeach,Admin")]
+    [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
@@ -203,7 +232,64 @@ public class LessonController : Controller
         var courseId = lesson.CourseId;
         await _lessons.DeleteAsync(id);
         _audit.Log("lesson.delete", $"lesson#{id} \"{lesson.Title}\" course#{courseId}");
-        TempData["Success"] = "Lezione eliminata.";
+        TempData["Success"] = "§lesson.msg_deleted";
         return RedirectToAction("Details", "Course", new { id = courseId });
     }
+
+    // ── Lesson Groups ────────────────────────────────────────────────────────
+
+    [Authorize(Roles = "CanTeach,Admin")]
+    [HttpPost]
+    public async Task<IActionResult> CreateGroup([FromBody] CreateGroupRequest req)
+    {
+        if (req == null || string.IsNullOrWhiteSpace(req.Title)) return BadRequest();
+        if (!await IsOwnerOrAdminAsync(req.CourseId)) return Forbid();
+        var id = await _groups.CreateAsync(req.CourseId, req.Title.Trim());
+        _audit.Log("lesson.group.create", $"group#{id} \"{req.Title}\" course#{req.CourseId}");
+        return Ok(new { id, title = req.Title.Trim() });
+    }
+
+    [Authorize(Roles = "CanTeach,Admin")]
+    [HttpPost]
+    public async Task<IActionResult> RenameGroup([FromBody] RenameGroupRequest req)
+    {
+        if (req == null || string.IsNullOrWhiteSpace(req.Title)) return BadRequest();
+        var group = await _groups.GetByIdAsync(req.GroupId);
+        if (group == null) return NotFound();
+        if (!await IsOwnerOrAdminAsync(group.CourseId)) return Forbid();
+        await _groups.RenameAsync(req.GroupId, req.Title.Trim());
+        _audit.Log("lesson.group.rename", $"group#{req.GroupId} \"{req.Title}\"");
+        return Ok();
+    }
+
+    [Authorize(Roles = "CanTeach,Admin")]
+    [HttpPost]
+    public async Task<IActionResult> DeleteGroup([FromBody] DeleteGroupRequest req)
+    {
+        if (req == null) return BadRequest();
+        var group = await _groups.GetByIdAsync(req.GroupId);
+        if (group == null) return NotFound();
+        if (!await IsOwnerOrAdminAsync(group.CourseId)) return Forbid();
+        await _groups.DeleteAsync(req.GroupId);
+        _audit.Log("lesson.group.delete", $"group#{req.GroupId} course#{group.CourseId}");
+        return Ok();
+    }
+
+    [Authorize(Roles = "CanTeach,Admin")]
+    [HttpPost]
+    public async Task<IActionResult> SetLessonGroup([FromBody] SetLessonGroupRequest req)
+    {
+        if (req == null) return BadRequest();
+        var lesson = await _lessons.GetByIdAsync(req.LessonId);
+        if (lesson == null) return NotFound();
+        if (!await IsOwnerOrAdminAsync(lesson.CourseId)) return Forbid();
+        await _groups.SetLessonGroupAsync(req.LessonId, req.GroupId);
+        _audit.Log("lesson.group.assign", $"lesson#{req.LessonId} → group#{req.GroupId?.ToString() ?? "none"}");
+        return Ok();
+    }
 }
+
+public record CreateGroupRequest(int CourseId, string Title);
+public record RenameGroupRequest(int GroupId, string Title);
+public record DeleteGroupRequest(int GroupId);
+public record SetLessonGroupRequest(int LessonId, int? GroupId);

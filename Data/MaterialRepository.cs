@@ -493,6 +493,29 @@ public class MaterialRepository
         return list;
     }
 
+    public async Task<int> GetLessonCountForMaterialAsync(int materialId)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT COUNT(*) FROM lesson_materials WHERE material_id = @id", conn);
+        cmd.Parameters.AddWithValue("@id", materialId);
+        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+    }
+
+    public async Task<Dictionary<int, int>> GetLessonCountsAsync()
+    {
+        var result = new Dictionary<int, int>();
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "SELECT material_id, COUNT(*) AS cnt FROM lesson_materials GROUP BY material_id", conn);
+        using var r = await cmd.ExecuteReaderAsync();
+        while (await r.ReadAsync())
+            result[r.GetInt32("material_id")] = (int)r.GetInt64("cnt");
+        return result;
+    }
+
     public async Task<List<string>> GetDistinctAuthorsAsync()
     {
         var list = new List<string>();

@@ -274,8 +274,9 @@ public class MaterialsController : Controller
             return RedirectToAction("NoModules", "Home");
 
         var materials = await _materials.GetAllAsync(q, lang, typeId, catYear, modYear, folderName, folderId);
-        ViewBag.CanCreate = await CanCreateMaterialAsync();
-        ViewBag.CanEdit   = await CanEditMaterialAsync();
+        ViewBag.CanCreate     = await CanCreateMaterialAsync();
+        ViewBag.CanEdit       = await CanEditMaterialAsync();
+        ViewBag.LessonCounts  = await _materials.GetLessonCountsAsync();
         var vm = new MaterialsIndexViewModel
         {
             Materials             = materials,
@@ -583,14 +584,14 @@ public class MaterialsController : Controller
             catch (Exception ex)
             {
                 _logger.LogError(ex, "SaveVersionAsync fallita per materialId={MatId} file={File}", matId, vm.File.FileName);
-                TempData["Warning"] = _t.T("mat.msg_created_no_file") + " " + ex.Message;
+                TempData["Warning"] = $"§mat.msg_created_no_file|{ex.Message}";
                 return RedirectToAction(nameof(Details), new { id = matId });
             }
         }
 
         _audit.Log("material.create", $"material#{matId} \"{vm.Title}\"");
         FireMaterialNotification(vm.Title, "created");
-        TempData["Success"] = string.Format(_t.T("mat.msg_created"), vm.Title);
+        TempData["Success"] = $"§mat.msg_created|{vm.Title}";
         return RedirectToAction(nameof(Details), new { id = matId });
     }
 
@@ -722,14 +723,14 @@ public class MaterialsController : Controller
             {
                 _logger.LogError(ex, "SaveVersionAsync fallita in Edit per materialId={Id} file={File}", id, vm.File.FileName);
                 FireMaterialNotification(vm.Title, "updated");
-                TempData["Warning"] = _t.T("mat.msg_updated_no_file") + " " + ex.Message;
+                TempData["Warning"] = $"§mat.msg_updated_no_file|{ex.Message}";
                 return RedirectToAction(nameof(Index));
             }
         }
 
         _audit.Log("material.edit", $"material#{id} \"{vm.Title}\"");
         FireMaterialNotification(vm.Title, "updated");
-        TempData["Success"] = _t.T("mat.msg_updated");
+        TempData["Success"] = "§mat.msg_updated";
         return RedirectToAction(nameof(Index));
     }
 
@@ -738,27 +739,27 @@ public class MaterialsController : Controller
     [Authorize]
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> UploadVersion(int id, IFormFile file, string? notes)
+    public async Task<IActionResult> UploadVersion(int id, IFormFile file, string? notes, bool convertToPdf = false)
     {
         if (!await CanEditMaterialAsync()) return Forbid();
         var material = await _materials.GetByIdAsync(id);
         if (material == null) return NotFound();
         if (file == null || file.Length == 0)
         {
-            TempData["Error"] = _t.T("mat.msg_select_file");
+            TempData["Error"] = "§mat.msg_select_file";
             return RedirectToAction(nameof(Details), new { id });
         }
         try
         {
-            await SaveVersionAsync(id, file, notes);
+            await SaveVersionAsync(id, file, notes, convertToPdf);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "SaveVersionAsync fallita in UploadVersion per materialId={Id} file={File}", id, file.FileName);
-            TempData["Error"] = _t.T("mat.msg_file_save_error") + " " + ex.Message;
+            TempData["Error"] = $"§mat.msg_file_save_error|{ex.Message}";
             return RedirectToAction(nameof(Details), new { id });
         }
-        TempData["Success"] = _t.T("mat.msg_version_uploaded");
+        TempData["Success"] = "§mat.msg_version_uploaded";
         return RedirectToAction(nameof(Details), new { id });
     }
 
@@ -773,7 +774,7 @@ public class MaterialsController : Controller
         var material = await _materials.GetByIdAsync(materialId);
         if (material == null) return NotFound();
         await _materials.RestoreVersionAsync(materialId, versionId);
-        TempData["Success"] = _t.T("mat.msg_version_restored");
+        TempData["Success"] = "§mat.msg_version_restored";
         return RedirectToAction(nameof(Details), new { id = materialId });
     }
 
@@ -794,7 +795,7 @@ public class MaterialsController : Controller
         var count = await _materials.CountVersionsAsync(materialId);
         if (count <= 1)
         {
-            TempData["Error"] = _t.T("mat.msg_version_last");
+            TempData["Error"] = "§mat.msg_version_last";
             return RedirectToAction(nameof(Details), new { id = materialId });
         }
 
@@ -811,7 +812,7 @@ public class MaterialsController : Controller
             System.IO.File.Delete(fullPath);
 
         await _materials.DeleteVersionAsync(versionId);
-        TempData["Success"] = string.Format(_t.T("mat.msg_version_deleted"), version.VersionNumber);
+        TempData["Success"] = $"§mat.msg_version_deleted|{version.VersionNumber}";
         return RedirectToAction(nameof(Details), new { id = materialId });
     }
 
@@ -824,7 +825,7 @@ public class MaterialsController : Controller
     {
         if (ids == null || ids.Count == 0)
         {
-            TempData["Error"] = _t.T("mat.msg_select_at_least_one");
+            TempData["Error"] = "§mat.msg_select_at_least_one";
             return RedirectToAction(nameof(Index));
         }
 
@@ -852,7 +853,7 @@ public class MaterialsController : Controller
 
         if (added == 0)
         {
-            TempData["Error"] = _t.T("mat.msg_no_files_available");
+            TempData["Error"] = "§mat.msg_no_files_available";
             return RedirectToAction(nameof(Index));
         }
 
@@ -869,7 +870,14 @@ public class MaterialsController : Controller
         var version = await _materials.GetVersionByIdAsync(versionId);
         if (version == null) return NotFound();
         var fullPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/'));
-        if (!System.IO.File.Exists(fullPath)) return NotFound();
+        if (!System.IO.File.Exists(fullPath))
+        {
+            _logger.LogWarning("Download richiesto per versione {VersionId} ma il file è assente: {Path}", versionId, fullPath);
+            TempData["Error"] = $"§mat.msg_file_not_found_admin|{version.FileName}";
+            var referer = Request.Headers.Referer.FirstOrDefault();
+            return Redirect(string.IsNullOrEmpty(referer) ? "/" : referer);
+        }
+        _audit.Log("material.download", $"material_version#{versionId} \"{version.FileName}\"", "ok", User.Identity?.Name, HttpContext.Connection.RemoteIpAddress?.ToString());
         return PhysicalFile(fullPath, "application/octet-stream", version.FileName);
     }
 
@@ -881,7 +889,13 @@ public class MaterialsController : Controller
         var version = await _materials.GetVersionByIdAsync(versionId);
         if (version == null) return NotFound();
         var fullPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/'));
-        if (!System.IO.File.Exists(fullPath)) return NotFound();
+        if (!System.IO.File.Exists(fullPath))
+        {
+            _logger.LogWarning("Preview richiesto per versione {VersionId} ma il file è assente: {Path}", versionId, fullPath);
+            TempData["Error"] = $"§mat.msg_file_not_found|{version.FileName}";
+            var referer = Request.Headers.Referer.FirstOrDefault();
+            return Redirect(string.IsNullOrEmpty(referer) ? "/" : referer);
+        }
         var mime = GetMimeType(version.FileType);
         return PhysicalFile(fullPath, mime, enableRangeProcessing: true);
     }
@@ -914,6 +928,13 @@ public class MaterialsController : Controller
         var material = await _materials.GetByIdAsync(id);
         if (material == null) return NotFound();
 
+        var lessonCount = await _materials.GetLessonCountForMaterialAsync(id);
+        if (lessonCount > 0)
+        {
+            TempData["Error"] = $"§mat.msg_delete_blocked|{material.Title}|{lessonCount}";
+            return RedirectToAction(nameof(Index));
+        }
+
         var versions = await _materials.GetVersionsAsync(id);
         foreach (var v in versions)
         {
@@ -929,7 +950,7 @@ public class MaterialsController : Controller
         await _materials.DeleteAsync(id);
         _audit.Log("material.delete", $"material#{id} \"{deletedTitle}\"");
         FireMaterialNotification(deletedTitle, "deleted");
-        TempData["Success"] = string.Format(_t.T("mat.msg_deleted"), deletedTitle);
+        TempData["Success"] = $"§mat.msg_deleted|{deletedTitle}";
         return RedirectToAction(nameof(Index));
     }
 
@@ -942,7 +963,7 @@ public class MaterialsController : Controller
     {
         if (!await CanEditMaterialAsync()) return Forbid();
         await _materials.LinkToLessonAsync(lessonId, materialId, CurrentUserId());
-        TempData["Success"] = _t.T("mat.msg_linked_lesson");
+        TempData["Success"] = "§mat.msg_linked_lesson";
         return RedirectToAction("Details", "Lesson", new { id = lessonId });
     }
 
@@ -953,7 +974,7 @@ public class MaterialsController : Controller
     {
         if (!await CanEditMaterialAsync()) return Forbid();
         await _materials.UnlinkFromLessonAsync(lessonId, materialId);
-        TempData["Success"] = _t.T("mat.msg_unlinked_lesson");
+        TempData["Success"] = "§mat.msg_unlinked_lesson";
         return RedirectToAction("Details", "Lesson", new { id = lessonId });
     }
 

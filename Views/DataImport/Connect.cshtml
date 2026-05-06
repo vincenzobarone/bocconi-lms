@@ -1,0 +1,62 @@
+@model BocconiLMS.Models.SqlSourceConnectionVm
+@{
+    ViewData["Title"] = T["dataimport.page_title"];
+}
+
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <h2 class="fw-bold text-bocconi mb-0">
+        <i class="bi bi-cloud-arrow-down me-2"></i>@T["dataimport.page_title"]
+    </h2>
+    <a asp-controller="DataImport" asp-action="Cancel" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-x-circle me-1"></i>@T["dataimport.cancel"]
+    </a>
+</div>
+
+@await Html.PartialAsync("_DataImportStepper", 0)
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">
+        <i class="bi bi-exclamation-triangle me-1"></i>@TempData["Error"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-header fw-semibold bg-light d-flex align-items-center gap-2">
+        <i class="bi bi-plug text-bocconi"></i>@T["dataimport.connect_title"]
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info d-flex gap-2 py-2 mb-3" role="note">
+            <i class="bi bi-shield-check flex-shrink-0 mt-1"></i>
+            <span class="small">@T["dataimport.connect_hint"]</span>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.TestError))
+        {
+            <div class="alert alert-danger d-flex gap-2">
+                <i class="bi bi-exclamation-triangle flex-shrink-0 mt-1"></i>
+                <span><strong>Connessione fallita:</strong> @Model.TestError</span>
+            </div>
+        }
+
+        <form method="post" asp-action="Connect">
+            @Html.AntiForgeryToken()
+            <div class="mb-4">
+                <label class="form-label fw-semibold" asp-for="ConnectionString">
+                    @T["dataimport.conn_str_label"] <span class="text-danger">*</span>
+                </label>
+                <textarea class="form-control font-monospace @(Model.TestError != null ? "is-invalid" : "")"
+                          asp-for="ConnectionString" rows="3"
+                          placeholder="Server=myserver;Database=mydb;User ID=sa;Password=xxx;TrustServerCertificate=True"></textarea>
+                <span asp-validation-for="ConnectionString" class="text-danger small"></span>
+                <div class="form-text">
+                    Aggiungere <code>TrustServerCertificate=True</code> se il server usa un certificato self-signed.
+                </div>
+            </div>
+            <button type="submit" class="btn btn-bocconi">
+                <i class="bi bi-plug me-1"></i>@T["dataimport.test_btn"]
+            </button>
+        </form>
+    </div>
+</div>

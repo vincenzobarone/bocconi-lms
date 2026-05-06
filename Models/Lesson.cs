@@ -11,4 +11,5 @@ public class Lesson
     public bool IsPublished { get; set; } = false;
     public DateTime CreatedAt { get; set; }
     public bool IsCompleted { get; set; } = false;
+    public int? GroupId { get; set; }
 }

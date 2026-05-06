@@ -4,13 +4,6 @@
     ViewData["Title"] = $"{T["course.students"]} - {course?.Title}";
 }
 
-<nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-action="Dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@course?.Id">@course?.Title</a></li>
-        <li class="breadcrumb-item active">@T["course.students"]</li>
-    </ol>
-</nav>
 
 <h2 class="fw-bold text-bocconi mb-4"><i class="bi bi-people me-2"></i>@T["course.enrolled_students"]</h2>
 

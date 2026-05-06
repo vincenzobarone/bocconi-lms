@@ -2,12 +2,12 @@
   "profiles": {
     "BocconiLMS": {
       "commandName": "Project",
-      "launchBrowser": true,
+      "launchBrowser": false,
       "launchUrl": "",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
-      "applicationUrl": "http://localhost:5000"
+      "applicationUrl": "http://0.0.0.0:5000"
     }
   }
 }

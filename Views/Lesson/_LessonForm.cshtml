@@ -8,12 +8,6 @@
     <label asp-for="Content" class="form-label fw-semibold">@T["lesson.form.content"]</label>
     <textarea asp-for="Content" class="form-control" rows="8" placeholder="@T["lesson.form.content_placeholder"]"></textarea>
 </div>
-<div class="row">
-    <div class="col-md-6 mb-3">
-        <label asp-for="SortOrder" class="form-label fw-semibold">@T["lesson.form.sort_order"]</label>
-        <input asp-for="SortOrder" type="number" class="form-control" min="0" />
-    </div>
-</div>
 <div class="form-check">
     <input asp-for="IsPublished" class="form-check-input" type="checkbox" />
     <label asp-for="IsPublished" class="form-check-label">@T["lesson.form.publish"]</label>

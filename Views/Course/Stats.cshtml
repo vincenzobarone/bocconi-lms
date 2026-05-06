@@ -1,0 +1,274 @@
+@model CourseStatsViewModel
+@{
+    ViewData["Title"] = T["course.stats.title"] + " — " + Model.Course.Title;
+
+    var lessonLabels   = Model.LessonStats.Select(l => l.LessonTitle).ToList();
+    var lessonCounts   = Model.LessonStats.Select(l => l.CompletedCount).ToList();
+    var enrolled       = Model.EnrolledCount;
+
+    var quizLabels     = Model.QuizStats.Select(q => q.QuizTitle).ToList();
+    var quizAvg        = Model.QuizStats.Select(q => q.AvgScore).ToList();
+    var quizPassing    = Model.QuizStats.Select(q => q.PassingScore).ToList();
+    var quizPassed     = Model.QuizStats.Select(q => enrolled > 0
+                            ? (int)Math.Round((double)q.PassedCount / enrolled * 100) : 0).ToList();
+}
+
+
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <h2 class="fw-bold text-bocconi mb-0">
+        <i class="bi bi-bar-chart-line-fill me-2"></i>@Model.Course.Title
+    </h2>
+    <a asp-controller="Course" asp-action="Details" asp-route-id="@Model.Course.Id"
+       class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-pencil-square me-1"></i>@T["dashboard.teacher.manage_btn"]
+    </a>
+</div>
+
+@* ── KPI summary ────────────────────────────────────────────────────────── *@
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card border-0 bg-light text-center h-100">
+            <div class="card-body py-3">
+                <div class="display-6 fw-bold text-bocconi">@Model.EnrolledCount</div>
+                <small class="text-muted">@T["course.stats.enrolled"]</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 bg-light text-center h-100">
+            <div class="card-body py-3">
+                <div class="display-6 fw-bold text-bocconi">@Model.LessonStats.Count</div>
+                <small class="text-muted">@T["course.stats.lessons"]</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 bg-light text-center h-100">
+            <div class="card-body py-3">
+                <div class="display-6 fw-bold text-bocconi">@Model.QuizStats.Count</div>
+                <small class="text-muted">@T["course.stats.quizzes"]</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card border-0 bg-light text-center h-100">
+            <div class="card-body py-3">
+                @{
+                    var totalAttempts = Model.QuizStats.Sum(q => q.TotalAttempts);
+                }
+                <div class="display-6 fw-bold text-bocconi">@totalAttempts</div>
+                <small class="text-muted">@T["course.stats.total_attempts"]</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+@* ── Grafico completamento lezioni ──────────────────────────────────────── *@
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-check2-circle me-2 text-bocconi"></i>@T["course.stats.lessons_chart"]
+        <span class="badge bg-secondary ms-2 fw-normal">@T["course.stats.enrolled_of"] @enrolled @T["course.stats.students"]</span>
+    </div>
+    <div class="card-body">
+        @if (!Model.LessonStats.Any())
+        {
+            <p class="text-muted fst-italic mb-0">@T["course.stats.no_lessons"]</p>
+        }
+        else
+        {
+            <div style="position:relative; height:@(Math.Max(180, Model.LessonStats.Count * 42))px;">
+                <canvas id="lessonsChart"></canvas>
+            </div>
+        }
+    </div>
+</div>
+
+@* ── Grafico quiz ───────────────────────────────────────────────────────── *@
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-white fw-semibold">
+        <i class="bi bi-patch-question me-2 text-bocconi"></i>@T["course.stats.quiz_chart"]
+    </div>
+    <div class="card-body">
+        @if (!Model.QuizStats.Any())
+        {
+            <p class="text-muted fst-italic mb-0">@T["course.stats.no_quizzes"]</p>
+        }
+        else
+        {
+            <div style="position:relative; height:@(Math.Max(220, Model.QuizStats.Count * 55))px;">
+                <canvas id="quizzesChart"></canvas>
+            </div>
+
+            @* Tabella dettaglio quiz *@
+            <div class="table-responsive mt-4">
+                <table class="table table-sm table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>@T["course.stats.col_quiz"]</th>
+                            <th>@T["course.stats.col_lesson"]</th>
+                            <th class="text-center">@T["course.stats.col_attempts"]</th>
+                            <th class="text-center">@T["course.stats.col_students"]</th>
+                            <th class="text-center">@T["course.stats.col_avg"]</th>
+                            <th class="text-center">@T["course.stats.col_max"]</th>
+                            <th class="text-center">@T["course.stats.col_passed"]</th>
+                            <th class="text-center">@T["course.stats.col_threshold"]</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var q in Model.QuizStats)
+                        {
+                            var passRate = q.UniqueStudents > 0
+                                ? (int)Math.Round((double)q.PassedCount / q.UniqueStudents * 100) : 0;
+                            <tr>
+                                <td class="fw-semibold">@q.QuizTitle</td>
+                                <td class="text-muted small">@q.LessonTitle</td>
+                                <td class="text-center">@q.TotalAttempts</td>
+                                <td class="text-center">@q.UniqueStudents</td>
+                                <td class="text-center">
+                                    <span class="fw-semibold @(q.AvgScore >= q.PassingScore ? "text-success" : "text-danger")">
+                                        @q.AvgScore.ToString("0.#")%
+                                    </span>
+                                </td>
+                                <td class="text-center">@q.MaxScore%</td>
+                                <td class="text-center">
+                                    <span class="badge @(passRate >= 50 ? "bg-success" : "bg-warning text-dark")">
+                                        @q.PassedCount / @q.UniqueStudents (@passRate%)
+                                    </span>
+                                </td>
+                                <td class="text-center text-muted small">@q.PassingScore%</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    var bocconiBlue = '#003087';
+    var bocconiGold = '#c8a96e';
+    var enrolled    = @enrolled;
+
+    // ── Lezioni ──────────────────────────────────────────────────────────
+    var lessonCanvas = document.getElementById('lessonsChart');
+    if (lessonCanvas) {
+        var lessonLabels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(lessonLabels));
+        var lessonCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(lessonCounts));
+
+        var lessonColors = lessonCounts.map(function(v) {
+            var pct = enrolled > 0 ? v / enrolled : 0;
+            return pct >= 0.75 ? 'rgba(25,135,84,.75)'
+                 : pct >= 0.4  ? 'rgba(255,193,7,.8)'
+                               : 'rgba(220,53,69,.7)';
+        });
+
+        new Chart(lessonCanvas, {
+            type: 'bar',
+            data: {
+                labels: lessonLabels,
+                datasets: [{
+                    label: '@T["course.stats.students_completed"]',
+                    data: lessonCounts,
+                    backgroundColor: lessonColors,
+                    borderRadius: 4,
+                    barThickness: 24,
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                var pct = enrolled > 0 ? Math.round(ctx.raw / enrolled * 100) : 0;
+                                return ' ' + ctx.raw + ' studenti (' + pct + '%)';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: Math.max(enrolled, 1),
+                        ticks: { stepSize: 1, precision: 0 },
+                        title: { display: true, text: '@T["course.stats.students_completed"]' }
+                    },
+                    y: { ticks: { font: { size: 12 } } }
+                }
+            }
+        });
+    }
+
+    // ── Quiz ─────────────────────────────────────────────────────────────
+    var quizCanvas = document.getElementById('quizzesChart');
+    if (quizCanvas) {
+        var quizLabels  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(quizLabels));
+        var quizAvg     = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(quizAvg));
+        var quizPassing = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(quizPassing));
+        var quizPassed  = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(quizPassed));
+
+        new Chart(quizCanvas, {
+            type: 'bar',
+            data: {
+                labels: quizLabels,
+                datasets: [
+                    {
+                        label: '@T["course.stats.avg_score"]',
+                        data: quizAvg,
+                        backgroundColor: 'rgba(0,48,135,.7)',
+                        borderRadius: 4,
+                        order: 2,
+                    },
+                    {
+                        label: '@T["course.stats.pass_rate"]',
+                        data: quizPassed,
+                        backgroundColor: 'rgba(200,169,110,.7)',
+                        borderRadius: 4,
+                        order: 3,
+                    },
+                    {
+                        label: '@T["course.stats.passing_score"]',
+                        data: quizPassing,
+                        type: 'line',
+                        borderColor: 'rgba(220,53,69,.85)',
+                        borderWidth: 2,
+                        borderDash: [6, 4],
+                        pointRadius: 0,
+                        fill: false,
+                        order: 1,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            label: function(ctx) {
+                                return ' ' + ctx.dataset.label + ': ' + ctx.raw + '%';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: { callback: function(v) { return v + '%'; } }
+                    }
+                }
+            }
+        });
+    }
+})();
+</script>
+}
