@@ -802,11 +802,50 @@ Dopo il rinnovo, fornire il nuovo metadata XML al team IT di Bocconi (l'URL non 
 | `SAML_SP_BASE_URL` | produzione | `https://<hostname-definitivo>` |
 | `SAML_SP_CERT_PFX` | produzione | Bundle PKCS#12 (cert + chiave) in Base64 — se assente il LMS genera un cert temporaneo |
 
-> In sviluppo, se `SAML_IDP_METADATA_URL` non è impostata, il LMS usa `samltest.id` come IdP di test. In ambienti non-Development, puntare a `samltest.id` causa un errore di avvio intenzionale (fail-fast guard in `Program.cs`).
+**Comportamento per environment:**
+
+| `ASPNETCORE_ENVIRONMENT` | IdP usato | Fail-fast guard |
+|---|---|---|
+| `Development` | StubIdP (`stubidp.sustainsys.com`) | nessuno |
+| `Staging` / `Testing` / altri | StubIdP (con warning nel log) | nessuno |
+| `Production` | deve essere `SAML_IDP_METADATA_URL` reale | **crash intenzionale** se punta a IdP di test |
+
+> **`PublicOrigin` (ACS URL):** in Development senza `SAML_SP_BASE_URL`, il LMS lo ricava automaticamente dall'URL della richiesta HTTP corrente. Funziona sia da `https://localhost:5001` che da `https://didasco.local` senza configurazione aggiuntiva. In Production senza variabile esplicita, usa `SAML_SP_ENTITY_ID` come fallback.
 
 ---
 
-### 14.5 Procedura di setup con il team IT di Bocconi
+### 14.5 Test SSO in sviluppo locale (Visual Studio)
+
+Il LMS usa automaticamente il **Sustainsys StubIdP** (`https://stubidp.sustainsys.com`) come IdP di test. Non richiede registrazione SP e funziona out-of-the-box.
+
+> **Requisito obbligatorio: HTTPS.** I browser moderni (Chrome 80+, Edge, Firefox) rifiutano i cookie `SameSite=None` su connessioni HTTP. Poiché il SAML POST binding è cross-site, il cookie di stato SAML deve essere `SameSite=None; Secure` — il che richiede HTTPS. Su HTTP il flusso fallisce con `UnexpectedInResponseToException`.
+
+**Setup una-tantum:**
+
+```
+# 1. Installa e trustra il dev-cert .NET (eseguire una volta sola)
+dotnet dev-certs https --trust
+```
+
+**Avvio con HTTPS:**
+
+Il `launchSettings.json` include già il profilo `BocconiLMS HTTPS` con URL `https://localhost:5001;http://localhost:5000`. Selezionarlo dal menu accanto al pulsante ▶ in Visual Studio, oppure impostare manualmente l'URL dell'app nelle Proprietà di debug.
+
+**Procedura di test:**
+
+1. Avviare il LMS con il profilo HTTPS — si apre `https://localhost:5001`
+2. Cliccare **"Sign in with Bocconi SSO"**
+3. Lo StubIdP mostra la pagina di risposta con `Assertion Consumer Service Url: https://localhost:5001/Saml2/Acs`
+4. Nella sezione **Attribute Statements** aggiungere:
+   - `mail` → email di un utente esistente nel DB (es. l'admin)
+   - `eduPersonPrincipalName` → stessa email
+5. Cliccare **Log in** → l'utente viene autenticato e reindirizzato alla dashboard
+
+> **Nota:** lo StubIdP accetta qualsiasi attributo e non verifica credenziali reali. È adatto solo per test funzionali del flusso SAML, non per validare i dati Bocconi.
+
+---
+
+### 14.6 Procedura di setup con il team IT di Bocconi
 
 1. **Deploy del LMS** sull'hostname definitivo con tutte le variabili d'ambiente di produzione impostate
 2. **Girare al team IT** l'URL metadata SP: `https://<hostname>/Saml2/metadata`
@@ -815,7 +854,7 @@ Dopo il rinnovo, fornire il nuovo metadata XML al team IT di Bocconi (l'URL non 
 
 ---
 
-### 14.6 Endpoint SSO nel LMS
+### 14.7 Endpoint SSO nel LMS
 
 | URL | Descrizione |
 |---|---|

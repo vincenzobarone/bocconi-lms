@@ -24,8 +24,9 @@ builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(o =>
 });
 
 var connectionString = Environment.GetEnvironmentVariable("MYSQL_CONNECTION_STRING")
-    ?? builder.Configuration.GetConnectionString("MySQL")
-    ?? "Server=localhost;Port=3306;Database=bocconi_lms;User=root;Password=;";
+    ?? throw new InvalidOperationException(
+        "La variabile d'ambiente MYSQL_CONNECTION_STRING non è impostata. " +
+        "Impostarla prima di avviare l'applicazione.");
 
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<DbHelper>(_ => new DbHelper(connectionString));
@@ -75,8 +76,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
-builder.Services.Configure<SmtpSettings>(
-    builder.Configuration.GetSection("Smtp"));
+// SmtpSettings viene letto interamente dal DB (SettingsRepository) — nessun fallback da appsettings.
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddHostedService<LessonReminderHostedService>();
 

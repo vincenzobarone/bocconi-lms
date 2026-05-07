@@ -1,7 +1,6 @@
 using MailKit.Net.Smtp;
 using MailKit.Security;
 using MimeKit;
-using Microsoft.Extensions.Options;
 using BocconiLMS.Data;
 
 namespace BocconiLMS.Services;
@@ -20,16 +19,13 @@ public class SmtpSettings
 
 public class EmailService
 {
-    private readonly SmtpSettings _defaults;
     private readonly SettingsRepository _settingsRepo;
     private readonly ILogger<EmailService> _logger;
 
     public EmailService(
-        IOptions<SmtpSettings> defaults,
         SettingsRepository settingsRepo,
         ILogger<EmailService> logger)
     {
-        _defaults = defaults.Value;
         _settingsRepo = settingsRepo;
         _logger = logger;
     }
@@ -38,27 +34,27 @@ public class EmailService
     {
         var db = await _settingsRepo.GetByPrefixAsync("Smtp:");
 
-        string Get(string key, string fallback) =>
+        string Get(string key, string fallback = "") =>
             db.TryGetValue("Smtp:" + key, out var v) && !string.IsNullOrEmpty(v) ? v! : fallback;
 
-        bool GetBool(string key, bool fallback) =>
+        bool GetBool(string key, bool fallback = false) =>
             db.TryGetValue("Smtp:" + key, out var v) && !string.IsNullOrEmpty(v)
                 ? v!.Equals("true", StringComparison.OrdinalIgnoreCase)
                 : fallback;
 
-        int GetInt(string key, int fallback) =>
+        int GetInt(string key, int fallback = 0) =>
             db.TryGetValue("Smtp:" + key, out var v) && int.TryParse(v, out var n) ? n : fallback;
 
         return new SmtpSettings
         {
-            Enabled  = GetBool("Enabled",   _defaults.Enabled),
-            Host     = Get("Host",           _defaults.Host),
-            Port     = GetInt("Port",        _defaults.Port),
-            Username = Get("Username",       _defaults.Username),
-            Password = Get("Password",       _defaults.Password),
-            FromEmail= Get("FromEmail",      _defaults.FromEmail),
-            FromName = Get("FromName",       _defaults.FromName),
-            UseSsl   = GetBool("UseSsl",     _defaults.UseSsl),
+            Enabled   = GetBool("Enabled"),
+            Host      = Get("Host"),
+            Port      = GetInt("Port", 587),
+            Username  = Get("Username"),
+            Password  = Get("Password"),
+            FromEmail = Get("FromEmail"),
+            FromName  = Get("FromName", "Didasco"),
+            UseSsl    = GetBool("UseSsl"),
         };
     }
 
