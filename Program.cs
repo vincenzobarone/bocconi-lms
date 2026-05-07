@@ -311,12 +311,23 @@ var isIIS = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ASPNETCORE
 
 if (isIIS)
 {
+    // IIS gestisce il binding — non passare URL
     app.Run();
 }
 else
 {
-    var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
-    app.Run($"http://0.0.0.0:{port}");
+    var replitPort = Environment.GetEnvironmentVariable("PORT");
+    if (!string.IsNullOrEmpty(replitPort))
+    {
+        // Replit: la porta è assegnata dinamicamente via env var PORT
+        app.Run($"http://0.0.0.0:{replitPort}");
+    }
+    else
+    {
+        // VS locale / dotnet run: usa applicationUrl da launchSettings.json
+        // (supporta sia http://localhost:5000 che https://localhost:5001)
+        app.Run();
+    }
 }
 
 public partial class Program { }
