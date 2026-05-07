@@ -100,6 +100,24 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
+// Il cookie di stato Sustainsys deve sopravvivere al redirect cross-site
+// dall'IdP (POST binding). SameSite=Lax (default .NET) viene scartato dal
+// browser su POST cross-origin → l'ACS non trova lo stato → UnexpectedInResponseToException.
+// La cookie policy intercetta l'Append e forza SameSite=None sui cookie Sustainsys.
+builder.Services.Configure<CookiePolicyOptions>(cookiePolicy =>
+{
+    cookiePolicy.MinimumSameSitePolicy = SameSiteMode.Unspecified;
+    cookiePolicy.OnAppendCookie = ctx =>
+    {
+        if (ctx.CookieName.StartsWith("Sustainsys", StringComparison.OrdinalIgnoreCase))
+        {
+            ctx.CookieOptions.SameSite = SameSiteMode.None;
+            // Secure=true solo se la connessione è già HTTPS (in dev HTTP funziona comunque)
+            ctx.CookieOptions.Secure = ctx.Context.Request.IsHttps;
+        }
+    };
+});
+
 // ── Shibboleth / SAML 2.0 SSO ──────────────────────────────────────────────
 // Development fallback: Sustainsys StubIdP — progettato per testare questa libreria,
 // non richiede registrazione SP e funziona out-of-the-box.
@@ -128,15 +146,24 @@ var samlSpEntityId = Environment.GetEnvironmentVariable("SAML_SP_ENTITY_ID")
                   ?? "https://didasco.unibocconi.it";
 var samlBaseUrl    = Environment.GetEnvironmentVariable("SAML_SP_BASE_URL");
 
-// Fail-fast guard: in produzione DEVE essere impostato l'IdP Bocconi reale
-if (!builder.Environment.IsDevelopment()
-    && (string.Equals(samlIdpMetadataUrl, StubIdpMetaUrl, StringComparison.OrdinalIgnoreCase)
-     || string.Equals(samlIdpMetadataUrl, "https://samltest.id/saml/idp",
-                      StringComparison.OrdinalIgnoreCase)))
+// Fail-fast guard: in Production DEVE essere impostato l'IdP Bocconi reale.
+// In Development e Staging (es. IIS locale) si permette l'uso di IdP di test
+// ma viene loggato un warning visibile nella console IIS/Event Viewer.
+static bool IsTestIdp(string url) =>
+    string.Equals(url, "https://stubidp.sustainsys.com/Metadata", StringComparison.OrdinalIgnoreCase) ||
+    string.Equals(url, "https://samltest.id/saml/idp",            StringComparison.OrdinalIgnoreCase);
+
+if (IsTestIdp(samlIdpMetadataUrl))
 {
-    throw new InvalidOperationException(
-        "SAML_IDP_METADATA_URL must be set to the production Bocconi IdP metadata URL " +
-        "in non-Development environments. Current value points to a test IdP.");
+    if (builder.Environment.IsProduction())
+        throw new InvalidOperationException(
+            "SAML_IDP_METADATA_URL deve puntare all'IdP Bocconi reale in ambiente Production. " +
+            "Impostare la variabile d'ambiente SAML_IDP_METADATA_URL.");
+
+    // Development / Staging / Testing / IIS locale: avvisa ma non blocca
+    Console.WriteLine(
+        "[SAML WARNING] Ambiente non-Production: si usa un IdP di test. " +
+        "Non adatto per dati reali Bocconi.");
 }
 
 builder.Services.AddAuthentication()
@@ -214,6 +241,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
+app.UseCookiePolicy();   // deve precedere UseAuthentication per intercettare i cookie Sustainsys
 app.UseSession();
 app.UseAuthentication();
 app.UseMiddleware<HttpAccessLogMiddleware>();
