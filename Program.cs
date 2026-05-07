@@ -101,33 +101,41 @@ builder.Services.AddSession(options =>
 });
 
 // ── Shibboleth / SAML 2.0 SSO ──────────────────────────────────────────────
-// Development fallback: samltest.id (entity ID == metadata URL for that provider)
-const string SamlTestIdpUrl = "https://samltest.id/saml/idp";
+// Development fallback: Sustainsys StubIdP — progettato per testare questa libreria,
+// non richiede registrazione SP e funziona out-of-the-box.
+// samltest.id è stato abbandonato: restituisce 400 Bad Request sul metadata endpoint.
+const string StubIdpEntityId  = "https://stubidp.sustainsys.com/";
+const string StubIdpMetaUrl   = "https://stubidp.sustainsys.com/Metadata";
 
-// SAML_IDP_METADATA_URL  → URL from which to FETCH the IdP metadata XML
-//   dev default : https://samltest.id/saml/idp
+// SAML_IDP_METADATA_URL  → URL da cui scaricare il metadata XML dell'IdP
+//   dev default : https://stubidp.sustainsys.com/Metadata
 //   Bocconi prod: https://idp.unibocconi.it/metadata/get-config.php?what=UNIBOCCONI-ADFS
 var samlIdpMetadataUrl = Environment.GetEnvironmentVariable("SAML_IDP_METADATA_URL")
-                      ?? SamlTestIdpUrl;
+                      ?? StubIdpMetaUrl;
 
-// SAML_IDP_ENTITY_ID → entityID used inside SAML assertions (may differ from metadata URL)
-//   dev default : same as SAML_IDP_METADATA_URL (samltest.id uses identical value)
+// SAML_IDP_ENTITY_ID → entityID nelle asserzioni SAML (può differire dalla metadata URL)
+//   dev default : https://stubidp.sustainsys.com/
 //   Bocconi prod: https://idp.unibocconi-prod.it/idp/shibboleth
 var samlIdpEntityId = Environment.GetEnvironmentVariable("SAML_IDP_ENTITY_ID")
-                   ?? samlIdpMetadataUrl;
+                   ?? (string.Equals(samlIdpMetadataUrl, StubIdpMetaUrl,
+                          StringComparison.OrdinalIgnoreCase)
+                       ? StubIdpEntityId
+                       : samlIdpMetadataUrl);
 
 // SP identity & public origin
 var samlSpEntityId = Environment.GetEnvironmentVariable("SAML_SP_ENTITY_ID")
                   ?? "https://didasco.unibocconi.it";
 var samlBaseUrl    = Environment.GetEnvironmentVariable("SAML_SP_BASE_URL");
 
-// Fail-fast guard: production must not accidentally use the samltest.id IdP
+// Fail-fast guard: in produzione DEVE essere impostato l'IdP Bocconi reale
 if (!builder.Environment.IsDevelopment()
-    && string.Equals(samlIdpMetadataUrl, SamlTestIdpUrl, StringComparison.OrdinalIgnoreCase))
+    && (string.Equals(samlIdpMetadataUrl, StubIdpMetaUrl, StringComparison.OrdinalIgnoreCase)
+     || string.Equals(samlIdpMetadataUrl, "https://samltest.id/saml/idp",
+                      StringComparison.OrdinalIgnoreCase)))
 {
     throw new InvalidOperationException(
         "SAML_IDP_METADATA_URL must be set to the production Bocconi IdP metadata URL " +
-        "in non-Development environments. Current value points to samltest.id.");
+        "in non-Development environments. Current value points to a test IdP.");
 }
 
 builder.Services.AddAuthentication()
