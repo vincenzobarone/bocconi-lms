@@ -104,7 +104,8 @@ builder.Services.AddSession(options =>
 // Development fallback: Sustainsys StubIdP — progettato per testare questa libreria,
 // non richiede registrazione SP e funziona out-of-the-box.
 // samltest.id è stato abbandonato: restituisce 400 Bad Request sul metadata endpoint.
-const string StubIdpEntityId  = "https://stubidp.sustainsys.com/";
+// Lo StubIdP usa lo stesso valore per entityID e metadata URL
+const string StubIdpEntityId  = "https://stubidp.sustainsys.com/Metadata";
 const string StubIdpMetaUrl   = "https://stubidp.sustainsys.com/Metadata";
 
 // SAML_IDP_METADATA_URL  → URL da cui scaricare il metadata XML dell'IdP
