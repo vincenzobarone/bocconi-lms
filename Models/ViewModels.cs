@@ -79,38 +79,38 @@ public class AjaxCourseNotifyRequest
 
 public class LoginViewModel
 {
-    [Required(ErrorMessage = "Email obbligatoria")]
-    [EmailAddress(ErrorMessage = "Email non valida")]
+    [Required(ErrorMessage = "validation.required")]
+    [EmailAddress(ErrorMessage = "validation.email")]
     public string Email { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Password obbligatoria")]
+    [Required(ErrorMessage = "validation.required")]
     [DataType(DataType.Password)]
     public string Password { get; set; } = string.Empty;
 }
 
 public class PublicRegisterViewModel
 {
-    [Required(ErrorMessage = "Nome obbligatorio")]
-    [MaxLength(100)]
+    [Required(ErrorMessage = "validation.required")]
+    [MaxLength(100, ErrorMessage = "validation.max_length")]
     public string FirstName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Cognome obbligatorio")]
-    [MaxLength(100)]
+    [Required(ErrorMessage = "validation.required")]
+    [MaxLength(100, ErrorMessage = "validation.max_length")]
     public string LastName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Email obbligatoria")]
-    [EmailAddress(ErrorMessage = "Email non valida")]
-    [MaxLength(255)]
+    [Required(ErrorMessage = "validation.required")]
+    [EmailAddress(ErrorMessage = "validation.email")]
+    [MaxLength(255, ErrorMessage = "validation.max_length")]
     public string Email { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Password obbligatoria")]
-    [MinLength(8, ErrorMessage = "Minimo 8 caratteri")]
+    [Required(ErrorMessage = "validation.required")]
+    [MinLength(8, ErrorMessage = "validation.min_length")]
     [DataType(DataType.Password)]
     public string Password { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Conferma password obbligatoria")]
+    [Required(ErrorMessage = "validation.required")]
     [DataType(DataType.Password)]
-    [Compare("Password", ErrorMessage = "Le password non coincidono")]
+    [Compare("Password", ErrorMessage = "validation.password_match")]
     public string ConfirmPassword { get; set; } = string.Empty;
 
     public string MathCaptchaAnswer { get; set; } = string.Empty;
@@ -118,22 +118,22 @@ public class PublicRegisterViewModel
 
 public class RegisterViewModel
 {
-    [Required(ErrorMessage = "Nome obbligatorio")]
+    [Required(ErrorMessage = "validation.required")]
     public string FirstName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Cognome obbligatorio")]
+    [Required(ErrorMessage = "validation.required")]
     public string LastName { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Email obbligatoria")]
-    [EmailAddress(ErrorMessage = "Email non valida")]
+    [Required(ErrorMessage = "validation.required")]
+    [EmailAddress(ErrorMessage = "validation.email")]
     public string Email { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Password obbligatoria")]
-    [MinLength(8, ErrorMessage = "Minimo 8 caratteri")]
+    [Required(ErrorMessage = "validation.required")]
+    [MinLength(8, ErrorMessage = "validation.min_length")]
     [DataType(DataType.Password)]
     public string Password { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Ruolo obbligatorio")]
+    [Required(ErrorMessage = "validation.required")]
     public string Role { get; set; } = "Student";
 }
 
@@ -141,13 +141,13 @@ public class CourseFormViewModel
 {
     public int Id { get; set; }
 
-    [Required(ErrorMessage = "Titolo obbligatorio")]
+    [Required(ErrorMessage = "validation.required")]
     public string Title { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Descrizione obbligatoria")]
+    [Required(ErrorMessage = "validation.required")]
     public string Description { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Categoria obbligatoria")]
+    [Required(ErrorMessage = "validation.required")]
     public string Category { get; set; } = string.Empty;
 
     public DateTime? StartDate { get; set; }
@@ -172,7 +172,7 @@ public class LessonFormViewModel
     public int Id { get; set; }
     public int CourseId { get; set; }
 
-    [Required(ErrorMessage = "Titolo obbligatorio")]
+    [Required(ErrorMessage = "validation.required")]
     public string Title { get; set; } = string.Empty;
 
     public string Content { get; set; } = string.Empty;
@@ -184,12 +184,12 @@ public class DocumentUploadViewModel
     public int LessonId { get; set; }
     public int? DocumentId { get; set; }
 
-    [Required(ErrorMessage = "Titolo obbligatorio")]
+    [Required(ErrorMessage = "validation.required")]
     public string Title { get; set; } = string.Empty;
 
     public string? Notes { get; set; }
 
-    [Required(ErrorMessage = "File obbligatorio")]
+    [Required(ErrorMessage = "validation.required")]
     public IFormFile? File { get; set; }
 }
 
@@ -198,15 +198,15 @@ public class QuizFormViewModel
     public int Id { get; set; }
     public int LessonId { get; set; }
 
-    [Required(ErrorMessage = "Titolo obbligatorio")]
+    [Required(ErrorMessage = "validation.required")]
     public string Title { get; set; } = string.Empty;
 
     public string? Description { get; set; }
 
-    [Range(5, 180, ErrorMessage = "Tra 5 e 180 minuti")]
+    [Range(5, 180, ErrorMessage = "validation.range")]
     public int TimeLimitMinutes { get; set; } = 30;
 
-    [Range(1, 100, ErrorMessage = "Tra 1 e 100")]
+    [Range(1, 100, ErrorMessage = "validation.range")]
     public int PassingScore { get; set; } = 60;
 }
 
@@ -224,7 +224,7 @@ public class EmailSettingsViewModel
     public string Host { get; set; } = string.Empty;
 
     [Display(Name = "Porta")]
-    [Range(1, 65535, ErrorMessage = "Porta non valida")]
+    [Range(1, 65535, ErrorMessage = "validation.range")]
     public int Port { get; set; } = 587;
 
     [Display(Name = "Username")]
@@ -235,7 +235,7 @@ public class EmailSettingsViewModel
     public string? Password { get; set; }
 
     [Display(Name = "Email mittente")]
-    [EmailAddress(ErrorMessage = "Email non valida")]
+    [EmailAddress(ErrorMessage = "validation.email")]
     public string FromEmail { get; set; } = string.Empty;
 
     [Display(Name = "Nome mittente")]
@@ -245,7 +245,7 @@ public class EmailSettingsViewModel
     public bool UseSsl { get; set; }
 
     [Display(Name = "Email destinatario test")]
-    [EmailAddress(ErrorMessage = "Email non valida")]
+    [EmailAddress(ErrorMessage = "validation.email")]
     public string? TestEmailRecipient { get; set; }
 
     // ── Notifiche materiali (3 gruppi separati) ──────────────────────────
@@ -271,21 +271,21 @@ public class EmailSettingsViewModel
 
 public class ChangePasswordViewModel
 {
-    [Required(ErrorMessage = "Nuova password obbligatoria")]
-    [MinLength(8, ErrorMessage = "La nuova password deve contenere almeno 8 caratteri")]
+    [Required(ErrorMessage = "validation.required")]
+    [MinLength(8, ErrorMessage = "validation.min_length")]
     [DataType(DataType.Password)]
     public string NewPassword { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Conferma password obbligatoria")]
+    [Required(ErrorMessage = "validation.required")]
     [DataType(DataType.Password)]
-    [Compare("NewPassword", ErrorMessage = "Le password non corrispondono")]
+    [Compare("NewPassword", ErrorMessage = "validation.password_match")]
     public string ConfirmPassword { get; set; } = string.Empty;
 }
 
 public class ForgotPasswordViewModel
 {
-    [Required(ErrorMessage = "Email obbligatoria")]
-    [EmailAddress(ErrorMessage = "Email non valida")]
+    [Required(ErrorMessage = "validation.required")]
+    [EmailAddress(ErrorMessage = "validation.email")]
     public string Email { get; set; } = string.Empty;
 }
 
@@ -294,14 +294,14 @@ public class ResetPasswordViewModel
     [Required]
     public string Token { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Nuova password obbligatoria")]
-    [MinLength(8, ErrorMessage = "La nuova password deve contenere almeno 8 caratteri")]
+    [Required(ErrorMessage = "validation.required")]
+    [MinLength(8, ErrorMessage = "validation.min_length")]
     [DataType(DataType.Password)]
     public string NewPassword { get; set; } = string.Empty;
 
-    [Required(ErrorMessage = "Conferma password obbligatoria")]
+    [Required(ErrorMessage = "validation.required")]
     [DataType(DataType.Password)]
-    [Compare("NewPassword", ErrorMessage = "Le password non corrispondono")]
+    [Compare("NewPassword", ErrorMessage = "validation.password_match")]
     public string ConfirmPassword { get; set; } = string.Empty;
 }
 
@@ -343,9 +343,9 @@ public class RoleFormViewModel
 {
     public int Id { get; set; }
 
-    [Required(ErrorMessage = "Nome ruolo obbligatorio")]
-    [MaxLength(50, ErrorMessage = "Massimo 50 caratteri")]
-    [RegularExpression(@"^[a-zA-Z0-9_\s]+$", ErrorMessage = "Solo lettere, numeri, underscore e spazi")]
+    [Required(ErrorMessage = "validation.required")]
+    [MaxLength(50, ErrorMessage = "validation.max_length")]
+    [RegularExpression(@"^[a-zA-Z0-9_\s]+$", ErrorMessage = "validation.role_name_format")]
     public string Name { get; set; } = string.Empty;
 
     public List<string> Permissions { get; set; } = new();
@@ -355,16 +355,16 @@ public class MaterialFormViewModel
 {
     public int Id { get; set; }
 
-    [Required(ErrorMessage = "Il titolo è obbligatorio")]
-    [MaxLength(255, ErrorMessage = "Massimo 255 caratteri")]
+    [Required(ErrorMessage = "validation.required")]
+    [MaxLength(255, ErrorMessage = "validation.max_length")]
     public string Title { get; set; } = string.Empty;
 
-    [MaxLength(255, ErrorMessage = "Massimo 255 caratteri")]
+    [MaxLength(255, ErrorMessage = "validation.max_length")]
     public string? AuthorName { get; set; }
 
     public int? OwnerId { get; set; }
 
-    [Required(ErrorMessage = "La lingua è obbligatoria")]
+    [Required(ErrorMessage = "validation.required")]
     public string Language { get; set; } = "Italiano";
 
     [Required]
@@ -378,10 +378,10 @@ public class MaterialFormViewModel
 
     public bool ConvertToPdf { get; set; }
 
-    [Required(ErrorMessage = "L'area è obbligatoria.")]
+    [Required(ErrorMessage = "validation.required")]
     public int? AreaId { get; set; }
 
-    [Required(ErrorMessage = "La data di catalogazione è obbligatoria.")]
+    [Required(ErrorMessage = "validation.required")]
     public DateTime? CatalogationDate { get; set; }
 
     public int? PageCount { get; set; }
@@ -404,8 +404,8 @@ public class DocumentTypeFormViewModel
 {
     public int Id { get; set; }
 
-    [Required(ErrorMessage = "Il nome del tipo è obbligatorio")]
-    [MaxLength(255, ErrorMessage = "Massimo 255 caratteri")]
+    [Required(ErrorMessage = "validation.required")]
+    [MaxLength(255, ErrorMessage = "validation.max_length")]
     public string Name { get; set; } = string.Empty;
 }
 

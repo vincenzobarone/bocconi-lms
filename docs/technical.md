@@ -20,6 +20,7 @@
 11. [Test automatici](#11-test-automatici)
 12. [Deploy in produzione](#12-deploy-in-produzione)
 13. [Sicurezza](#13-sicurezza)
+14. [SSO Shibboleth / SAML 2.0](#14-sso-shibboleth--saml-20)
 
 ---
 
@@ -726,3 +727,99 @@ Configurazione attuale (in `Program.cs`):
 ### File caricati
 
 I file vengono salvati in `wwwroot/uploads/mat_{id}/` con nomi prefissati dalla versione (`v1_`, `v2_`, ecc.) per evitare conflitti. Il download e l'anteprima avvengono tramite `MaterialsController` che verifica l'autenticazione dell'utente. Non è possibile accedere ai file tramite URL diretto senza essere autenticati.
+
+---
+
+## 14. SSO Shibboleth / SAML 2.0
+
+### 14.1 Panoramica
+
+Il LMS supporta il Single Sign-On via SAML 2.0 integrato direttamente nell'app come **Service Provider (SP)** tramite la libreria `Sustainsys.Saml2.AspNetCore2`. **Non è richiesto installare il daemon nativo Shibboleth SP** (`shibd`) — la libreria .NET è funzionalmente equivalente e si configura interamente tramite variabili d'ambiente.
+
+L'Identity Provider (IdP) di riferimento è quello di Bocconi:
+
+| Ruolo | URL |
+|---|---|
+| **Entity ID dell'IdP** (usato nelle asserzioni SAML) | `https://idp.unibocconi-prod.it/idp/shibboleth` |
+| **Metadata XML dell'IdP** (da cui il LMS scarica la config) | `https://idp.unibocconi.it/metadata/get-config.php?what=UNIBOCCONI-ADFS` |
+| **Metadata XML del LMS (SP)** | `https://<hostname>/Saml2/metadata` |
+
+> Il metadata del LMS all'URL sopra è l'equivalente del `/Shibboleth.sso/Metadata` usato dagli altri applicativi Bocconi che usano il daemon nativo. Va fornito al team IT di Bocconi per completare la fase di setup.
+
+---
+
+### 14.2 Attributi SAML ricevuti dall'IdP
+
+Il LMS usa i seguenti attributi dall'asserzione SAML (mappati dall'`attribute-map.xml` di Bocconi):
+
+| Attributo | OID | Uso nel LMS |
+|---|---|---|
+| `mail` | `urn:oid:0.9.2342.19200300.100.1.3` | Email utente — chiave di lookup nell'anagrafica |
+| `eduPersonPrincipalName` (`eppn`) | `urn:oid:1.3.6.1.4.1.5923.1.1.1.6` | Identificativo stabile Shibboleth — salvato in `users.shibboleth_id` |
+
+L'utente deve già esistere nel database del LMS con la stessa email. Il login SSO **non crea automaticamente nuovi utenti**: associa l'`eppn` all'account esistente al primo accesso, e lo verifica ai successivi.
+
+---
+
+### 14.3 Certificato di firma SP
+
+Il LMS firma le richieste SAML con un certificato self-signed RSA 2048 (valido 10 anni, CN=`didasco.unibocconi.it`).
+
+**Strategia di caricamento (in ordine di priorità):**
+
+1. **Segreto `SAML_SP_CERT_PFX`** (produzione) — bundle PKCS#12 codificato Base64 contenente cert + chiave privata
+2. **Nessun segreto** (sviluppo / Replit) — il LMS genera automaticamente un certificato RSA-2048 self-signed ad ogni avvio
+
+In sviluppo non serve configurare nulla. In produzione usare il flusso PKCS#12 descritto sotto.
+
+**Generare il bundle PKCS#12 per la produzione:**
+
+```bash
+# 1. Genera cert e chiave PEM
+openssl req -x509 -newkey rsa:2048 -keyout sp-key.pem -out sp-cert.pem -days 3650 -nodes \
+  -subj "/CN=didasco.unibocconi.it/O=Universita Bocconi/C=IT"
+
+# 2. Esporta come PKCS#12 (senza password)
+openssl pkcs12 -export -out sp-bundle.pfx -inkey sp-key.pem -in sp-cert.pem -passout pass:
+
+# 3. Converti in Base64 (una riga) → incolla nel segreto SAML_SP_CERT_PFX
+cat sp-bundle.pfx | base64 -w 0
+```
+
+Dopo il rinnovo, fornire il nuovo metadata XML al team IT di Bocconi (l'URL non cambia, ma il certificato incorporato nel metadata sarà aggiornato).
+
+> **Nota tecnica:** il formato PEM-da-base64 è stato abbandonato perché `X509Certificate2.CreateFromPem` in .NET è stretto sui caratteri invisibili introdotti dalle UI dei secret manager. Il PKCS#12 è binario e non ha questo problema.
+
+---
+
+### 14.4 Variabili d'ambiente
+
+| Variabile | Ambiente | Valore |
+|---|---|---|
+| `SAML_IDP_METADATA_URL` | produzione | `https://idp.unibocconi.it/metadata/get-config.php?what=UNIBOCCONI-ADFS` |
+| `SAML_IDP_ENTITY_ID` | produzione | `https://idp.unibocconi-prod.it/idp/shibboleth` |
+| `SAML_SP_ENTITY_ID` | produzione | `https://<hostname-definitivo>` |
+| `SAML_SP_BASE_URL` | produzione | `https://<hostname-definitivo>` |
+| `SAML_SP_CERT_PFX` | produzione | Bundle PKCS#12 (cert + chiave) in Base64 — se assente il LMS genera un cert temporaneo |
+
+> In sviluppo, se `SAML_IDP_METADATA_URL` non è impostata, il LMS usa `samltest.id` come IdP di test. In ambienti non-Development, puntare a `samltest.id` causa un errore di avvio intenzionale (fail-fast guard in `Program.cs`).
+
+---
+
+### 14.5 Procedura di setup con il team IT di Bocconi
+
+1. **Deploy del LMS** sull'hostname definitivo con tutte le variabili d'ambiente di produzione impostate
+2. **Girare al team IT** l'URL metadata SP: `https://<hostname>/Saml2/metadata`
+3. **Il team IT** registra il nuovo SP nel loro IdP usando il metadata scaricato da quell'URL
+4. **Verifica**: tentare un login SSO da `https://<hostname>/Account/SsoLogin` — il flusso redirige all'IdP Bocconi, autentica l'utente e ritorna al LMS con la sessione attiva
+
+---
+
+### 14.6 Endpoint SSO nel LMS
+
+| URL | Descrizione |
+|---|---|
+| `/Account/SsoLogin` | Avvia il flusso SSO (redirect all'IdP) |
+| `/Account/SsoCallback` | Riceve l'asserzione SAML dall'IdP (ACS) |
+| `/Saml2/metadata` | Metadata XML del SP (da fornire al team IT) |
+| `/auth/saml-metadata` | Alias di `/Saml2/metadata` |

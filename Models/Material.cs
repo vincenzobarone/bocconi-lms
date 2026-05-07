@@ -21,6 +21,8 @@ public class MaterialFolder
     public int Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+    public int? CreatedById { get; set; }
+    public string? CreatedByName { get; set; }
 }
 
 public class Material

@@ -140,15 +140,6 @@
                                        class="btn btn-sm btn-outline-secondary" title="@T["common.edit"]">
                                         <i class="bi bi-pencil"></i>
                                     </a>
-                                    <form asp-action="DeleteTranslationKey" method="post" class="d-inline">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="key" value="@row.Key" />
-                                        <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                title="@T["common.delete"]"
-                                                data-confirm="@T["admin.translations.confirm_delete"]">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
                                 </div>
                             </td>
                         </tr>

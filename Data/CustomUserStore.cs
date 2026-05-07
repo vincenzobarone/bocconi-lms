@@ -18,8 +18,8 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(@"
-            INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, created_at)
-            VALUES (@email, @hash, @fn, @ln, '', 1, NOW());
+            INSERT INTO users (email, password_hash, first_name, last_name, is_active, created_at)
+            VALUES (@email, @hash, @fn, @ln, 1, NOW());
             SELECT LAST_INSERT_ID();", conn);
         cmd.Parameters.AddWithValue("@email", user.Email);
         cmd.Parameters.AddWithValue("@hash", user.PasswordHash ?? "");
@@ -63,7 +63,7 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(
-            "SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE id=@id LIMIT 1", conn);
+            "SELECT id, email, password_hash, shibboleth_id, first_name, last_name, is_active, created_at FROM users WHERE id=@id LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@id", id);
         using var r = await cmd.ExecuteReaderAsync(ct);
         return r.Read() ? MapUser(r) : null;
@@ -74,7 +74,7 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(
-            "SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE UPPER(email)=@un LIMIT 1", conn);
+            "SELECT id, email, password_hash, shibboleth_id, first_name, last_name, is_active, created_at FROM users WHERE UPPER(email)=@un LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@un", normalizedUserName);
         using var r = await cmd.ExecuteReaderAsync(ct);
         return r.Read() ? MapUser(r) : null;
@@ -85,7 +85,7 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(
-            "SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at FROM users WHERE UPPER(email)=@email LIMIT 1", conn);
+            "SELECT id, email, password_hash, shibboleth_id, first_name, last_name, is_active, created_at FROM users WHERE UPPER(email)=@email LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@email", normalizedEmail);
         using var r = await cmd.ExecuteReaderAsync(ct);
         return r.Read() ? MapUser(r) : null;
@@ -152,7 +152,8 @@ public class CustomUserStore :
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
-        using var cmd = new MySqlCommand("UPDATE users SET role=@role WHERE id=@id", conn);
+        using var cmd = new MySqlCommand(
+            "UPDATE users SET role_id=(SELECT id FROM roles WHERE name=@role) WHERE id=@id", conn);
         cmd.Parameters.AddWithValue("@role", roleName);
         cmd.Parameters.AddWithValue("@id", user.Id);
         await cmd.ExecuteNonQueryAsync(ct);
@@ -166,19 +167,18 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(@"
-            SELECT u.role,
+            SELECT COALESCE(r.name, '') AS role,
                    EXISTS(SELECT 1 FROM role_permissions rp
-                          JOIN roles r ON r.id = rp.role_id
-                          WHERE r.name = u.role AND rp.permission_key = 'courses.teach') AS can_teach,
+                          WHERE rp.role_id = u.role_id AND rp.permission_key = 'courses.teach') AS can_teach,
                    EXISTS(SELECT 1 FROM role_permissions rp
-                          JOIN roles r ON r.id = rp.role_id
-                          WHERE r.name = u.role AND rp.permission_key = 'courses.attend') AS can_attend
+                          WHERE rp.role_id = u.role_id AND rp.permission_key = 'courses.attend') AS can_attend
             FROM users u
+            LEFT JOIN roles r ON r.id = u.role_id
             WHERE u.id = @id LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@id", user.Id);
         using var r = await cmd.ExecuteReaderAsync(ct);
         if (!await r.ReadAsync(ct)) return [];
-        var roleName = r.IsDBNull(0) ? "" : r.GetString("role");
+        var roleName = r.GetString("role");
         if (string.IsNullOrEmpty(roleName)) return [];
         var roles = new List<string> { roleName };
         if (r.GetBoolean("can_teach"))
@@ -199,8 +199,10 @@ public class CustomUserStore :
         using var conn = _db.GetConnection();
         await conn.OpenAsync(ct);
         using var cmd = new MySqlCommand(@"
-            SELECT id, email, password_hash, first_name, last_name, role, is_active, created_at
-            FROM users WHERE role=@role AND is_active=1", conn);
+            SELECT u.id, u.email, u.password_hash, u.shibboleth_id, u.first_name, u.last_name, u.is_active, u.created_at
+            FROM users u
+            JOIN roles r ON r.id = u.role_id
+            WHERE r.name=@role AND u.is_active=1", conn);
         cmd.Parameters.AddWithValue("@role", roleName);
         var list = new List<ApplicationUser>();
         using var reader = await cmd.ExecuteReaderAsync(ct);
@@ -216,6 +218,7 @@ public class CustomUserStore :
         Email = r.GetString("email"),
         NormalizedEmail = r.GetString("email").ToUpperInvariant(),
         PasswordHash = r.GetString("password_hash"),
+        ShibbolethId = r.IsDBNull(r.GetOrdinal("shibboleth_id")) ? null : r.GetString("shibboleth_id"),
         FirstName = r.GetString("first_name"),
         LastName = r.GetString("last_name"),
         IsActive = r.GetBoolean("is_active"),

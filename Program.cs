@@ -1,3 +1,6 @@
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Text.Json;
 using BocconiLMS.Data;
 using BocconiLMS.Middleware;
@@ -86,13 +89,105 @@ builder.Services.AddSingleton<IAuditLogger, AuditLogger>();
 builder.Services.AddHealthChecks()
     .AddCheck<MySqlHealthCheck>("database", tags: ["db"]);
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddSingleton<Microsoft.Extensions.Localization.IStringLocalizerFactory,
+    BocconiLMS.Services.DbStringLocalizerFactory>();
+builder.Services.AddControllersWithViews()
+    .AddDataAnnotationsLocalization();
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromHours(8);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
+
+// ── Shibboleth / SAML 2.0 SSO ──────────────────────────────────────────────
+// Development fallback: samltest.id (entity ID == metadata URL for that provider)
+const string SamlTestIdpUrl = "https://samltest.id/saml/idp";
+
+// SAML_IDP_METADATA_URL  → URL from which to FETCH the IdP metadata XML
+//   dev default : https://samltest.id/saml/idp
+//   Bocconi prod: https://idp.unibocconi.it/metadata/get-config.php?what=UNIBOCCONI-ADFS
+var samlIdpMetadataUrl = Environment.GetEnvironmentVariable("SAML_IDP_METADATA_URL")
+                      ?? SamlTestIdpUrl;
+
+// SAML_IDP_ENTITY_ID → entityID used inside SAML assertions (may differ from metadata URL)
+//   dev default : same as SAML_IDP_METADATA_URL (samltest.id uses identical value)
+//   Bocconi prod: https://idp.unibocconi-prod.it/idp/shibboleth
+var samlIdpEntityId = Environment.GetEnvironmentVariable("SAML_IDP_ENTITY_ID")
+                   ?? samlIdpMetadataUrl;
+
+// SP identity & public origin
+var samlSpEntityId = Environment.GetEnvironmentVariable("SAML_SP_ENTITY_ID")
+                  ?? "https://didasco.unibocconi.it";
+var samlBaseUrl    = Environment.GetEnvironmentVariable("SAML_SP_BASE_URL");
+
+// Fail-fast guard: production must not accidentally use the samltest.id IdP
+if (!builder.Environment.IsDevelopment()
+    && string.Equals(samlIdpMetadataUrl, SamlTestIdpUrl, StringComparison.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException(
+        "SAML_IDP_METADATA_URL must be set to the production Bocconi IdP metadata URL " +
+        "in non-Development environments. Current value points to samltest.id.");
+}
+
+builder.Services.AddAuthentication()
+    .AddSaml2(options =>
+    {
+        options.SignInScheme = Microsoft.AspNetCore.Identity.IdentityConstants.ExternalScheme;
+        options.SPOptions.EntityId = new Sustainsys.Saml2.Metadata.EntityId(samlSpEntityId);
+        // AssertionConsumerServiceUrl = {origin}/Saml2/Acs  (derived by Sustainsys from PublicOrigin)
+        // SP metadata exposed at:  {origin}/Saml2/metadata  (alias: /auth/saml-metadata)
+        var spOrigin = !string.IsNullOrEmpty(samlBaseUrl) ? samlBaseUrl : samlSpEntityId;
+        options.SPOptions.PublicOrigin = new Uri(spOrigin);
+
+        // ── SP signing certificate ──────────────────────────────────────────
+        // Strategy (in order of priority):
+        //   1. SAML_SP_CERT_PFX secret  → base64-encoded PKCS#12 bundle (cert + key)
+        //   2. No secret                → generate a fresh RSA-2048 self-signed cert
+        //      Works perfectly in dev/Replit; in prod use SAML_SP_CERT_PFX.
+        //
+        // NOTE: raw PEM-from-base64 was abandoned because .NET's CreateFromPem is
+        //       strict about BOM/invisible chars that may be introduced by secret UIs.
+        X509Certificate2 spCert;
+        var spCertPfxB64 = Environment.GetEnvironmentVariable("SAML_SP_CERT_PFX");
+        if (!string.IsNullOrEmpty(spCertPfxB64))
+        {
+            var pfxBytes = Convert.FromBase64String(
+                spCertPfxB64.Replace("\r","").Replace("\n","").Replace(" ","").Trim());
+            spCert = X509CertificateLoader.LoadPkcs12(pfxBytes, password: null,
+                X509KeyStorageFlags.EphemeralKeySet);
+        }
+        else
+        {
+            // Generate a fresh self-signed cert at startup (dev / Replit default)
+            using var rsa = RSA.Create(2048);
+            var req = new CertificateRequest(
+                "CN=didasco.unibocconi.it, O=Universita Bocconi, C=IT",
+                rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            spCert = req.CreateSelfSigned(
+                DateTimeOffset.UtcNow.AddMinutes(-5),
+                DateTimeOffset.UtcNow.AddYears(10));
+        }
+        options.SPOptions.ServiceCertificates.Add(
+            new Sustainsys.Saml2.ServiceCertificate
+            {
+                Certificate = spCert,
+                Use         = Sustainsys.Saml2.CertificateUse.Signing
+            });
+
+        // ── IdP registration ────────────────────────────────────────────────
+        // Entity ID and metadata fetch URL are deliberately kept separate:
+        // for Bocconi they point to different hostnames.
+        var idp = new Sustainsys.Saml2.IdentityProvider(
+            new Sustainsys.Saml2.Metadata.EntityId(samlIdpEntityId),
+            options.SPOptions)
+        {
+            MetadataLocation              = samlIdpMetadataUrl,
+            LoadMetadata                  = true,
+            AllowUnsolicitedAuthnResponse = false
+        };
+        options.IdentityProviders.Add(idp);
+    });
 
 var app = builder.Build();
 
@@ -153,6 +248,14 @@ app.MapControllers();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+// Alias per SP metadata richiesto dalle specifiche Bocconi IT
+// (/Saml2/metadata è l'endpoint nativo di Sustainsys)
+app.MapGet("/auth/saml-metadata", (HttpContext ctx) =>
+{
+    ctx.Response.Redirect("/Saml2/metadata", permanent: false);
+    return Task.CompletedTask;
+}).AllowAnonymous();
 
 // IIS detection: AspNetCoreModuleV2 sets these env vars depending on hosting mode.
 //   - inprocess:    ASPNETCORE_IIS_HTTPAUTH, IIS_USER_TOKEN

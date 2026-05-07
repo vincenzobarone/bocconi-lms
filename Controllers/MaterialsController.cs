@@ -569,7 +569,7 @@ public class MaterialsController : Controller
             if (vm.FolderId.HasValue)
                 resolvedFolderId = vm.FolderId;
             else if (!string.IsNullOrWhiteSpace(vm.FolderName))
-                resolvedFolderId = await _materials.GetOrCreateFolderAsync(vm.FolderName);
+                resolvedFolderId = await _materials.GetOrCreateFolderAsync(vm.FolderName, CurrentUserId());
             assignedProtocol = await _materials.GetNextProtocolNumberAsync();
         }
 
@@ -705,7 +705,7 @@ public class MaterialsController : Controller
             if (vm.FolderId.HasValue)
                 resolvedFolderId = vm.FolderId;
             else if (!string.IsNullOrWhiteSpace(vm.FolderName))
-                resolvedFolderId = await _materials.GetOrCreateFolderAsync(vm.FolderName);
+                resolvedFolderId = await _materials.GetOrCreateFolderAsync(vm.FolderName, CurrentUserId());
 
             if (existing?.ProtocolNumber == null)
                 assignedProtocol = await _materials.GetNextProtocolNumberAsync();

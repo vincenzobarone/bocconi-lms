@@ -4,7 +4,7 @@ namespace BocconiLMS.Models;
 
 public class SqlSourceConnectionVm
 {
-    [Required(ErrorMessage = "La connection string è obbligatoria.")]
+    [Required(ErrorMessage = "validation.required")]
     public string ConnectionString { get; set; } = "";
     public string? MaskedDisplay   { get; set; }
     public int    TableCount       { get; set; }

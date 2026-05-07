@@ -74,7 +74,15 @@ public class CourseController : Controller
 
     public async Task<IActionResult> Index()
     {
-        var courses = await _courses.GetAllAsync(publishedOnly: true);
+        List<Course> courses;
+        if (User.IsInRole("Admin"))
+            courses = await _courses.GetAllAsync(publishedOnly: false);
+        else if (User.IsInRole("CanTeach"))
+            courses = await _courses.GetByTeacherAsync(CurrentUserId);
+        else
+            courses = await _courses.GetAllAsync(publishedOnly: true);
+
+        ViewBag.CurrentUserId = CurrentUserId;
         return View(courses);
     }
 
@@ -275,7 +283,8 @@ public class CourseController : Controller
         await _courses.DeleteAsync(id);
         _audit.Log("course.delete", $"course#{id} \"{course.Title}\"");
         TempData["Success"] = "§course.msg_deleted";
-        return RedirectToAction("Dashboard");
+        var returnTo = Request.Form["returnTo"].ToString();
+        return RedirectToAction(returnTo == "Index" ? "Index" : "Dashboard");
     }
 
     [Authorize(Roles = "CanTeach,Admin")]

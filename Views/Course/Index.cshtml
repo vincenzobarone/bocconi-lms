@@ -1,11 +1,14 @@
 @model List<Course>
 @{
     ViewData["Title"] = T["course.catalog_title"];
+    var currentUserId = (int)(ViewBag.CurrentUserId ?? 0);
+    bool isAdmin = User.IsInRole("Admin");
+    bool canTeach = User.IsInRole("CanTeach");
 }
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-bocconi mb-0"><i class="bi bi-book me-2"></i>@T["course.catalog_title"]</h2>
-    @if (User.IsInRole("CanTeach") || User.IsInRole("Admin"))
+    @if (canTeach || isAdmin)
     {
         <a asp-action="Create" class="btn btn-bocconi">
             <i class="bi bi-plus-lg me-1"></i>@T["course.new_btn"]
@@ -22,12 +25,21 @@
     <div class="row g-3" id="coursesGrid">
         @foreach (var c in Model)
         {
+            bool isOwner = isAdmin || c.TeacherId == currentUserId;
+            bool isDraft = !c.IsPublished;
+
             <div class="col-md-4 course-card" data-title="@c.Title.ToLower()" data-cat="@c.Category.ToLower()">
-                <div class="card h-100">
+                <div class="card h-100 @(isDraft ? "border-secondary opacity-75" : "")">
                     <div class="card-body">
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="badge" style="background-color:var(--bocconi-blue);">@c.Category</span>
-                            <small class="text-muted"><i class="bi bi-people me-1"></i>@c.EnrolledCount</small>
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="d-flex gap-1 flex-wrap">
+                                <span class="badge" style="background-color:var(--bocconi-blue);">@c.Category</span>
+                                @if (isDraft)
+                                {
+                                    <span class="badge bg-secondary">@T["common.draft"]</span>
+                                }
+                            </div>
+                            <small class="text-muted text-nowrap"><i class="bi bi-people me-1"></i>@c.EnrolledCount</small>
                         </div>
                         <h5 class="card-title fw-bold">@c.Title</h5>
                         <p class="card-text text-muted small">
@@ -42,9 +54,33 @@
                         </div>
                     </div>
                     <div class="card-footer bg-transparent">
-                        <a asp-action="Details" asp-route-id="@c.Id" class="btn btn-sm btn-bocconi w-100">
-                            @T["course.explore_btn"] <i class="bi bi-arrow-right ms-1"></i>
-                        </a>
+                        @if (isOwner)
+                        {
+                            <div class="d-flex gap-2">
+                                <a asp-action="Details" asp-route-id="@c.Id"
+                                   class="btn btn-sm btn-bocconi flex-grow-1">
+                                    @T["course.explore_btn"] <i class="bi bi-arrow-right ms-1"></i>
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@c.Id"
+                                   class="btn btn-sm btn-outline-secondary" title="@T["common.edit"]">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@c.Id" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="returnTo" value="Index" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="@T["common.delete"]"
+                                            data-confirm="@T["course.confirm_delete"] &quot;@c.Title&quot;?">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        }
+                        else
+                        {
+                            <a asp-action="Details" asp-route-id="@c.Id" class="btn btn-sm btn-bocconi w-100">
+                                @T["course.explore_btn"] <i class="bi bi-arrow-right ms-1"></i>
+                            </a>
+                        }
                     </div>
                 </div>
             </div>

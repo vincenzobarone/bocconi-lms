@@ -14,12 +14,14 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.role, u.is_active, u.created_at,
-                   EXISTS(SELECT 1 FROM role_permissions rp JOIN roles r ON r.id = rp.role_id
-                          WHERE r.name = u.role AND rp.permission_key = 'courses.teach') AS can_teach,
-                   EXISTS(SELECT 1 FROM role_permissions rp JOIN roles r ON r.id = rp.role_id
-                          WHERE r.name = u.role AND rp.permission_key = 'courses.attend') AS can_attend
+            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name,
+                   COALESCE(r.name, '') AS role, u.is_active, u.created_at,
+                   EXISTS(SELECT 1 FROM role_permissions rp
+                          WHERE rp.role_id = u.role_id AND rp.permission_key = 'courses.teach') AS can_teach,
+                   EXISTS(SELECT 1 FROM role_permissions rp
+                          WHERE rp.role_id = u.role_id AND rp.permission_key = 'courses.attend') AS can_attend
             FROM users u
+            LEFT JOIN roles r ON r.id = u.role_id
             WHERE u.email = @email LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@email", email);
         using var reader = await cmd.ExecuteReaderAsync();
@@ -31,12 +33,14 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.role, u.is_active, u.created_at,
-                   EXISTS(SELECT 1 FROM role_permissions rp JOIN roles r ON r.id = rp.role_id
-                          WHERE r.name = u.role AND rp.permission_key = 'courses.teach') AS can_teach,
-                   EXISTS(SELECT 1 FROM role_permissions rp JOIN roles r ON r.id = rp.role_id
-                          WHERE r.name = u.role AND rp.permission_key = 'courses.attend') AS can_attend
+            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name,
+                   COALESCE(r.name, '') AS role, u.is_active, u.created_at,
+                   EXISTS(SELECT 1 FROM role_permissions rp
+                          WHERE rp.role_id = u.role_id AND rp.permission_key = 'courses.teach') AS can_teach,
+                   EXISTS(SELECT 1 FROM role_permissions rp
+                          WHERE rp.role_id = u.role_id AND rp.permission_key = 'courses.attend') AS can_attend
             FROM users u
+            LEFT JOIN roles r ON r.id = u.role_id
             WHERE u.id = @id LIMIT 1", conn);
         cmd.Parameters.AddWithValue("@id", id);
         using var reader = await cmd.ExecuteReaderAsync();
@@ -49,16 +53,18 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.role, u.is_active, u.created_at,
-                   EXISTS(SELECT 1 FROM role_permissions rp JOIN roles r ON r.id = rp.role_id
-                          WHERE r.name = u.role AND rp.permission_key = 'courses.teach') AS can_teach,
-                   EXISTS(SELECT 1 FROM role_permissions rp JOIN roles r ON r.id = rp.role_id
-                          WHERE r.name = u.role AND rp.permission_key = 'courses.attend') AS can_attend,
+            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name,
+                   COALESCE(r.name, '') AS role, u.is_active, u.created_at,
+                   EXISTS(SELECT 1 FROM role_permissions rp
+                          WHERE rp.role_id = u.role_id AND rp.permission_key = 'courses.teach') AS can_teach,
+                   EXISTS(SELECT 1 FROM role_permissions rp
+                          WHERE rp.role_id = u.role_id AND rp.permission_key = 'courses.attend') AS can_attend,
                    (SELECT COUNT(*) FROM courses c WHERE c.teacher_id = u.id) AS course_count,
                    CONCAT(cb.first_name, ' ', cb.last_name) AS created_by_name
             FROM users u
+            LEFT JOIN roles r ON r.id = u.role_id
             LEFT JOIN users cb ON cb.id = u.created_by
-            WHERE u.role != 'Admin'
+            WHERE COALESCE(r.name, '') != 'Admin'
             ORDER BY u.last_name, u.first_name", conn);
         using var reader = await cmd.ExecuteReaderAsync();
         while (reader.Read())
@@ -77,7 +83,7 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(
-            "INSERT INTO users (email, password_hash, first_name, last_name, role, is_active, created_at) VALUES (@email, @hash, @fn, @ln, @role, 1, NOW()); SELECT LAST_INSERT_ID();", conn);
+            "INSERT INTO users (email, password_hash, first_name, last_name, role_id, is_active, created_at) VALUES (@email, @hash, @fn, @ln, (SELECT id FROM roles WHERE name=@role), 1, NOW()); SELECT LAST_INSERT_ID();", conn);
         cmd.Parameters.AddWithValue("@email", user.Email);
         cmd.Parameters.AddWithValue("@hash", user.PasswordHash);
         cmd.Parameters.AddWithValue("@fn", user.FirstName);
@@ -91,7 +97,7 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(
-            "UPDATE users SET first_name=@fn, last_name=@ln, role=@role, is_active=@active WHERE id=@id", conn);
+            "UPDATE users SET first_name=@fn, last_name=@ln, role_id=(SELECT id FROM roles WHERE name=@role), is_active=@active WHERE id=@id", conn);
         cmd.Parameters.AddWithValue("@fn", user.FirstName);
         cmd.Parameters.AddWithValue("@ln", user.LastName);
         cmd.Parameters.AddWithValue("@role", user.Role);
@@ -105,7 +111,7 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(
-            "SELECT COUNT(*) FROM users WHERE role='Admin' AND is_active=1", conn);
+            "SELECT COUNT(*) FROM users u JOIN roles r ON r.id = u.role_id WHERE r.name='Admin' AND u.is_active=1", conn);
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
 
@@ -166,8 +172,12 @@ public class UserRepository
                 (SELECT COUNT(*) FROM users) AS total_users,
                 (SELECT COUNT(*) FROM enrollments) AS total_enrollments,
                 (SELECT COUNT(*) FROM quiz_attempts) AS total_attempts,
-                (SELECT COUNT(*) FROM users u JOIN roles r ON r.name = u.role JOIN role_permissions rp ON rp.role_id = r.id AND rp.permission_key = 'courses.attend' WHERE u.is_active = 1) AS active_students,
-                (SELECT COUNT(*) FROM users u JOIN roles r ON r.name = u.role JOIN role_permissions rp ON rp.role_id = r.id AND rp.permission_key = 'courses.teach' WHERE u.is_active = 1) AS active_teachers", conn);
+                (SELECT COUNT(*) FROM users u
+                 JOIN role_permissions rp ON rp.role_id = u.role_id AND rp.permission_key = 'courses.attend'
+                 WHERE u.is_active = 1) AS active_students,
+                (SELECT COUNT(*) FROM users u
+                 JOIN role_permissions rp ON rp.role_id = u.role_id AND rp.permission_key = 'courses.teach'
+                 WHERE u.is_active = 1) AS active_teachers", conn);
         using var reader = await cmd.ExecuteReaderAsync();
         if (!reader.Read()) return new DashboardStats();
         return new DashboardStats
@@ -189,7 +199,7 @@ public class UserRepository
             SELECT r.id, r.name, r.created_at,
                    EXISTS(SELECT 1 FROM role_permissions rp WHERE rp.role_id = r.id AND rp.permission_key = 'courses.teach') AS can_teach,
                    EXISTS(SELECT 1 FROM role_permissions rp WHERE rp.role_id = r.id AND rp.permission_key = 'courses.attend') AS can_attend,
-                   (SELECT COUNT(*) FROM users u WHERE u.role = r.name) AS user_count,
+                   (SELECT COUNT(*) FROM users u WHERE u.role_id = r.id) AS user_count,
                    CONCAT(cb.first_name, ' ', cb.last_name) AS created_by_name
             FROM roles r
             LEFT JOIN users cb ON cb.id = r.created_by
@@ -217,7 +227,7 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(
-            "SELECT COUNT(*) FROM users WHERE role = (SELECT name FROM roles WHERE id = @id)", conn);
+            "SELECT COUNT(*) FROM users WHERE role_id = @id", conn);
         cmd.Parameters.AddWithValue("@id", roleId);
         return Convert.ToInt32(await cmd.ExecuteScalarAsync());
     }
@@ -240,15 +250,15 @@ public class UserRepository
         var names = roleNames.Where(r => !string.IsNullOrWhiteSpace(r)).ToList();
         if (names.Count == 0) return new();
 
-        // Parametri IN per evitare SQL injection
         var paramNames = names.Select((_, i) => $"@r{i}").ToList();
         var inList = string.Join(",", paramNames);
 
         var sql = $@"
             SELECT DISTINCT u.email, u.first_name, u.last_name
             FROM users u
+            JOIN roles r ON r.id = u.role_id
             WHERE u.is_active = 1
-              AND u.role IN ({inList})
+              AND r.name IN ({inList})
             ORDER BY u.last_name, u.first_name";
 
         using var conn = _db.GetConnection();
@@ -273,16 +283,18 @@ public class UserRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name, u.role, u.is_active, u.created_at,
-                   EXISTS(SELECT 1 FROM role_permissions rp JOIN roles r ON r.id = rp.role_id
-                          WHERE r.name = u.role AND rp.permission_key = 'courses.teach') AS can_teach,
-                   EXISTS(SELECT 1 FROM role_permissions rp JOIN roles r ON r.id = rp.role_id
-                          WHERE r.name = u.role AND rp.permission_key = 'courses.attend') AS can_attend
+            SELECT u.id, u.email, u.password_hash, u.first_name, u.last_name,
+                   COALESCE(r.name, '') AS role, u.is_active, u.created_at,
+                   EXISTS(SELECT 1 FROM role_permissions rp
+                          WHERE rp.role_id = u.role_id AND rp.permission_key = 'courses.teach') AS can_teach,
+                   EXISTS(SELECT 1 FROM role_permissions rp
+                          WHERE rp.role_id = u.role_id AND rp.permission_key = 'courses.attend') AS can_attend
             FROM users u
+            LEFT JOIN roles r ON r.id = u.role_id
             WHERE u.is_active = 1
-              AND (EXISTS(SELECT 1 FROM role_permissions rp JOIN roles r ON r.id = rp.role_id
-                          WHERE r.name = u.role AND rp.permission_key = 'courses.teach')
-                   OR u.role = 'Admin')
+              AND (EXISTS(SELECT 1 FROM role_permissions rp
+                          WHERE rp.role_id = u.role_id AND rp.permission_key = 'courses.teach')
+                   OR r.name = 'Admin')
             ORDER BY u.last_name, u.first_name",
             conn);
         var list = new List<User>();
@@ -299,6 +311,17 @@ public class UserRepository
         using var cmd = new MySqlCommand(
             "UPDATE users SET created_by = @createdBy WHERE id = @id", conn);
         cmd.Parameters.AddWithValue("@createdBy", createdById);
+        cmd.Parameters.AddWithValue("@id", userId);
+        await cmd.ExecuteNonQueryAsync();
+    }
+
+    public async Task SetShibbolethIdAsync(int userId, string shibbolethId)
+    {
+        using var conn = _db.GetConnection();
+        await conn.OpenAsync();
+        using var cmd = new MySqlCommand(
+            "UPDATE users SET shibboleth_id = @sid WHERE id = @id", conn);
+        cmd.Parameters.AddWithValue("@sid", shibbolethId);
         cmd.Parameters.AddWithValue("@id", userId);
         await cmd.ExecuteNonQueryAsync();
     }

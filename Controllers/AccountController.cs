@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +18,7 @@ public class AccountController : Controller
     private readonly ILogger<AccountController> _logger;
     private readonly IConfiguration _config;
     private readonly IAuditLogger _audit;
+    private readonly UserRepository _userRepository;
 
     public AccountController(
         UserManager<ApplicationUser> userManager,
@@ -25,7 +27,8 @@ public class AccountController : Controller
         EmailService emailService,
         ILogger<AccountController> logger,
         IConfiguration config,
-        IAuditLogger audit)
+        IAuditLogger audit,
+        UserRepository userRepository)
     {
         _userManager = userManager;
         _signInManager = signInManager;
@@ -34,6 +37,7 @@ public class AccountController : Controller
         _logger = logger;
         _config = config;
         _audit = audit;
+        _userRepository = userRepository;
     }
 
     [HttpGet]
@@ -329,6 +333,113 @@ public class AccountController : Controller
 
         TempData["RegisterSuccess"] = true;
         return RedirectToAction("Login");
+    }
+
+    // ── SSO Login — avvia il flusso SAML verso l'IdP ─────────────────────
+    [HttpGet]
+    [AllowAnonymous]
+    public IActionResult SsoLogin(string? returnUrl = null)
+    {
+        var redirectUri = Url.Action("SsoCallback", "Account", new { returnUrl });
+        return Challenge(new Microsoft.AspNetCore.Authentication.AuthenticationProperties
+        {
+            RedirectUri = redirectUri
+        }, "Saml2");
+    }
+
+    // ── SSO Callback — ricezione asserzione SAML ──────────────────────────
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<IActionResult> SsoCallback(string? returnUrl = null)
+    {
+        var result = await HttpContext.AuthenticateAsync(
+            Microsoft.AspNetCore.Identity.IdentityConstants.ExternalScheme);
+
+        if (!result.Succeeded)
+        {
+            _logger.LogWarning("SSO callback failed: {Error}", result.Failure?.Message);
+            TempData["Error"] = "§sso.error_auth";
+            return RedirectToAction("Login");
+        }
+
+        var principal = result.Principal!;
+
+        string? GetAttr(string friendly, string oid) =>
+            principal.FindFirst(friendly)?.Value ?? principal.FindFirst(oid)?.Value;
+
+        var mail = GetAttr("mail", "urn:oid:0.9.2342.19200300.100.1.3")
+                   ?? principal.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        var eppn = GetAttr("eduPersonPrincipalName", "urn:oid:1.3.6.1.4.1.5923.1.1.1.6");
+
+        await HttpContext.SignOutAsync(
+            Microsoft.AspNetCore.Identity.IdentityConstants.ExternalScheme);
+
+        if (string.IsNullOrEmpty(mail))
+        {
+            _logger.LogWarning("SSO callback: no mail attribute in assertion");
+            TempData["Error"] = "§sso.error_no_mail";
+            return RedirectToAction("Login");
+        }
+
+        // eppn è obbligatorio come identificativo stabile Shibboleth (fail-closed)
+        if (string.IsNullOrEmpty(eppn))
+        {
+            _logger.LogWarning("SSO callback: eduPersonPrincipalName missing for mail={Mail}", mail);
+            TempData["Error"] = "§sso.error_no_eppn";
+            return RedirectToAction("Login");
+        }
+
+        var appUser = await _userManager.FindByEmailAsync(mail);
+        if (appUser == null || !appUser.IsActive)
+        {
+            _audit.LogMinimal("auth.sso_login", null, "failure", user: mail);
+            TempData["Error"] = "§sso.error_not_found";
+            return RedirectToAction("Login");
+        }
+
+        // ── Identity binding hardening ────────────────────────────────────
+        // Se l'utente ha già un shibboleth_id diverso dall'eppn in arrivo,
+        // l'asserzione è per un'identità diversa: accesso negato per sicurezza.
+        if (!string.IsNullOrEmpty(eppn)
+            && !string.IsNullOrEmpty(appUser.ShibbolethId)
+            && !string.Equals(appUser.ShibbolethId, eppn, StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning(
+                "SSO: eppn mismatch for user#{UserId} (stored='{Stored}' assertion='{Asserted}')",
+                appUser.Id, appUser.ShibbolethId, eppn);
+            _audit.LogMinimal("auth.sso_eppn_mismatch", $"user#{appUser.Id}",
+                "failure", user: appUser.Email ?? mail);
+            TempData["Error"] = "§sso.error_auth";
+            return RedirectToAction("Login");
+        }
+
+        // Prima volta — collega eppn come identificativo stabile
+        if (!string.IsNullOrEmpty(eppn) && string.IsNullOrEmpty(appUser.ShibbolethId))
+        {
+            try
+            {
+                await _userRepository.SetShibbolethIdAsync(appUser.Id, eppn);
+                appUser.ShibbolethId = eppn;
+            }
+            catch (MySqlConnector.MySqlException ex)
+                when (ex.Number == 1062) // ER_DUP_ENTRY — eppn già associato ad altro utente
+            {
+                _logger.LogWarning(
+                    "SSO: eppn '{Eppn}' already linked to another user; denying access to user#{UserId}",
+                    eppn, appUser.Id);
+                _audit.LogMinimal("auth.sso_eppn_conflict", $"user#{appUser.Id}",
+                    "failure", user: appUser.Email ?? mail);
+                TempData["Error"] = "§sso.error_auth";
+                return RedirectToAction("Login");
+            }
+        }
+
+        await _signInManager.SignInAsync(appUser, isPersistent: false);
+        _audit.LogMinimal("auth.sso_login", $"user#{appUser.Id}", "success", user: appUser.Email ?? mail);
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
+        return RedirectToAction("Dashboard", "Home");
     }
 
     // ── Pending Role — utente registrato senza ruolo ─────────────────────

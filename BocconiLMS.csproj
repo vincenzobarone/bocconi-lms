@@ -14,10 +14,7 @@
   </ItemGroup>
 
   <Target Name="EmbedGitHash" BeforeTargets="BeforeBuild">
-    <Exec Command="git rev-parse --short HEAD"
-          ConsoleToMSBuild="true"
-          IgnoreExitCode="true"
-          StandardOutputImportance="low">
+    <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" IgnoreExitCode="true" StandardOutputImportance="low">
       <Output TaskParameter="ConsoleOutput" PropertyName="GitShortHash" />
     </Exec>
     <PropertyGroup Condition="'$(GitShortHash)' != ''">
@@ -32,6 +29,7 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
     <PackageReference Include="MySqlConnector" Version="2.3.7" />
     <PackageReference Include="QuestPDF" Version="2025.1.0" />
+    <PackageReference Include="Sustainsys.Saml2.AspNetCore2" Version="2.11.0" />
   </ItemGroup>
 
 </Project>

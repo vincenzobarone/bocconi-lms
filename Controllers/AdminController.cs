@@ -122,7 +122,10 @@ public class AdminController : Controller
             return View(model);
         }
 
-        var role = availableRoles.Contains(model.Role) ? model.Role : availableRoles.FirstOrDefault() ?? "";
+        // Case-insensitive lookup → always store the canonical name from the roles table
+        var role = availableRoles
+            .FirstOrDefault(r => string.Equals(r, model.Role, StringComparison.OrdinalIgnoreCase))
+            ?? availableRoles.FirstOrDefault() ?? "";
 
         var appUser = new ApplicationUser
         {
@@ -194,7 +197,10 @@ public class AdminController : Controller
         string resolvedRole = user.Role;
         if (user.Role != "Admin")
         {
-            var requestedRole = nonAdminRoles.Contains(model.Role) ? model.Role : user.Role;
+            // Case-insensitive lookup → always store the canonical name from the roles table
+            var requestedRole = nonAdminRoles
+                .FirstOrDefault(r => string.Equals(r, model.Role, StringComparison.OrdinalIgnoreCase))
+                ?? user.Role;
 
             if (requestedRole != user.Role)
             {
@@ -478,7 +484,7 @@ public class AdminController : Controller
             courses = Array.Empty<object>();
         }
 
-        return Json(new { user.FullName, user.Role, courses });
+        return Json(new { user.FullName, user.Role, user.CanTeach, user.CanAttend, courses });
     }
 
     [HttpGet]

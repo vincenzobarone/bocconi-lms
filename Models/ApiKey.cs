@@ -23,7 +23,7 @@ public class ApiKey
 
 public class CreateApiKeyVm
 {
-    [Required(ErrorMessage = "Il nome è obbligatorio.")]
+    [Required(ErrorMessage = "validation.required")]
     [StringLength(100)]
     public string Name { get; set; } = "";
 

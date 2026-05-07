@@ -16,20 +16,26 @@ public class MaterialRepository
         var list = new List<MaterialFolder>();
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
-        using var cmd = new MySqlCommand(
-            "SELECT id, name, created_at FROM material_folders ORDER BY name", conn);
+        using var cmd = new MySqlCommand(@"
+            SELECT mf.id, mf.name, mf.created_at, mf.created_by,
+                   CONCAT(u.first_name, ' ', u.last_name) AS created_by_name
+            FROM material_folders mf
+            LEFT JOIN users u ON u.id = mf.created_by
+            ORDER BY mf.name", conn);
         using var r = await cmd.ExecuteReaderAsync();
         while (await r.ReadAsync())
             list.Add(new MaterialFolder
             {
-                Id        = r.GetInt32("id"),
-                Name      = r.GetString("name"),
-                CreatedAt = r.GetDateTime("created_at")
+                Id            = r.GetInt32("id"),
+                Name          = r.GetString("name"),
+                CreatedAt     = r.GetDateTime("created_at"),
+                CreatedById   = r.IsDBNull(r.GetOrdinal("created_by")) ? null : r.GetInt32("created_by"),
+                CreatedByName = r.IsDBNull(r.GetOrdinal("created_by_name")) ? null : r.GetString("created_by_name").Trim()
             });
         return list;
     }
 
-    public async Task<int> GetOrCreateFolderAsync(string name)
+    public async Task<int> GetOrCreateFolderAsync(string name, int? createdBy = null)
     {
         name = name.Trim();
         using var conn = _db.GetConnection();
@@ -43,8 +49,9 @@ public class MaterialRepository
             return Convert.ToInt32(existing);
 
         using var ins = new MySqlCommand(
-            "INSERT INTO material_folders (name) VALUES (@name)", conn);
+            "INSERT INTO material_folders (name, created_by) VALUES (@name, @createdBy)", conn);
         ins.Parameters.AddWithValue("@name", name);
+        ins.Parameters.AddWithValue("@createdBy", (object?)createdBy ?? DBNull.Value);
         await ins.ExecuteNonQueryAsync();
         return await DbHelper.GetLastInsertIdAsync(conn);
     }

@@ -9,6 +9,7 @@ public class ApplicationUser : IdentityUser<int>
     public string FullName => $"{FirstName} {LastName}".Trim();
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public string? ShibbolethId { get; set; }
 }
 
 public class ApplicationRole : IdentityRole<int>

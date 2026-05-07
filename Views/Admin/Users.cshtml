@@ -45,20 +45,20 @@
                 <table id="usersTable" class="table table-hover align-middle">
                     <thead class="table-light">
                         <tr>
-                            <th scope="col">@T["common.name"]</th>
+                            <th scope="col" class="text-nowrap" style="width:18%">@T["common.name"]</th>
                             <th scope="col">Email</th>
-                            <th scope="col">@T["common.role"]</th>
-                            <th scope="col">@T["common.status"]</th>
-                            <th scope="col">@T["common.actions"]</th>
+                            <th scope="col" class="text-nowrap" style="width:1%">@T["common.role"]</th>
+                            <th scope="col" class="text-nowrap" style="width:1%">@T["common.status"]</th>
+                            <th scope="col" class="text-nowrap" style="width:1%">@T["common.actions"]</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var u in Model.Users)
                         {
                             <tr>
-                                <td><strong>@u.FullName</strong></td>
+                                <td class="text-nowrap"><strong>@u.FullName</strong></td>
                                 <td>@u.Email</td>
-                                <td>
+                                <td class="text-nowrap">
                                     @{
                                         var roleClass = u.Role switch {
                                             "Admin"   => "bg-danger",
@@ -78,7 +78,7 @@
                                         @roleLabel
                                     </span>
                                 </td>
-                                <td>
+                                <td class="text-nowrap">
                                     @if (u.Role == "Admin")
                                     {
                                         @if (u.IsActive)
@@ -104,8 +104,8 @@
                                         </button>
                                     }
                                 </td>
-                                <td>
-                                    <div class="d-flex gap-1">
+                                <td class="text-nowrap">
+                                    <div class="d-flex gap-1 flex-nowrap">
                                         @if (u.Id != currentUserId && u.Role != "Admin")
                                         {
                                             <a asp-action="EditUser" asp-route-id="@u.Id"
@@ -348,7 +348,13 @@
         };
 
         $(document).ready(function () {
-            $('#usersTable').DataTable({ language: window.dtLang() });
+            $('#usersTable').DataTable({
+                language: window.dtLang(),
+                autoWidth: false,
+                columnDefs: [
+                    { targets: [2, 3, 4], width: '1%', className: 'text-nowrap' }
+                ]
+            });
 
             // ── View courses ──────────────────────────────────────
             $(document).on('click', '.btn-view-courses', function () {
@@ -361,22 +367,24 @@
                 $.getJSON('/Admin/UserCourses/' + userId, function (data) {
                     var html = '';
                     var courses = data.courses;
+                    var isTeacher = data.canTeach;
                     if (!courses || courses.length === 0) {
-                        var emptyMsg = userRole === 'Teacher' ? _lbl.noCourseTaught : _lbl.noCourseEnrolled;
+                        var emptyMsg = isTeacher ? _lbl.noCourseTaught : _lbl.noCourseEnrolled;
                         html = '<p class="text-muted text-center py-3"><i class="bi bi-inbox me-2"></i>' + emptyMsg + '</p>';
                     } else {
-                        var heading = userRole === 'Teacher' ? _lbl.coursesTaught : _lbl.coursesEnrolled;
+                        var heading = isTeacher ? _lbl.coursesTaught : _lbl.coursesEnrolled;
                         html += '<p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>' + heading + '</p><div class="list-group">';
                         courses.forEach(function (c) {
                             var statusBadge = c.isPublished
                                 ? '<span class="badge bg-success ms-2">' + _lbl.published + '</span>'
                                 : '<span class="badge bg-secondary ms-2">' + _lbl.draft + '</span>';
+                            var idBadge = '<span class="text-muted ms-2" style="font-size:.75rem;">#' + c.id + '</span>';
                             var progressHtml = '';
-                            if (userRole === 'Student' && c.totalLessons > 0) {
+                            if (data.canAttend && !data.canTeach && c.totalLessons > 0) {
                                 var pct = Math.round(c.completedLessons / c.totalLessons * 100);
                                 progressHtml = '<div class="mt-1"><div class="progress" style="height:5px;"><div class="progress-bar bg-bocconi" style="width:' + pct + '%"></div></div><div class="text-muted" style="font-size:.75rem;">' + c.completedLessons + '/' + c.totalLessons + ' &mdash; ' + pct + '%</div></div>';
                             }
-                            html += '<a href="/Course/Details/' + c.id + '" class="list-group-item list-group-item-action" target="_blank"><div class="d-flex justify-content-between align-items-center"><span><i class="bi bi-book me-2 text-bocconi"></i><strong>' + c.title + '</strong>' + statusBadge + '</span><i class="bi bi-box-arrow-up-right text-muted small"></i></div>' + progressHtml + '</a>';
+                            html += '<a href="/Course/Details/' + c.id + '" class="list-group-item list-group-item-action" target="_blank"><div class="d-flex justify-content-between align-items-center"><span><i class="bi bi-book me-2 text-bocconi"></i><strong>' + c.title + '</strong>' + idBadge + statusBadge + '</span><i class="bi bi-box-arrow-up-right text-muted small"></i></div>' + progressHtml + '</a>';
                         });
                         html += '</div>';
                     }
