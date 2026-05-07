@@ -144,10 +144,16 @@ builder.Services.AddAuthentication()
     {
         options.SignInScheme = Microsoft.AspNetCore.Identity.IdentityConstants.ExternalScheme;
         options.SPOptions.EntityId = new Sustainsys.Saml2.Metadata.EntityId(samlSpEntityId);
-        // AssertionConsumerServiceUrl = {origin}/Saml2/Acs  (derived by Sustainsys from PublicOrigin)
-        // SP metadata exposed at:  {origin}/Saml2/metadata  (alias: /auth/saml-metadata)
-        var spOrigin = !string.IsNullOrEmpty(samlBaseUrl) ? samlBaseUrl : samlSpEntityId;
-        options.SPOptions.PublicOrigin = new Uri(spOrigin);
+        // PublicOrigin determina l'ACS URL inviato all'IdP.
+        // Se SAML_SP_BASE_URL è esplicito → usarlo sempre.
+        // In Development senza variabile → NON impostarlo: Sustainsys lo ricava
+        //   dall'URL reale della richiesta HTTP (funziona sia con localhost:5000
+        //   che con https://didasco.local senza nessuna config aggiuntiva).
+        // In produzione senza variabile → usare l'entity ID come fallback.
+        if (!string.IsNullOrEmpty(samlBaseUrl))
+            options.SPOptions.PublicOrigin = new Uri(samlBaseUrl);
+        else if (!builder.Environment.IsDevelopment())
+            options.SPOptions.PublicOrigin = new Uri(samlSpEntityId);
 
         // ── SP signing certificate ──────────────────────────────────────────
         // Strategy (in order of priority):
