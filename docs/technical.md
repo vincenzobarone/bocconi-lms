@@ -542,28 +542,52 @@ dotnet publish -c Release -o ./publish
 1. Installare **.NET 10 Hosting Bundle** sul server
 2. Creare un nuovo sito in IIS Manager che punta alla cartella `publish/`
 3. Impostare l'application pool su **"No Managed Code"** (ASP.NET Core è self-hosted)
-4. Configurare la connection string MySQL — **scegliere una delle due modalità qui sotto, mai entrambe**
+4. Configurare `MYSQL_CONNECTION_STRING` come variabile d'ambiente di sistema (vedi sotto)
 5. Assicurarsi che l'utente del pool IIS abbia accesso in scrittura a `wwwroot/uploads/`
 
-#### Modalità A — Connection string nel `web.config` (segreto per-sito)
+#### `web.config` — già incluso nel repo
 
-Più semplice da impostare; il segreto resta nel `web.config` del sito (file ACL ristretta a Administrators + identità del pool).
+Il file `web.config` è versionato nel repository e viene copiato automaticamente nella cartella `publish/` ad ogni pubblicazione. Non è necessario crearlo manualmente.
+
+Il repo contiene la configurazione per **sviluppo/test locale** (`ASPNETCORE_ENVIRONMENT=Development`). Prima del deploy in produzione occorre cambiare una sola riga e aggiungere le variabili SAML reali — vedi tabella sotto.
+
+| Scenario | `ASPNETCORE_ENVIRONMENT` | Effetto |
+|---|---|---|
+| IIS locale / staging (`didasco.local`) | `Development` | StubIdP di test, PublicOrigin auto-rilevato, nessun fail-fast guard |
+| Produzione (`didasco.unibocconi.it`) | `Production` | IdP Bocconi reale obbligatorio, crash esplicito se non configurato |
+
+**`web.config` per sviluppo/test locale** (come versionato nel repo):
+
+```xml
+<aspNetCore processPath="dotnet" arguments=".\BocconiLMS.dll"
+            stdoutLogEnabled="true" stdoutLogFile=".\logs\stdout"
+            hostingModel="inprocess">
+    <environmentVariables>
+        <environmentVariable name="ASPNETCORE_ENVIRONMENT" value="Development" />
+        <!-- MYSQL_CONNECTION_STRING impostata come variabile di sistema Windows -->
+    </environmentVariables>
+</aspNetCore>
+```
+
+**`web.config` per produzione** (modificare prima del deploy su `didasco.unibocconi.it`):
 
 ```xml
 <aspNetCore processPath="dotnet" arguments=".\BocconiLMS.dll"
             stdoutLogEnabled="false" stdoutLogFile=".\logs\stdout"
             hostingModel="inprocess">
     <environmentVariables>
-        <environmentVariable name="ASPNETCORE_ENVIRONMENT" value="Production" />
-        <environmentVariable name="MYSQL_CONNECTION_STRING"
-                             value="Server=HOST;Port=3306;Database=BocconiEdu;User=UTENTE;Password=PASSWORD;SslMode=Required;" />
+        <environmentVariable name="ASPNETCORE_ENVIRONMENT"  value="Production" />
+        <environmentVariable name="SAML_IDP_METADATA_URL"  value="https://idp.unibocconi.it/metadata/..." />
+        <environmentVariable name="SAML_IDP_ENTITY_ID"     value="https://idp.unibocconi-prod.it/idp/shibboleth" />
+        <environmentVariable name="SAML_SP_ENTITY_ID"      value="https://didasco.unibocconi.it" />
+        <environmentVariable name="SAML_SP_BASE_URL"       value="https://didasco.unibocconi.it" />
+        <!-- SAML_SP_CERT_PFX: bundle PKCS#12 in Base64 — se assente il LMS genera un cert temporaneo -->
+        <!-- MYSQL_CONNECTION_STRING impostata come variabile di sistema Windows -->
     </environmentVariables>
 </aspNetCore>
 ```
 
-⚠️ Con questa modalità **`web.config` contiene un segreto**: non committarlo nel repo. Vedi sezione *12.3.1* qui sotto per le strategie git.
-
-#### Modalità B — Connection string come variabile d'ambiente di sistema (consigliata)
+#### Connection string come variabile d'ambiente di sistema (consigliata)
 
 Il `web.config` resta privo di segreti e versionabile. La connection string vive a livello macchina, condivisibile tra più siti, e sopravvive ai redeploy / `git pull`.
 
@@ -584,27 +608,13 @@ Verifica che IIS la veda:
 [System.Environment]::GetEnvironmentVariable('MYSQL_CONNECTION_STRING', 'Machine')
 ```
 
-Il `web.config` corrispondente, **senza segreti**, è:
-
-```xml
-<aspNetCore processPath="dotnet" arguments=".\BocconiLMS.dll"
-            stdoutLogEnabled="false" stdoutLogFile=".\logs\stdout"
-            hostingModel="inprocess">
-    <environmentVariables>
-        <environmentVariable name="ASPNETCORE_ENVIRONMENT" value="Production" />
-    </environmentVariables>
-</aspNetCore>
-```
-
 #### 12.3.1 Gestione del `web.config` con git pull
 
-Se fai deploy con `git pull` sul server:
+Il `web.config` non contiene segreti (la connection string è variabile di sistema), quindi può stare nel repo ed essere sovrascritto ad ogni `git pull` senza problemi.
 
-- **Modalità A** (segreto nel file) → tre opzioni per evitare che il pull lo sovrascriva:
+**Unica eccezione:** se si vuole usare la Modalità A (connection string nel `web.config`) invece della variabile di sistema, il file conterrà un segreto e non dovrà essere sovrascritto dal pull. In quel caso:
   1. `git update-index --skip-worktree web.config` (congela la copia locale, soluzione rapida)
   2. Aggiungere `web.config` al `.gitignore` e versionare invece `web.config.template` con placeholder
-  3. Rimuovere dal tracking: `git rm --cached web.config && git commit ...`
-- **Modalità B** (env var) → nessun problema: il `web.config` non contiene segreti, può stare tranquillamente nel repo e venire sovrascritto a ogni `git pull`.
 
 #### 12.3.2 Debug startup IIS
 
