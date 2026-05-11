@@ -24,7 +24,10 @@ public class AppVersionService
             ?.Trim();
 
         if (!string.IsNullOrEmpty(infoVersion) && infoVersion != "1.0.0")
-            return infoVersion.Length >= 7 ? infoVersion[..7] : infoVersion;
+        {
+            var candidate = infoVersion.Length >= 7 ? infoVersion[..7] : infoVersion;
+            if (IsValidShortHash(candidate)) return candidate;
+        }
 
         // 2. Fallback runtime: legge .git/HEAD (funziona in sviluppo quando
         //    il processo gira nella stessa cartella del repo).
@@ -58,6 +61,9 @@ public class AppVersionService
             return "–";
         }
     }
+
+    private static bool IsValidShortHash(string s) =>
+        s.Length is >= 5 and <= 10 && s.All(c => c is (>= '0' and <= '9') or (>= 'a' and <= 'f') or (>= 'A' and <= 'F'));
 
     private static string? FindGitDir(string startPath)
     {

@@ -29,6 +29,7 @@ public class AdminController : Controller
     private readonly SystemLogRepository _logRepo;
     private readonly ApiKeyRepository _apiKeyRepo;
     private readonly ApiKeyService _apiKeys;
+    private readonly ILogger<AdminController> _logger;
 
     public AdminController(
         UserRepository users,
@@ -49,7 +50,8 @@ public class AdminController : Controller
         IAuditLogger audit,
         SystemLogRepository logRepo,
         ApiKeyRepository apiKeyRepo,
-        ApiKeyService apiKeys)
+        ApiKeyService apiKeys,
+        ILogger<AdminController> logger)
     {
         _users = users;
         _courses = courses;
@@ -70,6 +72,7 @@ public class AdminController : Controller
         _logRepo = logRepo;
         _apiKeyRepo = apiKeyRepo;
         _apiKeys = apiKeys;
+        _logger = logger;
     }
 
     public IActionResult Index()
@@ -1100,6 +1103,7 @@ public class AdminController : Controller
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Production script generation failed for user {User}", User.Identity?.Name);
             TempData["Error"] = "§admin.prod_script_error";
             return RedirectToAction(nameof(Database));
         }
