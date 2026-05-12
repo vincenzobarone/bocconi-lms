@@ -50,6 +50,8 @@ builder.Services.AddScoped<RolePermissionRepository>();
 builder.Services.AddScoped<FeatureFlagService>();
 builder.Services.AddScoped<ProductionScriptGenerator>();
 builder.Services.AddScoped<DataImportService>();
+builder.Services.Configure<BocconiLMS.Models.StorageOptions>(
+    builder.Configuration.GetSection(BocconiLMS.Models.StorageOptions.SectionName));
 
 builder.Services.AddScoped<IUserStore<ApplicationUser>, CustomUserStore>();
 builder.Services.AddScoped<IRoleStore<ApplicationRole>, CustomRoleStore>();

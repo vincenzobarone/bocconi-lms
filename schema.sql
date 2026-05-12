@@ -283,7 +283,6 @@ CREATE TABLE IF NOT EXISTS materials (
     status              VARCHAR(50) NOT NULL DEFAULT 'draft',
     protocol_number     INT NULL,
     folder_id           INT NULL,
-    folder              VARCHAR(255) NULL,
     area_id             INT NULL,
     catalogation_date   DATE NULL,
     created_at          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,

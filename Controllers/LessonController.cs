@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
@@ -22,6 +23,7 @@ public class LessonController : Controller
     private readonly IAuditLogger _audit;
     private readonly IWebHostEnvironment _env;
     private readonly LessonGroupRepository _groups;
+    private readonly StorageOptions _storage;
 
     public LessonController(LessonRepository lessons, CourseRepository courses,
         QuizRepository quizzes,
@@ -29,7 +31,8 @@ public class LessonController : Controller
         EmailService email, ILogger<LessonController> logger,
         MaterialRepository materials, SettingsRepository settings,
         IAuditLogger audit, IWebHostEnvironment env,
-        LessonGroupRepository groups)
+        LessonGroupRepository groups,
+        IOptions<StorageOptions> storage)
     {
         _lessons = lessons;
         _courses = courses;
@@ -43,6 +46,7 @@ public class LessonController : Controller
         _audit = audit;
         _env = env;
         _groups = groups;
+        _storage = storage.Value;
     }
 
     private int CurrentUserId => int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
@@ -85,7 +89,7 @@ public class LessonController : Controller
         {
             if (mat.ActiveVersion != null)
             {
-                var fullPath = Path.Combine(_env.WebRootPath, mat.ActiveVersion.FilePath.TrimStart('/'));
+                var fullPath = Path.Combine(_env.WebRootPath, _storage.UploadRoot, mat.ActiveVersion.FilePath);
                 if (!System.IO.File.Exists(fullPath))
                     missingFileIds.Add(mat.Id);
             }

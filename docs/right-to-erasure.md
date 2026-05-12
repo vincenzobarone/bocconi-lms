@@ -218,7 +218,7 @@ SELECT COUNT(*) FROM material_versions WHERE uploaded_by = <USER_ID>; -- deve es
 I log `[APP-AUDIT]` e `[HTTP-ACCESS]` possono contenere l'indirizzo e-mail e l'IP dell'utente. Questi log sono prodotti su due canali (vedi `log-strategy.md`):
 
 - **stdout** — raccolto dall'infrastruttura di hosting (file rotanti, Azure Monitor, Loki, ecc.).
-- **Tabella DB `system_logs`** (canale secondario, attivo per default in dev/Replit; spesso disattivato in produzione tramite `AuditLog:WriteToDatabase=false`).
+- **Tabella DB `system_logs`** (canale secondario, attivo per default in sviluppo; spesso disattivato in produzione tramite `AuditLog:WriteToDatabase=false`).
 
 ### 5.a — Pseudonimizzazione nella tabella `system_logs`
 

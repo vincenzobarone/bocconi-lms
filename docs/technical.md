@@ -39,7 +39,7 @@
 
 ## 2. Setup locale in Visual Studio 2026
 
-> **Flusso consigliato:** si lavora il codice su Replit (ambiente cloud), che salva automaticamente i commit su GitHub ad ogni task. Su Visual Studio 2026 basta fare **Git → Pull** per ricevere le modifiche aggiornate — tutto tramite GUI, senza usare la riga di comando.
+> **Flusso consigliato:** le modifiche vengono committate su GitHub. Su Visual Studio 2026 basta fare **Git → Pull** per ricevere le modifiche aggiornate — tutto tramite GUI, senza usare la riga di comando.
 
 ### 2.1 Ottenere il codice sorgente
 
@@ -53,7 +53,7 @@
 **Aggiornamenti successivi — Pull da VS2026 (GUI):**
 
 1. Aprire il pannello **Git Changes** (`Visualizza → Git Changes`)
-2. Cliccare la freccia **Pull** (⬇) per scaricare le ultime modifiche da Replit
+2. Cliccare la freccia **Pull** (⬇) per scaricare le ultime modifiche da GitHub
 
 Non è necessaria alcuna riga di comando: VS2026 gestisce tutto Git in modo nativo.
 
@@ -778,7 +778,7 @@ Il LMS firma le richieste SAML con un certificato self-signed RSA 2048 (valido 1
 **Strategia di caricamento (in ordine di priorità):**
 
 1. **Segreto `SAML_SP_CERT_PFX`** (produzione) — bundle PKCS#12 codificato Base64 contenente cert + chiave privata
-2. **Nessun segreto** (sviluppo / Replit) — il LMS genera automaticamente un certificato RSA-2048 self-signed ad ogni avvio
+2. **Nessun segreto** (sviluppo) — il LMS genera automaticamente un certificato RSA-2048 self-signed ad ogni avvio
 
 In sviluppo non serve configurare nulla. In produzione usare il flusso PKCS#12 descritto sotto.
 

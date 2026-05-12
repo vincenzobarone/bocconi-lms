@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using BocconiLMS.Data;
 using BocconiLMS.Models;
 using BocconiLMS.Services;
@@ -28,6 +29,7 @@ public class MaterialsController : Controller
     private readonly FeatureFlagService _features;
     private readonly TranslationService _t;
     private readonly IAuditLogger _audit;
+    private readonly StorageOptions _storage;
 
     public MaterialsController(
         MaterialRepository materials,
@@ -42,7 +44,8 @@ public class MaterialsController : Controller
         EmailService emailService,
         FeatureFlagService features,
         TranslationService t,
-        IAuditLogger audit)
+        IAuditLogger audit,
+        IOptions<StorageOptions> storage)
     {
         _materials    = materials;
         _docTypes     = docTypes;
@@ -57,6 +60,7 @@ public class MaterialsController : Controller
         _features     = features;
         _t            = t;
         _audit        = audit;
+        _storage      = storage.Value;
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
@@ -807,7 +811,7 @@ public class MaterialsController : Controller
                 await _materials.RestoreVersionAsync(materialId, prev.Id);
         }
 
-        var fullPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/'));
+        var fullPath = Path.Combine(_env.WebRootPath, _storage.UploadRoot, version.FilePath);
         if (System.IO.File.Exists(fullPath))
             System.IO.File.Delete(fullPath);
 
@@ -838,7 +842,7 @@ public class MaterialsController : Controller
                 var material = await _materials.GetByIdAsync(matId);
                 if (material?.ActiveVersion == null) continue;
                 var version = material.ActiveVersion;
-                var fullPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/'));
+                var fullPath = Path.Combine(_env.WebRootPath, _storage.UploadRoot, version.FilePath);
                 if (!System.IO.File.Exists(fullPath)) continue;
 
                 var entryName = $"{material.Title} - v{version.VersionNumber}{Path.GetExtension(version.FileName)}";
@@ -869,7 +873,7 @@ public class MaterialsController : Controller
     {
         var version = await _materials.GetVersionByIdAsync(versionId);
         if (version == null) return NotFound();
-        var fullPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/'));
+        var fullPath = Path.Combine(_env.WebRootPath, _storage.UploadRoot, version.FilePath);
         if (!System.IO.File.Exists(fullPath))
         {
             _logger.LogWarning("Download richiesto per versione {VersionId} ma il file è assente: {Path}", versionId, fullPath);
@@ -888,7 +892,7 @@ public class MaterialsController : Controller
     {
         var version = await _materials.GetVersionByIdAsync(versionId);
         if (version == null) return NotFound();
-        var fullPath = Path.Combine(_env.WebRootPath, version.FilePath.TrimStart('/'));
+        var fullPath = Path.Combine(_env.WebRootPath, _storage.UploadRoot, version.FilePath);
         if (!System.IO.File.Exists(fullPath))
         {
             _logger.LogWarning("Preview richiesto per versione {VersionId} ma il file è assente: {Path}", versionId, fullPath);
@@ -938,12 +942,12 @@ public class MaterialsController : Controller
         var versions = await _materials.GetVersionsAsync(id);
         foreach (var v in versions)
         {
-            var fullPath = Path.Combine(_env.WebRootPath, v.FilePath.TrimStart('/'));
+            var fullPath = Path.Combine(_env.WebRootPath, _storage.UploadRoot, v.FilePath);
             if (System.IO.File.Exists(fullPath))
                 System.IO.File.Delete(fullPath);
         }
 
-        var dirPath = Path.Combine(_env.WebRootPath, "uploads", "mat_" + id);
+        var dirPath = Path.Combine(_env.WebRootPath, _storage.UploadRoot, "mat_" + id);
         if (Directory.Exists(dirPath)) Directory.Delete(dirPath, true);
 
         var deletedTitle = material.Title;
@@ -993,8 +997,8 @@ public class MaterialsController : Controller
         var nextVer  = await _materials.GetNextVersionNumberAsync(materialId);
         var ext      = Path.GetExtension(fileToSave.FileName).TrimStart('.').ToUpperInvariant();
         var safeFile = $"v{nextVer}_{Path.GetFileNameWithoutExtension(fileToSave.FileName)}{Path.GetExtension(fileToSave.FileName)}";
-        var relDir   = Path.Combine("uploads", $"mat_{materialId}");
-        var absDir   = Path.Combine(_env.WebRootPath, relDir);
+        var relDir   = $"mat_{materialId}";
+        var absDir   = Path.Combine(_env.WebRootPath, _storage.UploadRoot, relDir);
         Directory.CreateDirectory(absDir);
         var absPath  = Path.Combine(absDir, safeFile);
         using (var fs = new FileStream(absPath, FileMode.Create))
@@ -1005,7 +1009,7 @@ public class MaterialsController : Controller
             MaterialId      = materialId,
             VersionNumber   = nextVer,
             FileName        = fileToSave.FileName,
-            FilePath        = "/" + relDir.Replace('\\', '/') + "/" + safeFile,
+            FilePath        = $"{relDir}/{safeFile}",
             FileType        = ext,
             FileSizeBytes   = fileToSave.Length,
             UploadedBy      = CurrentUserId(),

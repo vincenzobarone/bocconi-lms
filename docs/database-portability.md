@@ -6,7 +6,7 @@
 
 ## 1. Contesto
 
-Didasco è attualmente sviluppato e ospitato su **MySQL 8.x** (DB remoto Replit `BocconiEdu`).
+Didasco è attualmente sviluppato e ospitato su **MySQL 8.x** (DB remoto Kamatera `BocconiEdu`).
 Bocconi potrebbe in futuro richiedere il deploy su **SQL Server** (on-prem o Azure SQL),
 in coerenza con un'eventuale infrastruttura Microsoft preesistente.
 
@@ -238,7 +238,7 @@ applichiamo questi accorgimenti **incrementalmente** (senza refactoring di massa
 
 ## 5. Decisione finale
 
-La migrazione a SQL Server **non è in roadmap** al momento (vincolo: DB MySQL Replit obbligatorio
+La migrazione a SQL Server **non è in roadmap** al momento (vincolo: DB MySQL obbligatorio
 in fase corrente). Questo documento serve da:
 - **Stima trasparente** per Bocconi se richiede SQL Server (~3 giorni dev + test)
 - **Guida operativa** per chi eseguirà la migrazione

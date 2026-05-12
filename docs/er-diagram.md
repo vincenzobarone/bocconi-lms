@@ -473,7 +473,6 @@ erDiagram
 | status                 | VARCHAR(50)  | NOT NULL DEFAULT 'draft'                   | `draft`, `under_review`, `verified` |
 | protocol_number        | INT NULL     | —                                          | Numero protocollo interno           |
 | folder_id              | INT NULL     | FK → material_folders(id) SET NULL         |                                     |
-| folder                 | VARCHAR(255) | NULL                                       | Percorso cartella (legacy)          |
 | area_id                | INT NULL     | FK → areas(id) SET NULL                    |                                     |
 | catalogation_date      | DATE NULL    | —                                          | Data catalogazione                  |
 | page_count             | INT NULL     | —                                          | Numero di pagine                    |

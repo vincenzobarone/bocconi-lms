@@ -56,7 +56,7 @@ In `appsettings.json` (o tramite variabile d'ambiente `AuditLog__WriteToDatabase
 
 | Scenario | `WriteToDatabase` | Conseguenze |
 |---|---|---|
-| **Sviluppo / Stage Replit** | `true` (default) | log su stdout **+** consultabili via Admin UI |
+| **Sviluppo / Stage** | `true` (default) | log su stdout **+** consultabili via Admin UI |
 | **Produzione Bocconi su Azure** | `false` | solo stdout → Azure Monitor; nessun overhead DB |
 | **Audit interno temporaneo** | `true` | si attiva per finestra limitata, poi si disattiva |
 
@@ -72,7 +72,7 @@ export AuditLog__WriteToDatabase=false
 | Vincolo | Risposta |
 |---|---|
 | Capitolato richiede stdout | ✅ sempre rispettato (canale primario non disattivabile) |
-| In Replit non c'è log aggregation | ✅ il canale DB fornisce un viewer in-app |
+| In sviluppo non c'è log aggregation centralizzata | ✅ il canale DB fornisce un viewer in-app |
 | Su Azure il DB diventa ridondante | ✅ disattivabile con un flag, zero codice da toccare |
 | Performance | ✅ scrittura DB fire-and-forget, non blocca le richieste |
 | Costo storage | ✅ purge manuale da Admin UI (30/90 giorni o tutto) |
@@ -84,9 +84,9 @@ operativo** per le situazioni in cui Azure Monitor non è disponibile.
 
 ## 5. Considerazioni operative
 
-### 5.1 In Replit (situazione attuale)
+### 5.1 In sviluppo (senza log aggregation centralizzata)
 - Entrambi i canali attivi.
-- I log su stdout sono visibili nei logs del workflow (console).
+- I log su stdout sono visibili nella console dell'applicazione.
 - I log su DB sono visibili in **Admin → Log di Sistema**.
 
 ### 5.2 In container Docker (futuro Bocconi)
