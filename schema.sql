@@ -272,11 +272,25 @@ CREATE TABLE IF NOT EXISTS material_folders (
     UNIQUE KEY uk_name (name)
 ) ENGINE=InnoDB;
 
+-- ============================================================
+-- Autori (Task #49 - autori multipli)
+-- Sostituisce la colonna denormalizzata materials.author_name
+-- ============================================================
+CREATE TABLE IF NOT EXISTS authors (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    full_name   VARCHAR(255) NOT NULL,
+    email       VARCHAR(255) NULL,
+    affiliation VARCHAR(255) NULL,
+    created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_full_name (full_name),
+    INDEX idx_email (email)
+) ENGINE=InnoDB;
+
 -- Libreria materiali (repository centrale)
+-- NOTA: author_name rimosso in Task #49 — usare material_authors per la relazione N:N
 CREATE TABLE IF NOT EXISTS materials (
     id                  INT AUTO_INCREMENT PRIMARY KEY,
     title               VARCHAR(255) NOT NULL,
-    author_name         VARCHAR(255) NULL,
     owner_id            INT NULL,
     language            VARCHAR(50) NOT NULL DEFAULT 'Italiano',
     document_type_id    INT NULL,
@@ -294,6 +308,18 @@ CREATE TABLE IF NOT EXISTS materials (
     INDEX idx_type   (document_type_id),
     INDEX idx_status (status),
     INDEX idx_folder (folder_id)
+) ENGINE=InnoDB;
+
+-- Relazione N:N materiali ↔ autori (con ordinamento esplicito)
+CREATE TABLE IF NOT EXISTS material_authors (
+    material_id INT NOT NULL,
+    author_id   INT NOT NULL,
+    sort_order  INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (material_id, author_id),
+    FOREIGN KEY (material_id) REFERENCES materials(id) ON DELETE CASCADE,
+    FOREIGN KEY (author_id)   REFERENCES authors(id)   ON DELETE CASCADE,
+    INDEX idx_author   (author_id),
+    INDEX idx_material (material_id)
 ) ENGINE=InnoDB;
 
 -- Versioni file dei materiali
@@ -368,6 +394,30 @@ CREATE TABLE IF NOT EXISTS api_keys (
 -- Tabella traduzioni multilingua
 -- Lingue supportate: en (base), it, es, de
 -- ============================================================
+-- ============================================================
+-- MIGRATION: installazioni esistenti (non necessaria su fresh install)
+-- Eseguire UNA SOLA VOLTA sugli ambienti già in produzione:
+--
+--   -- 1. Crea tabelle se non esistono
+--   CREATE TABLE IF NOT EXISTS authors (...);     -- vedi sopra
+--   CREATE TABLE IF NOT EXISTS material_authors (...); -- vedi sopra
+--
+--   -- 2. Migra i dati legacy (author_name → authors + material_authors)
+--   INSERT IGNORE INTO authors (full_name)
+--     SELECT DISTINCT TRIM(author_name)
+--     FROM materials
+--     WHERE author_name IS NOT NULL AND TRIM(author_name) <> '';
+--
+--   INSERT IGNORE INTO material_authors (material_id, author_id, sort_order)
+--     SELECT m.id, a.id, 0
+--     FROM materials m
+--     JOIN authors a ON a.full_name = TRIM(m.author_name)
+--     WHERE m.author_name IS NOT NULL AND TRIM(m.author_name) <> '';
+--
+--   -- 3. Rimuovi colonna legacy (solo dopo verifica)
+--   ALTER TABLE materials DROP COLUMN author_name;
+-- ============================================================
+
 CREATE TABLE IF NOT EXISTS translations (
     id            INT AUTO_INCREMENT PRIMARY KEY,
     language_code VARCHAR(10)  NOT NULL,

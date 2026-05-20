@@ -1,0 +1,57 @@
+@model BocconiLMS.Models.Author
+@{
+    ViewData["Title"] = T["author.edit_title"];
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-bocconi text-white">
+                <h5 class="mb-0"><i class="bi bi-pencil me-2"></i>@T["author.edit_title"]</h5>
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">
+                            @T["author.col_name"] <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="FullName" class="form-control" maxlength="255" autofocus />
+                        <span asp-validation-for="FullName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">@T["author.col_email"]</label>
+                        <input asp-for="Email" type="email" class="form-control" maxlength="255" />
+                        <span asp-validation-for="Email" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">@T["author.col_affiliation"]</label>
+                        <input asp-for="Affiliation" class="form-control" maxlength="255" />
+                        <span asp-validation-for="Affiliation" class="text-danger small"></span>
+                    </div>
+
+                    @if (Model.MaterialCount > 0)
+                    {
+                        <div class="alert alert-info py-2 small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            @string.Format(T["author.linked_to_n_materials"].ToString(), Model.MaterialCount)
+                        </div>
+                    }
+
+                    <div class="d-flex justify-content-end gap-2 mt-4">
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="bi bi-x me-1"></i>@T["common.cancel"]
+                        </a>
+                        <button type="submit" class="btn btn-bocconi">
+                            <i class="bi bi-check-lg me-1"></i>@T["common.save"]
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -462,9 +462,9 @@ public class DataImportService
     private static readonly string[] AllowedMaterialColumns = new[]
     {
         "title","author_name","owner_id","language","document_type_id",
-        "status","protocol_number","folder_id","area_id",
-        "catalogation_date","page_count","is_publishable",
-        "external_protocol_code","external_link"
+        "status","protocol_code","old_protocol","folder_id","area_id",
+        "catalogation_date","last_update","page_count","is_publishable",
+        "external_protocol_code","external_link","course_code"
     };
 
     private static async Task InsertMaterialAsync(

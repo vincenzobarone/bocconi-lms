@@ -42,6 +42,7 @@ builder.Services.AddScoped<UserRepository>();
 builder.Services.AddScoped<SettingsRepository>();
 builder.Services.AddScoped<TranslationRepository>();
 builder.Services.AddScoped<MaterialRepository>();
+builder.Services.AddScoped<AuthorRepository>();
 builder.Services.AddScoped<LessonGroupRepository>();
 builder.Services.AddScoped<DocumentTypeRepository>();
 builder.Services.AddScoped<AreaRepository>();
@@ -95,6 +96,16 @@ builder.Services.AddSingleton<Microsoft.Extensions.Localization.IStringLocalizer
     BocconiLMS.Services.DbStringLocalizerFactory>();
 builder.Services.AddControllersWithViews()
     .AddDataAnnotationsLocalization();
+
+// In development l'app gira in un iframe (preview Replit / canvas):
+// il middleware Antiforgery imposta X-Frame-Options: SAMEORIGIN di default,
+// che blocca il caricamento in iframe su domini diversi.
+// SuppressXFrameOptionsHeader=true rimuove quell'header solo in dev.
+if (builder.Environment.IsDevelopment())
+{
+    builder.Services.AddAntiforgery(options =>
+        options.SuppressXFrameOptionsHeader = true);
+}
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromHours(8);
@@ -301,6 +312,11 @@ app.MapGet("/auth/saml-metadata", (HttpContext ctx) =>
     ctx.Response.Redirect("/Saml2/metadata", permanent: false);
     return Task.CompletedTask;
 }).AllowAnonymous();
+
+// ── Schema migrations + seed traduzioni ──────────────────────────────────────
+// DatabaseMigrator applica ogni migrazione esattamente una volta (tracciata in schema_migrations).
+try { await BocconiLMS.Tools.DatabaseMigrator.RunAsync(connectionString, app.Logger); }
+catch (Exception ex) { app.Logger.LogWarning(ex, "Database migration failed (non bloccante)"); }
 
 // IIS detection: AspNetCoreModuleV2 sets these env vars depending on hosting mode.
 //   - inprocess:    ASPNETCORE_IIS_HTTPAUTH, IIS_USER_TOKEN

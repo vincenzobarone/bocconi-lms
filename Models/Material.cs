@@ -1,5 +1,14 @@
 namespace BocconiLMS.Models;
 
+public class Author
+{
+    public int Id { get; set; }
+    public string FullName { get; set; } = string.Empty;
+    public string? Email { get; set; }
+    public string? Affiliation { get; set; }
+    public int MaterialCount { get; set; }
+}
+
 public class DocumentType
 {
     public int Id { get; set; }
@@ -29,7 +38,8 @@ public class Material
 {
     public int Id { get; set; }
     public string Title { get; set; } = string.Empty;
-    public string? AuthorName { get; set; }
+    public List<Author> Authors { get; set; } = new();
+    public string AuthorsDisplay { get; set; } = string.Empty;
     public int? OwnerId { get; set; }
     public string OwnerName { get; set; } = string.Empty;
     public string Language { get; set; } = "Italiano";
@@ -37,13 +47,15 @@ public class Material
     public string DocumentTypeName { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
     public string Status { get; set; } = "draft";
-    public int? ProtocolNumber { get; set; }
+    public string? ProtocolCode { get; set; }
+    public string? OldProtocol { get; set; }
     public int? FolderId { get; set; }
     public string FolderName { get; set; } = string.Empty;
 
     public int? AreaId { get; set; }
     public string AreaName { get; set; } = string.Empty;
     public DateTime? CatalogationDate { get; set; }
+    public DateTime? LastUpdate { get; set; }
     public int? PageCount { get; set; }
 
     // ── Publish fields ────────────────────────────────────────────────────
@@ -53,6 +65,7 @@ public class Material
     public string PlatformName { get; set; } = string.Empty;
     public bool IsPublished { get; set; }
     public string? ExternalLink { get; set; }
+    public string? CourseCode { get; set; }
 
     public int CurrentVersion { get; set; }
     public MaterialVersion? ActiveVersion { get; set; }

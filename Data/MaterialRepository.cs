@@ -58,13 +58,18 @@ public class MaterialRepository
 
     // ── Protocol ──────────────────────────────────────────────────────────
 
-    public async Task<int> GetNextProtocolNumberAsync()
+    private const string ProtocolPrefix = "d-";
+
+    public async Task<string> GetNextProtocolCodeAsync()
     {
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
-        using var cmd = new MySqlCommand(
-            "SELECT COALESCE(MAX(protocol_number), 0) + 1 FROM materials", conn);
-        return Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        using var cmd = new MySqlCommand(@"
+            SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(protocol_code, '-', -1) AS UNSIGNED)), 0) + 1
+            FROM materials
+            WHERE protocol_code IS NOT NULL", conn);
+        var next = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+        return $"{ProtocolPrefix}{next}";
     }
 
     // ── Core CRUD ────────────────────────────────────────────────────────
@@ -98,18 +103,21 @@ public class MaterialRepository
             where.Add("m.folder_id = @folderId");
 
         var sql = $@"
-            SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
-                   m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
-                   m.area_id, m.catalogation_date, m.page_count,
+            SELECT m.id, m.title, m.owner_id, m.language, m.document_type_id, m.created_at,
+                   m.status, m.protocol_code, m.old_protocol, m.folder_id, mf.name AS folder_name,
+                   m.area_id, m.catalogation_date, m.last_update, m.page_count,
                    m.is_publishable, m.external_protocol_code, m.platform_id,
-                   m.is_published, m.external_link,
+                   m.is_published, m.external_link, m.course_code,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
                    p.name AS platform_name,
                    COALESCE(mv.version_number,0) AS current_version,
                    mv.id AS ver_id, mv.file_name, mv.file_path,
-                   mv.file_type, mv.file_size_bytes, mv.uploaded_at
+                   mv.file_type, mv.file_size_bytes, mv.uploaded_at,
+                   (SELECT GROUP_CONCAT(au.full_name ORDER BY ma.sort_order SEPARATOR ', ')
+                    FROM material_authors ma JOIN authors au ON au.id = ma.author_id
+                    WHERE ma.material_id = m.id) AS authors_display
             FROM materials m
             LEFT JOIN users u ON u.id = m.owner_id
             LEFT JOIN document_types dt ON dt.id = m.document_type_id
@@ -144,32 +152,62 @@ public class MaterialRepository
 
     public async Task<Material?> GetByIdAsync(int id)
     {
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync();
-        using var cmd = new MySqlCommand(@"
-            SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
-                   m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
-                   m.area_id, m.catalogation_date, m.page_count,
-                   m.is_publishable, m.external_protocol_code, m.platform_id,
-                   m.is_published, m.external_link,
-                   CONCAT(u.first_name,' ',u.last_name) AS owner_name,
-                   dt.name AS type_name,
-                   a.name AS area_name,
-                   p.name AS platform_name,
-                   COALESCE(mv.version_number,0) AS current_version,
-                   mv.id AS ver_id, mv.file_name, mv.file_path,
-                   mv.file_type, mv.file_size_bytes, mv.uploaded_at
-            FROM materials m
-            LEFT JOIN users u ON u.id = m.owner_id
-            LEFT JOIN document_types dt ON dt.id = m.document_type_id
-            LEFT JOIN areas a ON a.id = m.area_id
-            LEFT JOIN material_folders mf ON mf.id = m.folder_id
-            LEFT JOIN platforms p ON p.id = m.platform_id
-            LEFT JOIN material_versions mv ON mv.material_id = m.id AND mv.is_active = 1
-            WHERE m.id = @id", conn);
-        cmd.Parameters.AddWithValue("@id", id);
-        using var r = await cmd.ExecuteReaderAsync();
-        return await r.ReadAsync() ? MapWithVersion(r) : null;
+        Material? material;
+        {
+            using var conn = _db.GetConnection();
+            await conn.OpenAsync();
+            using var cmd = new MySqlCommand(@"
+                SELECT m.id, m.title, m.owner_id, m.language, m.document_type_id, m.created_at,
+                       m.status, m.protocol_code, m.old_protocol, m.folder_id, mf.name AS folder_name,
+                       m.area_id, m.catalogation_date, m.last_update, m.page_count,
+                       m.is_publishable, m.external_protocol_code, m.platform_id,
+                       m.is_published, m.external_link, m.course_code,
+                       CONCAT(u.first_name,' ',u.last_name) AS owner_name,
+                       dt.name AS type_name,
+                       a.name AS area_name,
+                       p.name AS platform_name,
+                       COALESCE(mv.version_number,0) AS current_version,
+                       mv.id AS ver_id, mv.file_name, mv.file_path,
+                       mv.file_type, mv.file_size_bytes, mv.uploaded_at,
+                       (SELECT GROUP_CONCAT(au.full_name ORDER BY ma.sort_order SEPARATOR ', ')
+                        FROM material_authors ma JOIN authors au ON au.id = ma.author_id
+                        WHERE ma.material_id = m.id) AS authors_display
+                FROM materials m
+                LEFT JOIN users u ON u.id = m.owner_id
+                LEFT JOIN document_types dt ON dt.id = m.document_type_id
+                LEFT JOIN areas a ON a.id = m.area_id
+                LEFT JOIN material_folders mf ON mf.id = m.folder_id
+                LEFT JOIN platforms p ON p.id = m.platform_id
+                LEFT JOIN material_versions mv ON mv.material_id = m.id AND mv.is_active = 1
+                WHERE m.id = @id", conn);
+            cmd.Parameters.AddWithValue("@id", id);
+            using var r = await cmd.ExecuteReaderAsync();
+            material = await r.ReadAsync() ? MapWithVersion(r) : null;
+        }
+
+        if (material is null) return null;
+
+        // Populate the typed Authors list (distinct from AuthorsDisplay summary string)
+        using var conn2 = _db.GetConnection();
+        await conn2.OpenAsync();
+        using var authCmd = new MySqlCommand(@"
+            SELECT a.id, a.full_name, a.email, a.affiliation, a.created_at, 0 AS material_count
+            FROM   material_authors ma
+            JOIN   authors a ON a.id = ma.author_id
+            WHERE  ma.material_id = @mid
+            ORDER BY ma.sort_order, a.full_name", conn2);
+        authCmd.Parameters.AddWithValue("@mid", id);
+        using var ar = await authCmd.ExecuteReaderAsync();
+        while (await ar.ReadAsync())
+            material.Authors.Add(new Author
+            {
+                Id          = ar.GetInt32("id"),
+                FullName    = ar.GetString("full_name"),
+                Email       = ar.IsDBNull(ar.GetOrdinal("email"))       ? null : ar.GetString("email"),
+                Affiliation = ar.IsDBNull(ar.GetOrdinal("affiliation")) ? null : ar.GetString("affiliation"),
+            });
+
+        return material;
     }
 
     public async Task<bool> TitleExistsAsync(string title, int excludeId = 0)
@@ -199,27 +237,28 @@ public class MaterialRepository
     }
 
     public async Task<int> CreateAsync(
-        string title, string? authorName, int? ownerId, string language,
+        string title, int? ownerId, string language,
         int? documentTypeId, string status = "draft",
         int? folderId = null, int? areaId = null, DateTime? catalogationDate = null,
-        int? protocolNumber = null, int? pageCount = null,
+        DateTime? lastUpdate = null,
+        string? protocolCode = null, int? pageCount = null,
         bool isPublishable = false, string? externalProtocolCode = null,
-        int? platformId = null, string? externalLink = null)
+        int? platformId = null, string? externalLink = null, string? courseCode = null,
+        string? oldProtocol = null)
     {
         bool isPublished = isPublishable && !string.IsNullOrWhiteSpace(externalProtocolCode);
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
             INSERT INTO materials
-                (title, author_name, owner_id, language, document_type_id,
-                 status, folder_id, area_id, catalogation_date, protocol_number, page_count,
-                 is_publishable, external_protocol_code, platform_id, is_published, external_link)
+                (title, owner_id, language, document_type_id,
+                 status, folder_id, area_id, catalogation_date, last_update, protocol_code, old_protocol, page_count,
+                 is_publishable, external_protocol_code, platform_id, is_published, external_link, course_code)
             VALUES
-                (@title, @authorName, @ownerId, @lang, @typeId,
-                 @status, @folderId, @areaId, @catDate, @proto, @pageCount,
-                 @isPublishable, @extProto, @platformId, @isPublished, @extLink)", conn);
+                (@title, @ownerId, @lang, @typeId,
+                 @status, @folderId, @areaId, @catDate, @lastUpdate, @proto, @oldProto, @pageCount,
+                 @isPublishable, @extProto, @platformId, @isPublished, @extLink, @courseCode)", conn);
         cmd.Parameters.AddWithValue("@title", title.Trim());
-        cmd.Parameters.AddWithValue("@authorName", (object?)authorName?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@ownerId", (object?)ownerId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@lang", language);
         cmd.Parameters.AddWithValue("@typeId", (object?)documentTypeId ?? DBNull.Value);
@@ -227,24 +266,28 @@ public class MaterialRepository
         cmd.Parameters.AddWithValue("@folderId", (object?)folderId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@areaId", (object?)areaId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@catDate", (object?)catalogationDate ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@proto", (object?)protocolNumber ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@lastUpdate", (object?)lastUpdate ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@proto", (object?)protocolCode?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@oldProto", (object?)oldProtocol?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@pageCount", (object?)pageCount ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@isPublishable", isPublishable);
         cmd.Parameters.AddWithValue("@extProto", (object?)externalProtocolCode?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@platformId", (object?)platformId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@isPublished", isPublished);
         cmd.Parameters.AddWithValue("@extLink", (object?)externalLink?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@courseCode", (object?)courseCode?.Trim() ?? DBNull.Value);
         await cmd.ExecuteNonQueryAsync();
         return await DbHelper.GetLastInsertIdAsync(conn);
     }
 
     public async Task UpdateAsync(
-        int id, string title, string? authorName, int? ownerId, string language,
+        int id, string title, int? ownerId, string language,
         int? documentTypeId, string status,
         int? folderId = null, int? areaId = null, DateTime? catalogationDate = null,
-        int? protocolNumber = null, int? pageCount = null,
+        DateTime? lastUpdate = null,
+        string? protocolCode = null, int? pageCount = null,
         bool isPublishable = false, string? externalProtocolCode = null,
-        int? platformId = null, string? externalLink = null)
+        int? platformId = null, string? externalLink = null, string? courseCode = null)
     {
         bool isPublished = isPublishable && !string.IsNullOrWhiteSpace(externalProtocolCode);
         using var conn = _db.GetConnection();
@@ -253,7 +296,6 @@ public class MaterialRepository
         using var cmd = new MySqlCommand(@"
             UPDATE materials SET
                 title                  = @title,
-                author_name            = @authorName,
                 owner_id               = @ownerId,
                 language               = @lang,
                 document_type_id       = @typeId,
@@ -261,16 +303,17 @@ public class MaterialRepository
                 folder_id              = CASE WHEN @folderId IS NOT NULL THEN @folderId ELSE folder_id END,
                 area_id                = @areaId,
                 catalogation_date      = @catDate,
-                protocol_number        = CASE WHEN @proto IS NOT NULL THEN @proto ELSE protocol_number END,
+                last_update            = @lastUpdate,
+                protocol_code          = CASE WHEN @proto IS NOT NULL THEN @proto ELSE protocol_code END,
                 page_count             = CASE WHEN @pageCount IS NOT NULL THEN @pageCount ELSE page_count END,
                 is_publishable         = @isPublishable,
                 external_protocol_code = @extProto,
                 platform_id            = @platformId,
                 is_published           = @isPublished,
-                external_link          = @extLink
+                external_link          = @extLink,
+                course_code            = @courseCode
             WHERE id = @id", conn);
         cmd.Parameters.AddWithValue("@title", title.Trim());
-        cmd.Parameters.AddWithValue("@authorName", (object?)authorName?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@ownerId", (object?)ownerId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@lang", language);
         cmd.Parameters.AddWithValue("@typeId", (object?)documentTypeId ?? DBNull.Value);
@@ -278,13 +321,15 @@ public class MaterialRepository
         cmd.Parameters.AddWithValue("@folderId", (object?)folderId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@areaId", (object?)areaId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@catDate", (object?)catalogationDate ?? DBNull.Value);
-        cmd.Parameters.AddWithValue("@proto", (object?)protocolNumber ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@lastUpdate", (object?)lastUpdate ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@proto", (object?)protocolCode?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@pageCount", (object?)pageCount ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@isPublishable", isPublishable);
         cmd.Parameters.AddWithValue("@extProto", (object?)externalProtocolCode?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@platformId", (object?)platformId ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@isPublished", isPublished);
         cmd.Parameters.AddWithValue("@extLink", (object?)externalLink?.Trim() ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@courseCode", (object?)courseCode?.Trim() ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@id", id);
         await cmd.ExecuteNonQueryAsync();
     }
@@ -411,18 +456,21 @@ public class MaterialRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
-                   m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
-                   m.area_id, m.catalogation_date, m.page_count,
+            SELECT m.id, m.title, m.owner_id, m.language, m.document_type_id, m.created_at,
+                   m.status, m.protocol_code, m.old_protocol, m.folder_id, mf.name AS folder_name,
+                   m.area_id, m.catalogation_date, m.last_update, m.page_count,
                    m.is_publishable, m.external_protocol_code, m.platform_id,
-                   m.is_published, m.external_link,
+                   m.is_published, m.external_link, m.course_code,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
                    p.name AS platform_name,
                    COALESCE(mv.version_number,0) AS current_version,
                    mv.id AS ver_id, mv.file_name, mv.file_path,
-                   mv.file_type, mv.file_size_bytes, mv.uploaded_at
+                   mv.file_type, mv.file_size_bytes, mv.uploaded_at,
+                   (SELECT GROUP_CONCAT(au.full_name ORDER BY ma.sort_order SEPARATOR ', ')
+                    FROM material_authors ma JOIN authors au ON au.id = ma.author_id
+                    WHERE ma.material_id = m.id) AS authors_display
             FROM lesson_materials lm
             JOIN materials m ON m.id = lm.material_id
             LEFT JOIN users u ON u.id = m.owner_id
@@ -470,18 +518,21 @@ public class MaterialRepository
         using var conn = _db.GetConnection();
         await conn.OpenAsync();
         using var cmd = new MySqlCommand(@"
-            SELECT m.id, m.title, m.author_name, m.owner_id, m.language, m.document_type_id, m.created_at,
-                   m.status, m.protocol_number, m.folder_id, mf.name AS folder_name,
-                   m.area_id, m.catalogation_date, m.page_count,
+            SELECT m.id, m.title, m.owner_id, m.language, m.document_type_id, m.created_at,
+                   m.status, m.protocol_code, m.old_protocol, m.folder_id, mf.name AS folder_name,
+                   m.area_id, m.catalogation_date, m.last_update, m.page_count,
                    m.is_publishable, m.external_protocol_code, m.platform_id,
-                   m.is_published, m.external_link,
+                   m.is_published, m.external_link, m.course_code,
                    CONCAT(u.first_name,' ',u.last_name) AS owner_name,
                    dt.name AS type_name,
                    a.name AS area_name,
                    p.name AS platform_name,
                    COALESCE(mv.version_number,0) AS current_version,
                    mv.id AS ver_id, mv.file_name, mv.file_path,
-                   mv.file_type, mv.file_size_bytes, mv.uploaded_at
+                   mv.file_type, mv.file_size_bytes, mv.uploaded_at,
+                   (SELECT GROUP_CONCAT(au.full_name ORDER BY ma.sort_order SEPARATOR ', ')
+                    FROM material_authors ma JOIN authors au ON au.id = ma.author_id
+                    WHERE ma.material_id = m.id) AS authors_display
             FROM materials m
             LEFT JOIN users u ON u.id = m.owner_id
             LEFT JOIN document_types dt ON dt.id = m.document_type_id
@@ -523,22 +574,6 @@ public class MaterialRepository
         return result;
     }
 
-    public async Task<List<string>> GetDistinctAuthorsAsync()
-    {
-        var list = new List<string>();
-        using var conn = _db.GetConnection();
-        await conn.OpenAsync();
-        using var cmd = new MySqlCommand(@"
-            SELECT DISTINCT author_name
-            FROM materials
-            WHERE author_name IS NOT NULL AND author_name <> ''
-            ORDER BY author_name", conn);
-        using var r = await cmd.ExecuteReaderAsync();
-        while (await r.ReadAsync())
-            list.Add(r.GetString(0));
-        return list;
-    }
-
     // ── Private helpers ───────────────────────────────────────────────────
 
     private static Material MapWithVersion(MySqlDataReader r)
@@ -547,7 +582,7 @@ public class MaterialRepository
         {
             Id = r.GetInt32("id"),
             Title = r.GetString("title"),
-            AuthorName = r.IsDBNull(r.GetOrdinal("author_name")) ? null : r.GetString("author_name"),
+            AuthorsDisplay = r.IsDBNull(r.GetOrdinal("authors_display")) ? "" : r.GetString("authors_display"),
             OwnerId = r.IsDBNull(r.GetOrdinal("owner_id")) ? null : r.GetInt32("owner_id"),
             OwnerName = r.IsDBNull(r.GetOrdinal("owner_name")) ? "" : r.GetString("owner_name"),
             FolderId = r.IsDBNull(r.GetOrdinal("folder_id")) ? null : r.GetInt32("folder_id"),
@@ -557,10 +592,12 @@ public class MaterialRepository
             DocumentTypeName = r.IsDBNull(r.GetOrdinal("type_name")) ? "" : r.GetString("type_name"),
             CreatedAt = r.GetDateTime("created_at"),
             Status = r.IsDBNull(r.GetOrdinal("status")) ? "draft" : r.GetString("status"),
-            ProtocolNumber = r.IsDBNull(r.GetOrdinal("protocol_number")) ? null : r.GetInt32("protocol_number"),
+            ProtocolCode = r.IsDBNull(r.GetOrdinal("protocol_code")) ? null : r.GetString("protocol_code"),
+            OldProtocol  = r.IsDBNull(r.GetOrdinal("old_protocol"))  ? null : r.GetString("old_protocol"),
             AreaId = r.IsDBNull(r.GetOrdinal("area_id")) ? null : r.GetInt32("area_id"),
             AreaName = r.IsDBNull(r.GetOrdinal("area_name")) ? "" : r.GetString("area_name"),
             CatalogationDate = r.IsDBNull(r.GetOrdinal("catalogation_date")) ? null : r.GetDateTime("catalogation_date"),
+            LastUpdate = r.IsDBNull(r.GetOrdinal("last_update")) ? null : r.GetDateTime("last_update"),
             PageCount = r.IsDBNull(r.GetOrdinal("page_count")) ? null : r.GetInt32("page_count"),
             IsPublishable = !r.IsDBNull(r.GetOrdinal("is_publishable")) && r.GetBoolean("is_publishable"),
             ExternalProtocolCode = r.IsDBNull(r.GetOrdinal("external_protocol_code")) ? null : r.GetString("external_protocol_code"),
@@ -568,6 +605,7 @@ public class MaterialRepository
             PlatformName = r.IsDBNull(r.GetOrdinal("platform_name")) ? "" : r.GetString("platform_name"),
             IsPublished = !r.IsDBNull(r.GetOrdinal("is_published")) && r.GetBoolean("is_published"),
             ExternalLink = r.IsDBNull(r.GetOrdinal("external_link")) ? null : r.GetString("external_link"),
+            CourseCode = r.IsDBNull(r.GetOrdinal("course_code")) ? null : r.GetString("course_code"),
             CurrentVersion = r.GetInt32("current_version")
         };
         if (!r.IsDBNull(r.GetOrdinal("ver_id")))

@@ -204,7 +204,7 @@ else
                             </td>
                             <td><span class="badge bg-light text-dark border">@(string.IsNullOrEmpty(m.DocumentTypeName) ? "—" : m.DocumentTypeName)</span></td>
                             <td>@m.Language</td>
-                            <td class="text-muted small">@(string.IsNullOrEmpty(m.AuthorName) ? "—" : m.AuthorName)</td>
+                            <td class="text-muted small">@(string.IsNullOrEmpty(m.AuthorsDisplay) ? "—" : m.AuthorsDisplay)</td>
                             <td class="text-center">
                                 <span class="badge bg-@statusCss" style="font-size:.7rem;">@statusLabel</span>
                             </td>

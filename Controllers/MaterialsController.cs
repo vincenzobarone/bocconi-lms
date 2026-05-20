@@ -17,6 +17,7 @@ namespace BocconiLMS.Controllers;
 public class MaterialsController : Controller
 {
     private readonly MaterialRepository _materials;
+    private readonly AuthorRepository _authorRepo;
     private readonly DocumentTypeRepository _docTypes;
     private readonly UserRepository _users;
     private readonly IWebHostEnvironment _env;
@@ -33,6 +34,7 @@ public class MaterialsController : Controller
 
     public MaterialsController(
         MaterialRepository materials,
+        AuthorRepository authorRepo,
         DocumentTypeRepository docTypes,
         UserRepository users,
         IWebHostEnvironment env,
@@ -48,6 +50,7 @@ public class MaterialsController : Controller
         IOptions<StorageOptions> storage)
     {
         _materials    = materials;
+        _authorRepo   = authorRepo;
         _docTypes     = docTypes;
         _users        = users;
         _env          = env;
@@ -137,7 +140,7 @@ public class MaterialsController : Controller
         ViewBag.DocumentTypes   = await _docTypes.GetAllAsync();
         ViewBag.Languages       = Material.Languages;
         ViewBag.AvailableOwners = await _users.GetTeachersAndAdminsAsync();
-        ViewBag.ExistingAuthors = await _materials.GetDistinctAuthorsAsync();
+        ViewBag.AllAuthors = await _authorRepo.GetAllAsync();
         ViewBag.ExistingFolders = await _materials.GetAllFoldersAsync();
         ViewBag.Platforms       = await _platforms.GetAllAsync();
         // Areas: Admin sees all, Teacher sees only their assigned areas
@@ -153,7 +156,7 @@ public class MaterialsController : Controller
     public async Task<IActionResult> NextProtocol()
     {
         if (!await CanCreateMaterialAsync()) return Forbid();
-        var next = await _materials.GetNextProtocolNumberAsync();
+        var next = await _materials.GetNextProtocolCodeAsync();
         return Json(new { protocol = next });
     }
 
@@ -198,47 +201,6 @@ public class MaterialsController : Controller
             ModelState.AddModelError(fieldName,
                 _t.T("mat.doctype_required"));
         }
-    }
-
-    private static async Task<string?> TryExtractAuthorAsync(IFormFile file)
-    {
-        var ext = Path.GetExtension(file.FileName).ToLowerInvariant();
-        try
-        {
-            if (ext is ".docx" or ".pptx" or ".xlsx")
-            {
-                using var ms = new MemoryStream();
-                await file.CopyToAsync(ms);
-                ms.Position = 0;
-                using var zip = new System.IO.Compression.ZipArchive(ms, System.IO.Compression.ZipArchiveMode.Read);
-                var entry = zip.GetEntry("docProps/core.xml");
-                if (entry != null)
-                {
-                    using var sr = new StreamReader(entry.Open());
-                    var xml = await sr.ReadToEndAsync();
-                    var m = System.Text.RegularExpressions.Regex.Match(xml, @"<dc:creator>(.*?)</dc:creator>");
-                    if (m.Success && !string.IsNullOrWhiteSpace(m.Groups[1].Value))
-                        return m.Groups[1].Value.Trim();
-                }
-            }
-            else if (ext == ".pdf")
-            {
-                using var ms = new MemoryStream();
-                await file.CopyToAsync(ms);
-                var bytes = ms.ToArray();
-                var text = System.Text.Encoding.Latin1.GetString(bytes, 0, Math.Min(bytes.Length, 65536));
-                // PDF 1.x info dict: /Author (John Doe)
-                var m = System.Text.RegularExpressions.Regex.Match(text, @"/Author\s*\(([^)\\]*(?:\\.[^)\\]*)*)\)");
-                if (m.Success && !string.IsNullOrWhiteSpace(m.Groups[1].Value))
-                    return m.Groups[1].Value.Trim();
-                // XMP metadata: <dc:creator><rdf:Bag><rdf:li>author</rdf:li>
-                var mXmp = System.Text.RegularExpressions.Regex.Match(text, @"<dc:creator[\s\S]*?<rdf:li[^>]*>([\s\S]*?)<\/rdf:li>");
-                if (mXmp.Success && !string.IsNullOrWhiteSpace(mXmp.Groups[1].Value))
-                    return mXmp.Groups[1].Value.Trim();
-            }
-        }
-        catch { }
-        return null;
     }
 
     private static async Task<int?> TryExtractPageCountFromPdfAsync(IFormFile file)
@@ -328,14 +290,13 @@ public class MaterialsController : Controller
         {
             ws.Cell(row, 1).Value  = m.Id;
             ws.Cell(row, 2).Value  = m.Title;
-            ws.Cell(row, 3).Value  = m.AuthorName ?? "";
+            ws.Cell(row, 3).Value  = m.AuthorsDisplay;
             ws.Cell(row, 4).Value  = m.Language;
             ws.Cell(row, 5).Value  = m.DocumentTypeName;
             ws.Cell(row, 6).Value  = m.Status;
             ws.Cell(row, 7).Value  = m.AreaName;
             ws.Cell(row, 8).Value  = m.FolderName;
-            if (m.ProtocolNumber.HasValue) ws.Cell(row, 9).Value = m.ProtocolNumber.Value;
-            else ws.Cell(row, 9).Value = "";
+            ws.Cell(row, 9).Value = m.ProtocolCode ?? "";
             ws.Cell(row, 10).Value = m.CatalogationDate.HasValue
                 ? m.CatalogationDate.Value.ToString("dd/MM/yyyy") : "";
             ws.Cell(row, 11).Value = m.CreatedAt.ToString("dd/MM/yyyy");
@@ -454,7 +415,7 @@ public class MaterialsController : Controller
 
                         table.Cell().Element(Dcell).Text($"{m.Id}").FontSize(8);
                         table.Cell().Element(Dcell).Text(m.Title).FontSize(8);
-                        table.Cell().Element(Dcell).Text(m.AuthorName ?? "—").FontSize(8);
+                        table.Cell().Element(Dcell).Text(string.IsNullOrEmpty(m.AuthorsDisplay) ? "—" : m.AuthorsDisplay).FontSize(8);
                         table.Cell().Element(Dcell).Text(m.Language).FontSize(8);
                         table.Cell().Element(Dcell).Text(m.DocumentTypeName).FontSize(8);
                         table.Cell().Element(Dcell).Text(m.Status).FontSize(8);
@@ -509,23 +470,12 @@ public class MaterialsController : Controller
         // Owner is always the current logged-in user on create
         vm.OwnerId = CurrentUserId();
 
-        // Try to extract author from document metadata if field is empty
-        if (string.IsNullOrWhiteSpace(vm.AuthorName) && vm.File != null)
-        {
-            vm.AuthorName = await TryExtractAuthorAsync(vm.File);
-            if (!string.IsNullOrWhiteSpace(vm.AuthorName))
-                ModelState.Remove(nameof(vm.AuthorName));
-        }
-
         // Try to extract page count server-side from PDF when JS didn't provide it
         if (!vm.PageCount.HasValue && vm.File != null &&
             Path.GetExtension(vm.File.FileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase))
         {
             vm.PageCount = await TryExtractPageCountFromPdfAsync(vm.File);
         }
-
-        if (string.IsNullOrWhiteSpace(vm.AuthorName))
-            ModelState.AddModelError(nameof(vm.AuthorName), _t.T("mat.author_required"));
 
         if (vm.File == null || vm.File.Length == 0)
             ModelState.AddModelError(nameof(vm.File), _t.T("mat.file_required"));
@@ -567,17 +517,19 @@ public class MaterialsController : Controller
 
         // Resolve folder and assign protocol when status = verified
         int? resolvedFolderId = null;
-        int? assignedProtocol = null;
+        string? assignedProtocol = null;
         if (vm.Status == "verified")
         {
             if (vm.FolderId.HasValue)
                 resolvedFolderId = vm.FolderId;
             else if (!string.IsNullOrWhiteSpace(vm.FolderName))
                 resolvedFolderId = await _materials.GetOrCreateFolderAsync(vm.FolderName, CurrentUserId());
-            assignedProtocol = await _materials.GetNextProtocolNumberAsync();
+            assignedProtocol = await _materials.GetNextProtocolCodeAsync();
         }
 
-        var matId = await _materials.CreateAsync(vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, assignedProtocol, vm.PageCount, vm.IsPublishable, vm.ExternalProtocolCode, vm.PlatformId, vm.ExternalLink);
+        var matId = await _materials.CreateAsync(vm.Title, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, vm.LastUpdate, assignedProtocol, vm.PageCount, vm.IsPublishable, vm.ExternalProtocolCode, vm.PlatformId, vm.ExternalLink, vm.CourseCode);
+        if (vm.AuthorIds.Count > 0)
+            await _authorRepo.SetMaterialAuthorsAsync(matId, vm.AuthorIds);
 
         if (vm.File != null && vm.File.Length > 0)
         {
@@ -589,14 +541,14 @@ public class MaterialsController : Controller
             {
                 _logger.LogError(ex, "SaveVersionAsync fallita per materialId={MatId} file={File}", matId, vm.File.FileName);
                 TempData["Warning"] = $"§mat.msg_created_no_file|{ex.Message}";
-                return RedirectToAction(nameof(Details), new { id = matId });
+                return RedirectToAction(nameof(Index));
             }
         }
 
         _audit.Log("material.create", $"material#{matId} \"{vm.Title}\"");
         FireMaterialNotification(vm.Title, "created");
         TempData["Success"] = $"§mat.msg_created|{vm.Title}";
-        return RedirectToAction(nameof(Details), new { id = matId });
+        return RedirectToAction(nameof(Index));
     }
 
     // ── Edit ──────────────────────────────────────────────────────────────
@@ -609,11 +561,12 @@ public class MaterialsController : Controller
         var material = await _materials.GetByIdAsync(id);
         if (material == null) return NotFound();
         await PopulateDropdownsAsync();
+        var currentAuthors = await _authorRepo.GetByMaterialIdAsync(id);
         var vm = new MaterialFormViewModel
         {
             Id               = material.Id,
             Title            = material.Title,
-            AuthorName       = material.AuthorName,
+            AuthorIds        = currentAuthors.Select(a => a.Id).ToList(),
             OwnerId          = material.OwnerId,
             Language         = material.Language,
             DocumentTypeId   = material.DocumentTypeId,
@@ -622,6 +575,9 @@ public class MaterialsController : Controller
             FolderName            = material.FolderName,
             AreaId                = material.AreaId,
             CatalogationDate      = material.CatalogationDate ?? DateTime.Today,
+            LastUpdate            = material.LastUpdate,
+            PageCount             = material.PageCount,
+            CourseCode            = material.CourseCode,
             IsPublishable         = material.IsPublishable,
             ExternalProtocolCode  = material.ExternalProtocolCode,
             PlatformId            = material.PlatformId,
@@ -639,23 +595,12 @@ public class MaterialsController : Controller
     public async Task<IActionResult> Edit(int id, MaterialFormViewModel vm)
     {
         if (!await CanEditMaterialAsync()) return Forbid();
-        // Try to extract author from document metadata if field is empty
-        if (string.IsNullOrWhiteSpace(vm.AuthorName) && vm.File != null)
-        {
-            vm.AuthorName = await TryExtractAuthorAsync(vm.File);
-            if (!string.IsNullOrWhiteSpace(vm.AuthorName))
-                ModelState.Remove(nameof(vm.AuthorName));
-        }
-
         // Try to extract page count from new PDF file if JS didn't provide it
         if (!vm.PageCount.HasValue && vm.File != null &&
             Path.GetExtension(vm.File.FileName).Equals(".pdf", StringComparison.OrdinalIgnoreCase))
         {
             vm.PageCount = await TryExtractPageCountFromPdfAsync(vm.File);
         }
-
-        if (string.IsNullOrWhiteSpace(vm.AuthorName))
-            ModelState.AddModelError(nameof(vm.AuthorName), _t.T("mat.author_required"));
 
         TranslateDocTypeError(nameof(vm.DocumentTypeId), vm.DocumentTypeId);
 
@@ -702,7 +647,7 @@ public class MaterialsController : Controller
 
         // Resolve folder and assign protocol if transitioning to verified without them
         int? resolvedFolderId = null;
-        int? assignedProtocol = null;
+        string? assignedProtocol = null;
         if (vm.Status == "verified")
         {
             var existing = await _materials.GetByIdAsync(id);
@@ -711,11 +656,12 @@ public class MaterialsController : Controller
             else if (!string.IsNullOrWhiteSpace(vm.FolderName))
                 resolvedFolderId = await _materials.GetOrCreateFolderAsync(vm.FolderName, CurrentUserId());
 
-            if (existing?.ProtocolNumber == null)
-                assignedProtocol = await _materials.GetNextProtocolNumberAsync();
+            if (existing?.ProtocolCode == null)
+                assignedProtocol = await _materials.GetNextProtocolCodeAsync();
         }
 
-        await _materials.UpdateAsync(id, vm.Title, vm.AuthorName, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, assignedProtocol, vm.PageCount, vm.IsPublishable, vm.ExternalProtocolCode, vm.PlatformId, vm.ExternalLink);
+        await _materials.UpdateAsync(id, vm.Title, vm.OwnerId, vm.Language, vm.DocumentTypeId, vm.Status, resolvedFolderId, vm.AreaId, vm.CatalogationDate, vm.LastUpdate, assignedProtocol, vm.PageCount, vm.IsPublishable, vm.ExternalProtocolCode, vm.PlatformId, vm.ExternalLink, vm.CourseCode);
+        await _authorRepo.SetMaterialAuthorsAsync(id, vm.AuthorIds);
 
         if (vm.File != null && vm.File.Length > 0)
         {
@@ -1094,5 +1040,30 @@ public class MaterialsController : Controller
         catch { }
 
         return null;
+    }
+
+    // ── API: risolve o crea autore da nome estratto da metadati ──────────────
+
+    public record ResolveAuthorRequest(string Name);
+
+    [HttpPost]
+    [Authorize]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResolveAuthor([FromBody] ResolveAuthorRequest req)
+    {
+        var name = req?.Name?.Trim();
+        if (string.IsNullOrEmpty(name) || name.Length > 300)
+            return BadRequest(new { error = "Name invalid." });
+
+        var (id, fullName, created) = await _authorRepo.FindOrCreateByNameAsync(name);
+
+        if (created)
+            _audit.Log("Author.AutoCreate",
+                target:  fullName,
+                outcome: "created automatically from document metadata",
+                user:    User.Identity?.Name,
+                ip:      HttpContext.Connection.RemoteIpAddress?.ToString());
+
+        return Ok(new { id, name = fullName, created });
     }
 }

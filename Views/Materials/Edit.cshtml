@@ -5,14 +5,15 @@
     var docTypes = ViewBag.DocumentTypes as List<BocconiLMS.Models.DocumentType> ?? new();
     var languages = ViewBag.Languages as string[] ?? BocconiLMS.Models.Material.Languages;
     var owners = ViewBag.AvailableOwners as List<BocconiLMS.Models.User> ?? new();
-    var existingAuthors = ViewBag.ExistingAuthors as List<string> ?? new();
+    var allAuthors = ViewBag.AllAuthors as List<BocconiLMS.Models.Author> ?? new();
     var availableAreas  = ViewBag.AvailableAreas as List<BocconiLMS.Models.Area> ?? new();
     var existingFolders = ViewBag.ExistingFolders as List<BocconiLMS.Models.MaterialFolder> ?? new();
     var platforms       = ViewBag.Platforms as List<BocconiLMS.Models.Platform> ?? new();
     bool canSetStatus   = ViewBag.CanSetStatus == true;
     bool canPublish     = ViewBag.CanPublish == true;
 
-    bool hasProtocol = material?.ProtocolNumber != null;
+    bool hasProtocol = material?.ProtocolCode != null;
+    bool hasOldProtocol = !string.IsNullOrEmpty(material?.OldProtocol);
     bool hasFolder   = material?.FolderId != null;
 }
 
@@ -62,28 +63,60 @@
                         </a>
                     </div>
 
-                    <div class="row mb-3 g-2 align-items-start">
-                        <div class="col-md-4">
-                            <label asp-for="AuthorName" class="form-label fw-semibold">
-                                @T["mat.label_author"] <span class="text-danger">*</span>
-                            </label>
-                            <div class="position-relative">
-                                <input asp-for="AuthorName" id="authorInput" class="form-control"
-                                       placeholder="@T["mat.author_placeholder"]"
-                                       autocomplete="off" />
-                                <ul id="authorDropdown"
-                                    class="dropdown-menu w-100 shadow-sm py-1"
-                                    style="max-height:200px;overflow-y:auto;display:none;position:absolute;z-index:1055"></ul>
-                            </div>
-                            <span asp-validation-for="AuthorName" class="text-danger small"></span>
-                        </div>
-                        <div class="col-md-8">
+                    <div class="row mb-3 g-2">
+                        <div class="col-12">
                             <label asp-for="Title" class="form-label fw-semibold">
                                 @T["mat.label_title"] <span class="text-danger">*</span>
                             </label>
                             <input asp-for="Title" id="matTitle" class="form-control" />
                             <span asp-validation-for="Title" class="text-danger small"></span>
                         </div>
+                    </div>
+
+                    <div class="row mb-3 g-2">
+                        <div class="col-md-6">
+                            <label class="form-label fw-semibold">@T["mat.label_authors"]</label>
+                            <div class="d-flex align-items-start gap-2">
+                                <div class="flex-grow-1">
+                                    <select id="authorSelect" name="AuthorIds" multiple
+                                            class="form-select">
+                                        @foreach (var a in allAuthors)
+                                        {
+                                            if (Model.AuthorIds.Contains(a.Id))
+                                            {
+                                                <option value="@a.Id" selected>@a.FullName</option>
+                                            }
+                                            else
+                                            {
+                                                <option value="@a.Id">@a.FullName</option>
+                                            }
+                                        }
+                                    </select>
+                                </div>
+                                <button type="button" id="authorBrowseBtn"
+                                        class="btn btn-outline-secondary"
+                                        data-bs-toggle="modal" data-bs-target="#authorBrowseModal"
+                                        title="@T["mat.authors_browse"]">
+                                    <i class="bi bi-people"></i>
+                                </button>
+                            </div>
+                        </div>
+                        @if (availableAreas.Any())
+                        {
+                            <div class="col-md-6">
+                                <label asp-for="AreaId" class="form-label fw-semibold">
+                                    @T["mat.label_area"] <span class="text-danger">*</span>
+                                </label>
+                                <select asp-for="AreaId" class="form-select">
+                                    <option value="">@T["mat.select_area"]</option>
+                                    @foreach (var ar in availableAreas)
+                                    {
+                                        <option value="@ar.Id" selected="@(Model.AreaId == ar.Id ? "selected" : null)">@ar.Name</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="AreaId" class="text-danger small"></span>
+                            </div>
+                        }
                     </div>
 
                     <div class="row mb-3 g-2 align-items-start">
@@ -148,8 +181,15 @@
                                     @if (hasProtocol)
                                     {
                                         <div class="col-md-6">
-                                            <label class="form-label fw-semibold">@T["mat.protocol_number"]</label>
-                                            <input type="text" class="form-control" readonly value="@material!.ProtocolNumber" />
+                                            <label class="form-label fw-semibold">@T["mat.protocol_code"]</label>
+                                            <input type="text" class="form-control" readonly value="@material!.ProtocolCode" />
+                                        </div>
+                                    }
+                                    @if (hasOldProtocol)
+                                    {
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-semibold">@T["mat.old_protocol"]</label>
+                                            <input type="text" class="form-control" readonly value="@material!.OldProtocol" />
                                         </div>
                                     }
                                     @if (hasFolder)
@@ -168,25 +208,19 @@
                     {
                         <div class="row mb-3 g-2">
                             <div class="col-md-6">
-                                <label asp-for="AreaId" class="form-label fw-semibold">
-                                    @T["mat.label_area"] <span class="text-danger">*</span>
-                                </label>
-                                <select asp-for="AreaId" class="form-select">
-                                    <option value="">@T["mat.select_area"]</option>
-                                    @foreach (var ar in availableAreas)
-                                    {
-                                        <option value="@ar.Id" selected="@(Model.AreaId == ar.Id ? "selected" : null)">@ar.Name</option>
-                                    }
-                                </select>
-                                <span asp-validation-for="AreaId" class="text-danger small"></span>
-                            </div>
-                            <div class="col-md-6">
                                 <label asp-for="CatalogationDate" class="form-label fw-semibold">
                                     @T["mat.label_cat_date"] <span class="text-danger">*</span>
                                 </label>
                                 <input asp-for="CatalogationDate" type="date" class="form-control"
                                        value="@(Model.CatalogationDate.HasValue ? Model.CatalogationDate.Value.ToString("yyyy-MM-dd") : "")" />
                                 <span asp-validation-for="CatalogationDate" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="LastUpdate" class="form-label fw-semibold">
+                                    @T["mat.label_last_update"]
+                                </label>
+                                <input asp-for="LastUpdate" type="date" class="form-control"
+                                       value="@(Model.LastUpdate.HasValue ? Model.LastUpdate.Value.ToString("yyyy-MM-dd") : "")" />
                             </div>
                         </div>
                     }
@@ -264,6 +298,20 @@
                         </div>
                     }
 
+                    @* ── Codice corso ─────────────────────────────────────── *@
+                    <div class="row mb-3 g-2">
+                        <div class="col-md-12">
+                            <label asp-for="CourseCode" class="form-label fw-semibold">
+                                <i class="bi bi-mortarboard me-1"></i>@T["mat.label_course_code"]
+                            </label>
+                            <input asp-for="CourseCode" class="form-control" maxlength="100"
+                                   placeholder="es. CM_2024_12345, M12024CODICE" />
+                            <div class="form-text text-muted small">
+                                <i class="bi bi-info-circle me-1"></i>@T["mat.help_course_code"]
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-end gap-2 mt-4">
                         <a asp-action="Index" class="btn btn-outline-secondary">
                             <i class="bi bi-x me-1"></i>@T["mat.cancel"]
@@ -292,7 +340,7 @@
 
                 <div class="mb-3">
                     <label class="form-label fw-semibold">
-                        <i class="bi bi-hash me-1"></i>@T["mat.protocol_number"]
+                        <i class="bi bi-hash me-1"></i>@T["mat.protocol_code"]
                     </label>
                     <div class="d-flex align-items-center gap-2 px-3 py-2 rounded border bg-light text-muted small">
                         <i class="bi bi-magic"></i>
@@ -339,10 +387,57 @@
     </div>
 </div>
 
+<!-- ── Browse Authors Modal ─────────────────────────────────────────── -->
+<div class="modal fade" id="authorBrowseModal" tabindex="-1" aria-modal="true" role="dialog">
+    <div class="modal-dialog modal-dialog-scrollable" style="max-width:360px;">
+        <div class="modal-content">
+            <div class="modal-header py-2">
+                <h6 class="modal-title fw-semibold">
+                    <i class="bi bi-people me-1 text-bocconi"></i>@T["mat.authors_browse"]
+                </h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-2">
+                <div class="input-group input-group-sm mb-2">
+                    <input type="text" id="authorCreateInput" class="form-control"
+                           placeholder="@T["mat.author_new_placeholder"]" maxlength="300" autocomplete="off" />
+                    <button type="button" class="btn btn-bocconi" id="authorCreateBtn"
+                            title="@T["mat.authors_browse"]">
+                        <i class="bi bi-person-plus"></i>
+                    </button>
+                </div>
+                <hr class="my-2" />
+                <input type="text" id="authorBrowseSearch" class="form-control form-control-sm mb-2"
+                       placeholder="@T["mat.author_filter_placeholder"]" autocomplete="off" />
+                <div class="list-group list-group-flush" style="max-height:300px;overflow-y:auto;">
+                    @foreach (var a in allAuthors)
+                    {
+                        <button type="button"
+                                class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 small"
+                                data-author-id="@a.Id" data-author-name="@a.FullName">
+                            <i class="bi bi-circle text-muted flex-shrink-0"></i>
+                            @a.FullName
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div id="folderMap" data-folders="@System.Text.Json.JsonSerializer.Serialize(existingFolders.Select(f => new { f.Id, f.Name }))"></div>
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" />
+    <style>
+        /* Nasconde la ricerca interna al widget autori — la modale Browse la sostituisce */
+        .author-ts-no-search .ts-control input { display: none !important; }
+    </style>
+}
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
     <script>
         (function () {
             var summary = document.getElementById('valSummary');
@@ -482,61 +577,6 @@
             verifiedModal.hide();
         });
 
-        // ── Author autocomplete ────────────────────────────────────────────
-        (function() {
-            var authors = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(existingAuthors));
-            var inp  = document.getElementById('authorInput');
-            var drop = document.getElementById('authorDropdown');
-            if (!inp || !drop || !authors || !authors.length) return;
-
-            function showDrop(matches) {
-                drop.innerHTML = '';
-                if (!matches.length) { drop.style.display = 'none'; return; }
-                matches.forEach(function(a) {
-                    var li  = document.createElement('li');
-                    var btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.className = 'dropdown-item py-1 small';
-                    btn.textContent = a;
-                    btn.addEventListener('mousedown', function(e) {
-                        e.preventDefault();
-                        inp.value = a;
-                        drop.style.display = 'none';
-                    });
-                    li.appendChild(btn);
-                    drop.appendChild(li);
-                });
-                drop.style.display = 'block';
-            }
-
-            function filter(term) {
-                if (!term) { drop.style.display = 'none'; return; }
-                var lc = term.toLowerCase();
-                var m = authors.filter(function(a) {
-                    return a && a.toLowerCase().indexOf(lc) !== -1;
-                }).slice(0, 12);
-                showDrop(m);
-            }
-
-            inp.addEventListener('input',  function() { filter(this.value.trim()); });
-            inp.addEventListener('focus',  function() { if (this.value.trim()) filter(this.value.trim()); });
-            inp.addEventListener('blur',   function() { setTimeout(function(){ drop.style.display='none'; }, 150); });
-            inp.addEventListener('keydown', function(e) {
-                var items = Array.from(drop.querySelectorAll('.dropdown-item'));
-                if (e.key === 'ArrowDown' && items.length) { items[0].focus(); e.preventDefault(); }
-                else if (e.key === 'Escape') { drop.style.display = 'none'; }
-            });
-            drop.addEventListener('keydown', function(e) {
-                var items = Array.from(drop.querySelectorAll('.dropdown-item'));
-                var idx = items.indexOf(document.activeElement);
-                if (e.key === 'ArrowDown' && idx < items.length - 1) { items[idx+1].focus(); e.preventDefault(); }
-                else if (e.key === 'ArrowUp') {
-                    if (idx > 0) items[idx-1].focus(); else inp.focus();
-                    e.preventDefault();
-                } else if (e.key === 'Escape') { drop.style.display='none'; inp.focus(); }
-            });
-        })();
-
         // ── Publish section toggle ────────────────────────────────────────
         function togglePublishFields() {
             var checked = document.getElementById('isPublishableCheck')?.checked;
@@ -560,5 +600,121 @@
                 disp.innerHTML = '<span class="text-muted">' + publishableLabel + '</span>';
             }
         }
+        // ── TomSelect — author multi-select ──────────────────────────────────
+        window._authorTS = new TomSelect('#authorSelect', {
+            plugins: ['remove_button', 'clear_button'],
+            placeholder: @Json.Serialize(T["mat.authors_placeholder"]),
+            searchField: ['text'],
+            maxOptions: 200,
+            create: false,
+            onInitialize: function() {
+                var ts = this;
+                ts.wrapper.classList.add('author-ts-no-search');
+                ts.control_input.setAttribute('tabindex', '-1');
+                ts.on('dropdown_open', function() { ts.close(); });
+            },
+            render: {
+                option: function(data) {
+                    return '<div class="py-1 px-2"><i class="bi bi-person me-1 text-muted"></i>' + data.text + '</div>';
+                },
+                item: function(data) {
+                    return '<div><i class="bi bi-person me-1"></i>' + data.text + '</div>';
+                }
+            }
+        });
+
+        // ── Browse modal ──────────────────────────────────────────────────────
+        (function () {
+            var modal = document.getElementById('authorBrowseModal');
+            if (!modal) return;
+
+            function refreshIcons() {
+                var selected = window._authorTS ? window._authorTS.items : [];
+                modal.querySelectorAll('[data-author-id]').forEach(function (btn) {
+                    var active = selected.includes(String(btn.dataset.authorId));
+                    btn.classList.toggle('active', active);
+                    btn.querySelector('i').className = active
+                        ? 'bi bi-check-circle-fill text-bocconi flex-shrink-0'
+                        : 'bi bi-circle text-muted flex-shrink-0';
+                });
+            }
+
+            // ── Crea nuovo autore ─────────────────────────────────────────
+            var createInput = document.getElementById('authorCreateInput');
+            var createBtn   = document.getElementById('authorCreateBtn');
+
+            function doCreateAuthor() {
+                if (!createInput) return;
+                var name = createInput.value.trim();
+                if (!name) { createInput.focus(); return; }
+                createBtn.disabled = true;
+                var token = document.querySelector('[name=__RequestVerificationToken]');
+                fetch('@Url.Action("ResolveAuthor","Materials")', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': token ? token.value : ''
+                    },
+                    body: JSON.stringify({ name: name })
+                }).then(function(r) { return r.ok ? r.json() : null; })
+                  .then(function(data) {
+                      if (!data || !data.id) return;
+                      var ts  = window._authorTS;
+                      var sid = String(data.id);
+                      if (!ts.options[sid]) ts.addOption({ value: sid, text: data.name });
+                      if (!ts.items.includes(sid)) ts.addItem(sid);
+                      var list = modal.querySelector('.list-group');
+                      if (list && !modal.querySelector('[data-author-id="' + sid + '"]')) {
+                          var newBtn = document.createElement('button');
+                          newBtn.type = 'button';
+                          newBtn.className = 'list-group-item list-group-item-action d-flex align-items-center gap-2 py-2 small';
+                          newBtn.dataset.authorId   = sid;
+                          newBtn.dataset.authorName = data.name;
+                          newBtn.innerHTML = '<i class="bi bi-check-circle-fill text-bocconi flex-shrink-0"></i>' + escHtml(data.name);
+                          newBtn.addEventListener('click', function() {
+                              var id2 = String(this.dataset.authorId);
+                              if (ts.items[id2]) { ts.removeItem(id2); } else { ts.addItem(id2); }
+                              refreshIcons();
+                          });
+                          list.insertBefore(newBtn, list.firstChild);
+                      }
+                      refreshIcons();
+                      createInput.value = '';
+                      createInput.focus();
+                  }).catch(function() {})
+                  .finally(function() { createBtn.disabled = false; });
+            }
+
+            if (createBtn)   createBtn.addEventListener('click', doCreateAuthor);
+            if (createInput) createInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') { e.preventDefault(); doCreateAuthor(); }
+            });
+
+            // ── Apri modale ───────────────────────────────────────────────
+            modal.addEventListener('show.bs.modal', function () {
+                refreshIcons();
+                var s = document.getElementById('authorBrowseSearch');
+                if (s) { s.value = ''; }
+                modal.querySelectorAll('[data-author-id]').forEach(function (b) { b.style.display = ''; });
+                setTimeout(function() { if (createInput) createInput.focus(); }, 300);
+            });
+
+            document.getElementById('authorBrowseSearch').addEventListener('input', function () {
+                var q = this.value.toLowerCase();
+                modal.querySelectorAll('[data-author-id]').forEach(function (btn) {
+                    btn.style.display = btn.dataset.authorName.toLowerCase().includes(q) ? '' : 'none';
+                });
+            });
+
+            modal.querySelectorAll('[data-author-id]').forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    var ts = window._authorTS;
+                    if (!ts) return;
+                    var id = String(this.dataset.authorId);
+                    if (ts.items.includes(id)) { ts.removeItem(id); } else { ts.addItem(id); }
+                    refreshIcons();
+                });
+            });
+        })();
     </script>
 }

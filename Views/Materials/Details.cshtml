@@ -182,7 +182,7 @@
                     <dt class="col-5 text-muted">@T["mat.col_lang"]</dt>
                     <dd class="col-7">@Model.Language</dd>
                     <dt class="col-5 text-muted">@T["mat.col_author"]</dt>
-                    <dd class="col-7">@(string.IsNullOrEmpty(Model.AuthorName) ? "—" : Model.AuthorName)</dd>
+                    <dd class="col-7">@(string.IsNullOrEmpty(Model.AuthorsDisplay) ? "—" : Model.AuthorsDisplay)</dd>
                     @if (Model.PageCount.HasValue)
                     {
                         <dt class="col-5 text-muted">@T["mat.page_count"]</dt>
@@ -192,11 +192,18 @@
                     <dd class="col-7">@(string.IsNullOrEmpty(Model.OwnerName) ? "—" : Model.OwnerName)</dd>
                     <dt class="col-5 text-muted">@T["mat.col_status"]</dt>
                     <dd class="col-7"><span class="badge bg-@stCss">@stLabel</span></dd>
-                    @if (Model.ProtocolNumber.HasValue)
+                    @if (!string.IsNullOrEmpty(Model.ProtocolCode))
                     {
                         <dt class="col-5 text-muted">@T["mat.col_protocol"]</dt>
                         <dd class="col-7">
-                            <code class="text-success fw-semibold">@Model.ProtocolNumber</code>
+                            <code class="text-success fw-semibold">@Model.ProtocolCode</code>
+                        </dd>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.OldProtocol))
+                    {
+                        <dt class="col-5 text-muted">@T["mat.old_protocol"]</dt>
+                        <dd class="col-7">
+                            <code class="text-muted fw-semibold">@Model.OldProtocol</code>
                         </dd>
                     }
                     @if (!string.IsNullOrEmpty(Model.FolderName))
@@ -215,6 +222,11 @@
                     {
                         <dt class="col-5 text-muted">@T["mat.label_cat_date"]</dt>
                         <dd class="col-7">@Model.CatalogationDate.Value.ToString("dd/MM/yyyy")</dd>
+                    }
+                    @if (Model.LastUpdate.HasValue)
+                    {
+                        <dt class="col-5 text-muted">@T["mat.label_last_update"]</dt>
+                        <dd class="col-7">@Model.LastUpdate.Value.ToString("dd/MM/yyyy")</dd>
                     }
                     <dt class="col-5 text-muted">@T["mat.col_version"]</dt>
                     <dd class="col-7">
@@ -272,6 +284,19 @@
                             </dd>
                         }
                     </dl>
+                </div>
+            </div>
+        }
+
+        @* ── Codice corso ────────────────────────────────────────── *@
+        @if (!string.IsNullOrEmpty(Model.CourseCode))
+        {
+            <div class="card mt-3 border-secondary-subtle">
+                <div class="card-header bg-light fw-semibold py-2 text-secondary">
+                    <i class="bi bi-mortarboard me-1"></i>@T["mat.label_course_code"]
+                </div>
+                <div class="card-body small py-2">
+                    <code class="fs-6">@Model.CourseCode</code>
                 </div>
             </div>
         }

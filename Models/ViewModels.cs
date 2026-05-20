@@ -359,8 +359,7 @@ public class MaterialFormViewModel
     [MaxLength(255, ErrorMessage = "validation.max_length")]
     public string Title { get; set; } = string.Empty;
 
-    [MaxLength(255, ErrorMessage = "validation.max_length")]
-    public string? AuthorName { get; set; }
+    public List<int> AuthorIds { get; set; } = new();
 
     public int? OwnerId { get; set; }
 
@@ -384,7 +383,11 @@ public class MaterialFormViewModel
     [Required(ErrorMessage = "validation.required")]
     public DateTime? CatalogationDate { get; set; }
 
+    public DateTime? LastUpdate { get; set; }
+
     public int? PageCount { get; set; }
+    [MaxLength(100)]
+    public string? CourseCode { get; set; }
 
     // ── Verified fields (set via modal) ──────────────────────────────────
     public int? FolderId { get; set; }

@@ -1,0 +1,92 @@
+@model List<BocconiLMS.Models.Author>
+@{
+    ViewData["Title"] = T["author.title"];
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>@T["author.title"]</h2>
+    <a asp-action="Create" class="btn btn-bocconi">
+        <i class="bi bi-plus-lg me-1"></i>@T["author.btn_new"]
+    </a>
+</div>
+
+@if (!Model.Any())
+{
+    <div class="text-center py-5 text-muted">
+        <i class="bi bi-people display-4 d-block mb-3"></i>
+        <p>@T["author.no_results"] <a asp-action="Create">@T["author.create_first"]</a>.</p>
+    </div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-hover align-middle" id="authorsTable">
+            <thead class="table-light">
+                <tr>
+                    <th>#</th>
+                    <th>@T["author.col_name"]</th>
+                    <th>@T["author.col_email"]</th>
+                    <th>@T["author.col_affiliation"]</th>
+                    <th class="text-center">@T["author.col_materials"]</th>
+                    <th class="text-end">@T["common.actions"]</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var a in Model)
+                {
+                    <tr>
+                        <td class="text-muted small">@a.Id</td>
+                        <td class="fw-semibold">@a.FullName</td>
+                        <td class="text-muted small">@(string.IsNullOrEmpty(a.Email) ? "—" : a.Email)</td>
+                        <td class="text-muted small">@(string.IsNullOrEmpty(a.Affiliation) ? "—" : a.Affiliation)</td>
+                        <td class="text-center">
+                            @if (a.MaterialCount > 0)
+                            {
+                                <span class="badge bg-primary">@a.MaterialCount</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">0</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex gap-1 justify-content-end">
+                                <a asp-action="Edit" asp-route-id="@a.Id"
+                                   class="btn btn-sm btn-outline-secondary"
+                                   title="@T["common.edit"]">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                @if (a.MaterialCount == 0)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-danger"
+                                            data-confirm="@T["common.delete"] «@a.FullName»?"
+                                            data-delete-url="@Url.Action("Delete","Authors", new { id = a.Id })"
+                                            title="@T["common.delete"]">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <span title="@T["author.warn_in_use"]" style="cursor:not-allowed;">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled style="pointer-events:none;">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </span>
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#authorsTable').DataTable({ language: window.dtLang(), pageLength: 25 });
+        });
+    </script>
+}
