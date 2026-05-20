@@ -97,7 +97,7 @@ builder.Services.AddSingleton<Microsoft.Extensions.Localization.IStringLocalizer
 builder.Services.AddControllersWithViews()
     .AddDataAnnotationsLocalization();
 
-// In development l'app gira in un iframe (preview Replit / canvas):
+// In development l'app gira in un iframe (preview preProd / canvas):
 // il middleware Antiforgery imposta X-Frame-Options: SAMEORIGIN di default,
 // che blocca il caricamento in iframe su domini diversi.
 // SuppressXFrameOptionsHeader=true rimuove quell'header solo in dev.
@@ -142,8 +142,15 @@ const string StubIdpMetaUrl   = "https://stubidp.sustainsys.com/Metadata";
 // SAML_IDP_METADATA_URL  → URL da cui scaricare il metadata XML dell'IdP
 //   dev default : https://stubidp.sustainsys.com/Metadata
 //   Bocconi prod: https://idp.unibocconi.it/metadata/get-config.php?what=UNIBOCCONI-ADFS
-var samlIdpMetadataUrl = Environment.GetEnvironmentVariable("SAML_IDP_METADATA_URL")
-                      ?? StubIdpMetaUrl;
+// Se la variabile punta al vecchio samltest.id (abbandonato, restituisce 400),
+// ignorarla e usare il fallback stubidp che funziona correttamente.
+const string AbandonedSamlTestId = "https://samltest.id/saml/idp";
+var samlIdpMetadataUrlRaw = Environment.GetEnvironmentVariable("SAML_IDP_METADATA_URL");
+var samlIdpMetadataUrl =
+    string.IsNullOrEmpty(samlIdpMetadataUrlRaw) ||
+    string.Equals(samlIdpMetadataUrlRaw, AbandonedSamlTestId, StringComparison.OrdinalIgnoreCase)
+        ? StubIdpMetaUrl
+        : samlIdpMetadataUrlRaw;
 
 // SAML_IDP_ENTITY_ID → entityID nelle asserzioni SAML (può differire dalla metadata URL)
 //   dev default : https://stubidp.sustainsys.com/
@@ -199,7 +206,7 @@ builder.Services.AddAuthentication()
         // Strategy (in order of priority):
         //   1. SAML_SP_CERT_PFX secret  → base64-encoded PKCS#12 bundle (cert + key)
         //   2. No secret                → generate a fresh RSA-2048 self-signed cert
-        //      Works perfectly in dev/Replit; in prod use SAML_SP_CERT_PFX.
+        //      Works perfectly in dev/preProd; in prod use SAML_SP_CERT_PFX.
         //
         // NOTE: raw PEM-from-base64 was abandoned because .NET's CreateFromPem is
         //       strict about BOM/invisible chars that may be introduced by secret UIs.
@@ -214,7 +221,7 @@ builder.Services.AddAuthentication()
         }
         else
         {
-            // Generate a fresh self-signed cert at startup (dev / Replit default)
+            // Generate a fresh self-signed cert at startup (dev / preProd default)
             using var rsa = RSA.Create(2048);
             var req = new CertificateRequest(
                 "CN=didasco.unibocconi.it, O=Universita Bocconi, C=IT",
@@ -314,9 +321,15 @@ app.MapGet("/auth/saml-metadata", (HttpContext ctx) =>
 }).AllowAnonymous();
 
 // ── Schema migrations + seed traduzioni ──────────────────────────────────────
-// DatabaseMigrator applica ogni migrazione esattamente una volta (tracciata in schema_migrations).
-try { await BocconiLMS.Tools.DatabaseMigrator.RunAsync(connectionString, app.Logger); }
-catch (Exception ex) { app.Logger.LogWarning(ex, "Database migration failed (non bloccante)"); }
+// Le migrazioni NON vengono più eseguite automaticamente all'avvio.
+// Per applicarle manualmente (solo quando necessario):
+//   dotnet run --project artifacts/bocconi-lms -- migrate
+// oppure, da Admin → Database → "Esegui migrazioni".
+//
+// In produzione lo schema viene generato una-tantum con GenerateProductionScript.
+//
+// try { await BocconiLMS.Tools.DatabaseMigrator.RunAsync(connectionString, app.Logger); }
+// catch (Exception ex) { app.Logger.LogWarning(ex, "Database migration failed (non bloccante)"); }
 
 // IIS detection: AspNetCoreModuleV2 sets these env vars depending on hosting mode.
 //   - inprocess:    ASPNETCORE_IIS_HTTPAUTH, IIS_USER_TOKEN
@@ -334,11 +347,11 @@ if (isIIS)
 }
 else
 {
-    var replitPort = Environment.GetEnvironmentVariable("PORT");
-    if (!string.IsNullOrEmpty(replitPort))
+    var preProdPort = Environment.GetEnvironmentVariable("PORT");
+    if (!string.IsNullOrEmpty(preProdPort))
     {
-        // Replit: la porta è assegnata dinamicamente via env var PORT
-        app.Run($"http://0.0.0.0:{replitPort}");
+        // preProd: la porta è assegnata dinamicamente via env var PORT
+        app.Run($"http://0.0.0.0:{preProdPort}");
     }
     else
     {
