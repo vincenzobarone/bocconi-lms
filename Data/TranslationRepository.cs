@@ -128,6 +128,29 @@ public class TranslationRepository
         await cmd.ExecuteNonQueryAsync();
     }
 
+    // Called fire-and-forget by TranslationService when a key is used in code
+    // but not yet present in the DB. Inserts empty rows for all languages so
+    // the key appears in Admin → Translations ready to be filled in.
+    public async Task RegisterMissingKeyAsync(string key)
+    {
+        try
+        {
+            using var conn = _db.GetConnection();
+            await conn.OpenAsync();
+            foreach (var lang in new[] { "en", "it", "es", "de" })
+            {
+                using var cmd = new MySqlCommand(@"
+                    INSERT IGNORE INTO translations
+                        (language_code, label_key, label_value, created_at, updated_at)
+                    VALUES (@lang, @key, '', NOW(), NOW())", conn);
+                cmd.Parameters.AddWithValue("@lang", lang);
+                cmd.Parameters.AddWithValue("@key", key);
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+        catch { /* fire-and-forget: never throw */ }
+    }
+
     public async Task<bool> KeyExistsAsync(string key)
     {
         using var conn = _db.GetConnection();

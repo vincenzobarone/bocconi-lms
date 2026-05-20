@@ -52,9 +52,16 @@ public class TranslationService
     {
         var lang = CurrentLanguage;
         var dict = GetCachedLanguage(lang);
-        if (dict.TryGetValue(key, out var val)) return val;
 
-        // If the translation is missing, always return the key
+        if (dict.TryGetValue(key, out var val) && !string.IsNullOrEmpty(val))
+            return val;
+
+        // Key missing from DB entirely: register it once (fire-and-forget) so it
+        // appears in Admin → Translations ready to be translated.
+        if (!dict.ContainsKey(key) && _autoInserted.TryAdd(key, 1))
+            _ = _repo.RegisterMissingKeyAsync(key);
+
+        // Fallback: return the key itself (also when translation is empty)
         return key;
     }
 
