@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Sfondo blu Bocconi con angoli arrotondati -->
+  <rect width="64" height="64" rx="10" ry="10" fill="#003087"/>
+  <!-- Accento oro in basso -->
+  <rect x="0" y="56" width="64" height="8" rx="0" ry="0" fill="#c8a96e"/>
+  <rect x="0" y="56" width="64" height="8" rx="0" ry="0" fill="#c8a96e"/>
+  <!-- Angoli arrotondati per la striscia oro -->
+  <rect x="0" y="52" width="64" height="12" rx="10" ry="10" fill="#c8a96e"/>
+  <rect x="0" y="52" width="64" height="6" fill="#c8a96e"/>
+  <!-- "D" bianca bold centrata -->
+  <text x="32" y="46"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="42"
+        font-weight="bold"
+        fill="white"
+        text-anchor="middle"
+        dominant-baseline="auto">D</text>
+</svg>
