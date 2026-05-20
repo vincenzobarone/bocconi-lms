@@ -4,6 +4,13 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Timestamp di build incorporato nel DLL — funziona su qualsiasi macchina/CI
+         senza dipendenze da git. Formato: ddMMyyyyHHmm  es. 200520261643
+         InformationalVersion è valutato qui (prima di tutti i target), poi
+         IncludeSourceRevisionInInformationalVersion=false impedisce al SDK
+         di sovrascriverlo aggiungendo l'hash git in coda. -->
+    <InformationalVersion>$([System.DateTime]::UtcNow.ToString("ddMMyyyyHHmm"))</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,15 +19,6 @@
     <EmbeddedResource Remove="BocconiLMS.Tests/**" />
     <None Remove="BocconiLMS.Tests/**" />
   </ItemGroup>
-
-  <Target Name="EmbedGitHash" BeforeTargets="BeforeBuild">
-    <Exec Command="git rev-parse --short HEAD" ConsoleToMSBuild="true" IgnoreExitCode="true" StandardOutputImportance="low">
-      <Output TaskParameter="ConsoleOutput" PropertyName="GitShortHash" />
-    </Exec>
-    <PropertyGroup Condition="'$(GitShortHash)' != ''">
-      <InformationalVersion>$(GitShortHash.Trim())</InformationalVersion>
-    </PropertyGroup>
-  </Target>
 
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />

@@ -1,79 +1,44 @@
 using System.Reflection;
+using System.Text.RegularExpressions;
 
 namespace BocconiLMS.Services;
 
 public class AppVersionService
 {
-    public string CommitHash { get; }
+    // Etichetta leggibile del build — sempre valorizzata dopo la compilazione.
+    // Formato: "dd/MM/yyyy HH:mm (UTC)"  es. "20/05/2026 16:43 (UTC)"
+    public string BuildLabel { get; }
     public string Environment { get; }
 
     public AppVersionService(IWebHostEnvironment env)
     {
-        CommitHash = ReadGitHash();
+        BuildLabel  = ReadBuildLabel();
         Environment = env.EnvironmentName;
     }
 
-    private static string ReadGitHash()
+    private static string ReadBuildLabel()
     {
-        // 1. AssemblyInformationalVersion — incorporato dal target MSBuild EmbedGitHash
-        //    al momento di dotnet build/publish. Funziona sempre, anche senza .git.
-        var infoVersion = Assembly
+        var raw = Assembly
             .GetExecutingAssembly()
             .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
             ?.InformationalVersion
-            ?.Trim();
+            ?.Trim() ?? "";
 
-        if (!string.IsNullOrEmpty(infoVersion) && infoVersion != "1.0.0")
+        // Formato atteso dal target MSBuild EmbedBuildTimestamp: ddMMyyyyHHmm (12 cifre)
+        // es. "200520261643" → "20/05/2026 16:43 (UTC)"
+        var m = Regex.Match(raw, @"^(\d{2})(\d{2})(\d{4})(\d{2})(\d{2})$");
+        if (m.Success)
         {
-            var candidate = infoVersion.Length >= 7 ? infoVersion[..7] : infoVersion;
-            if (IsValidShortHash(candidate)) return candidate;
+            var (dd, MM, yyyy, HH, mm) =
+                (m.Groups[1].Value, m.Groups[2].Value,
+                 m.Groups[3].Value, m.Groups[4].Value, m.Groups[5].Value);
+            return $"{dd}/{MM}/{yyyy} {HH}:{mm} (UTC)";
         }
 
-        // 2. Fallback runtime: legge .git/HEAD (funziona in sviluppo quando
-        //    il processo gira nella stessa cartella del repo).
-        try
-        {
-            var gitDir = FindGitDir(AppContext.BaseDirectory);
-            if (gitDir == null) return "–";
+        // Fallback: mostra il valore raw se non è vuoto né il default SDK "1.0.0"
+        if (!string.IsNullOrEmpty(raw) && raw != "1.0.0")
+            return raw;
 
-            var headFile = Path.Combine(gitDir, "HEAD");
-            if (!File.Exists(headFile)) return "–";
-
-            var head = File.ReadAllText(headFile).Trim();
-            string hash;
-
-            if (head.StartsWith("ref: "))
-            {
-                var refRelative = head[5..].Replace('/', Path.DirectorySeparatorChar);
-                var refFile = Path.Combine(gitDir, refRelative);
-                if (!File.Exists(refFile)) return "–";
-                hash = File.ReadAllText(refFile).Trim();
-            }
-            else
-            {
-                hash = head;
-            }
-
-            return hash.Length >= 7 ? hash[..7] : hash;
-        }
-        catch
-        {
-            return "–";
-        }
-    }
-
-    private static bool IsValidShortHash(string s) =>
-        s.Length is >= 5 and <= 10 && s.All(c => c is (>= '0' and <= '9') or (>= 'a' and <= 'f') or (>= 'A' and <= 'F'));
-
-    private static string? FindGitDir(string startPath)
-    {
-        var dir = new DirectoryInfo(startPath);
-        while (dir != null)
-        {
-            var gitPath = Path.Combine(dir.FullName, ".git");
-            if (Directory.Exists(gitPath)) return gitPath;
-            dir = dir.Parent;
-        }
-        return null;
+        return "";
     }
 }

@@ -199,10 +199,11 @@
 <footer class="footer mt-auto py-3 bg-light border-top">
     <div class="container text-center text-muted small">
         &copy; @DateTime.Now.Year Università Bocconi — @T["footer.copyright"]
-        @if (_ver.Environment == "Development" && _ver.CommitHash != "–")
+        @if (!string.IsNullOrEmpty(_ver.BuildLabel))
         {
-            <span class="footer-rev" title="@_ver.Environment">
-                &nbsp;·&nbsp;<span class="rev-dev">&#9679;</span>&nbsp;<code>@_ver.CommitHash</code>
+            var dotColor = _ver.Environment == "Development" ? "rev-dev" : "rev-prod";
+            <span class="footer-rev" title="Build @_ver.Environment">
+                &nbsp;·&nbsp;<span class="@dotColor">&#9679;</span>&nbsp;<code>@_ver.BuildLabel</code>
             </span>
         }
     </div>
